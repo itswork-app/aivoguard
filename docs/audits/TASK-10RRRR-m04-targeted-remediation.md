@@ -48,7 +48,7 @@ FILES_CHANGED:
   docs/audits/TASK-10RRRR-m04-targeted-remediation.md
   docs/audits/TASK-10RRR-m04-final-remediation.md (removed; user audit-doc policy)
 
-COMMIT: (filled after commit)
+COMMIT: 58f0e01
 
 VERDICT: PASS
 
