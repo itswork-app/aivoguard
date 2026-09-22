@@ -37,6 +37,12 @@ Full hierarchy and process rules:
 
 ## Current status
 
-Product scope, Gate 0, Gate 1, and economic semantics are **not** documented
-as frozen specifications yet. Empty category directories are intentional
-placeholders for upcoming specification work.
+| Document | Status |
+| --- | --- |
+| [`design/SPECIFICATION-POLICY.md`](design/SPECIFICATION-POLICY.md) | Process policy (normative for process) |
+| [`design/product-scope.md`](design/product-scope.md) | Product scope — **FROZEN** |
+| Gate 0 / Domain Contract (TASK-02) | Authorized to begin; Gate 0 blocked until complete |
+| Gate 1 / economic semantics | Blocked |
+
+Empty architecture/reference directories remain intentional placeholders for
+upcoming specification work.

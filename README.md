@@ -28,10 +28,12 @@ foundation suitable for subsequent specification-driven development.
 * CLI, SDK, or agent adapters
 * Payment adapters (including x402 or similar)
 * Production APIs or network services
-* Frozen product-scope or Gate 0 / Gate 1 specifications
+* Gate 0 / Gate 1 specifications
+* Implemented economic modules
 
-Claiming otherwise would be dishonest. Product behavior will land only after
-normative specifications are written and frozen.
+The frozen product-scope specification is
+[`docs/design/product-scope.md`](docs/design/product-scope.md)
+(**FROZEN**). Claiming implemented product behavior would be dishonest.
 
 ## Technical direction (informational)
 
@@ -101,7 +103,13 @@ See [`SECURITY.md`](SECURITY.md). A dedicated vulnerability-reporting contact
 has not been configured yet and will be established before any production
 release.
 
+## Specifications
+
+* Process: [`docs/design/SPECIFICATION-POLICY.md`](docs/design/SPECIFICATION-POLICY.md)
+* Product scope (**FROZEN**): [`docs/design/product-scope.md`](docs/design/product-scope.md)
+
 ## Next steps
 
-The next planned task is **TASK-01 — Product Scope Specification**.
-Do not treat this README as authorization to implement product scope.
+**TASK-02 — Domain Contract / Gate 0** is authorized to begin.
+Gate 0 remains blocked until TASK-02 completes. Gate 1 remains blocked.
+Do not treat this README as authorization to implement economic modules.
