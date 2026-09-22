@@ -12,8 +12,9 @@ keywords.workspace = true
 categories.workspace = true
 publish.workspace = true
 
-# This package hosts Gate-1 M01 and Gate-2 M02. It remains free of network,
-# database, and LLM dependencies. M02 is read-only over M01 outputs.
+# This package hosts Gate-1 M01, Gate-2 M02, and Gate-3 M03. It remains free of
+# network, database, and LLM dependencies. M02/M03 are read-only over M01
+# outputs (M03 orchestrates only).
 
 [dependencies]
 # None. Keep the Gate-1 kernel dependency-free (std only).

@@ -48,7 +48,7 @@ Full hierarchy and process rules:
 | [`architecture/architecture-baseline.md`](architecture/architecture-baseline.md) | Architecture baseline (TASK-00B) — structural only |
 | M01 implementation | Present in `crates/aivoguard` (`kernel`); TASK-04 **PASS** |
 | M02 implementation | Present in `crates/aivoguard` (`invariant`); TASK-06 / TASK-06R |
-| M03 implementation | **BLOCKED** (specification frozen; requires TASK-08) |
+| M03 implementation | Present in `crates/aivoguard` (`simulator`); TASK-08 |
 | Gate 4+ modules (M04+) | Not implemented |
 
 `docs/reference/` remains an intentional placeholder for non-normative

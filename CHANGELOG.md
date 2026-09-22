@@ -19,7 +19,7 @@ once releases begin.
   M02 implemented in `crates/aivoguard`.
 * Deterministic simulator specification
   (`docs/design/deterministic-simulator-specification.md`) — **FROZEN**
-  (Gate 3 **CLOSED**; M03 implementation still **BLOCKED** pending TASK-08).
+  (Gate 3 **CLOSED**); M03 implemented in `crates/aivoguard` (`simulator`).
 
 ### Changed
 
@@ -30,6 +30,7 @@ once releases begin.
 * Economic kernel specification frozen (TASK-03F); M01 implementation (TASK-04).
 * M03 specification frozen after TASK-07 / TASK-07R remediation and TASK-07F
   independent Gate-3 freeze audit.
+* M03 deterministic simulator implemented (TASK-08).
 
 ### Deprecated
 

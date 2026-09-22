@@ -19,7 +19,7 @@ Related:
 * [`../design/domain-contract.md`](../design/domain-contract.md) (**FROZEN**)
 * [`../design/economic-kernel-specification.md`](../design/economic-kernel-specification.md) (**FROZEN**)
 * [`../design/economic-invariant-engine-specification.md`](../design/economic-invariant-engine-specification.md) (**FROZEN**; Gate 2 **CLOSED**)
-* [`../design/deterministic-simulator-specification.md`](../design/deterministic-simulator-specification.md) (**FROZEN**; Gate 3 **CLOSED**; implementation **BLOCKED**)
+* [`../design/deterministic-simulator-specification.md`](../design/deterministic-simulator-specification.md) (**FROZEN**; Gate 3 **CLOSED**; implemented TASK-08)
 * [`../design/SPECIFICATION-POLICY.md`](../design/SPECIFICATION-POLICY.md)
 * [`../adr/`](../adr/)
 
@@ -119,7 +119,7 @@ Conceptual layers (dependency flows **downward**):
 ```text
 INTERFACES          CLI / SDK / HTTP / language bindings (future; not frozen)
 ADAPTERS            M07 / M08 external translation (future)
-ORCHESTRATION       M03 simulator (FROZEN; not implemented); M09 multi-agent (future)
+ORCHESTRATION       M03 simulator (IMPLEMENTED; Gate 3 CLOSED); M09 multi-agent (future)
 EVALUATION          M02 invariants (IMPLEMENTED); M06 regression comparison (future)
 ECONOMIC AUTHORITY  M01 kernel (IMPLEMENTED)
 DOMAIN              World / State / Action / Asset / Money primitives (in M01)
@@ -128,6 +128,7 @@ DOMAIN              World / State / Action / Asset / Money primitives (in M01)
 Orchestration depends on **M01** for economic truth. M02 is an **optional**
 downstream consumer of authoritative M01 outputs (and of simulation results),
 not a mandatory layer for every simulation run.
+
 ### CURRENT Rust layout
 
 Prefer **one crate** with clear modules over premature multi-crate splits:
@@ -138,9 +139,9 @@ crates/aivoguard/
     lib.rs
     kernel/     ← ECONOMIC AUTHORITY + DOMAIN (M01)
     invariant/  ← EVALUATION (M02; read-only)
+    simulator/  ← ORCHESTRATION (M03; sequential; read-only over M01/M02)
     # future seams (NOT created):
-    # simulation/   ← M03
-    # ...
+    # adversarial/ chaos/ regression/ adapters/ …
 ```
 
 Additional crates are authorized only when a frozen specification and explicit
@@ -204,7 +205,7 @@ M02 must not become a second economic engine.
 Specification: **FROZEN**. Implementation: present under `crates/aivoguard/src/invariant/`
 (TASK-06 / TASK-06R).
 
-### M03 — Deterministic Simulator (SPECIFICATION FROZEN; Gate 3 CLOSED; NOT IMPLEMENTED)
+### M03 — Deterministic Simulator (IMPLEMENTED; Gate 3 CLOSED)
 
 May construct scenarios, provide initial state, invoke M01, capture transitions,
 optionally invoke M02, advance logical simulation, produce results.
@@ -216,8 +217,8 @@ invokes M02 as a read-only consumer of authoritative outputs.
 Must **not** redefine M01 economic semantics. Orchestrates only.
 
 Specification: **FROZEN** (`docs/design/deterministic-simulator-specification.md`;
-TASK-07 / TASK-07R / TASK-07F). Implementation: **BLOCKED** until explicit
-TASK-08 authorization. No `simulation/` module in the crate yet.
+TASK-07 / TASK-07R / TASK-07F). Implementation: present under
+`crates/aivoguard/src/simulator/` (TASK-08).
 
 ### M04 / M05 — Adversarial / Chaos (BOUNDARY ONLY)
 
@@ -470,7 +471,7 @@ Architecture remains compatible with, and does **not** decide:
 | Plugin / adapter architecture (product OD-08) | OPEN |
 | Language bindings | OPEN |
 | Multi-crate split beyond `aivoguard` | OPEN until a frozen spec requires it |
-| M03–M09 detailed APIs / serialization | Deferred; M03 **execution semantics** are FROZEN (Gate 3 CLOSED); implementation still blocked |
+| M03–M09 detailed APIs / serialization | Deferred; M03 execution semantics FROZEN and implemented (TASK-08); public API/serialization remain open |
 
 ---
 
@@ -478,10 +479,11 @@ Architecture remains compatible with, and does **not** decide:
 
 ### CURRENT
 
-* Single crate `aivoguard` with `kernel` (M01) and `invariant` (M02)
+* Single crate `aivoguard` with `kernel` (M01), `invariant` (M02), and
+  `simulator` (M03)
 * Frozen Product Scope, Domain Contract, Economic Kernel Specification
 * M02 specification: **FROZEN** (Gate 2 **CLOSED**); implemented (TASK-06)
-* M03 specification: **FROZEN** (Gate 3 **CLOSED**); implementation **BLOCKED** (TASK-07F)
+* M03 specification: **FROZEN** (Gate 3 **CLOSED**); implemented (TASK-08)
 * M04–M09: product boundaries only; no code
 * No network/DB/LLM in the authoritative core
 
@@ -492,8 +494,8 @@ Architecture remains compatible with, and does **not** decide:
   interfaces compose around them
 * M02 as a read-only downstream module under `crates/aivoguard/src/invariant/`
   (implemented; further packaging remains an implementation decision)
-* M03 as a future orchestration module under `crates/aivoguard/src/simulation/`
-  (path provisional; not present until TASK-08)
+* M03 as a read-only orchestration module under `crates/aivoguard/src/simulator/`
+  (implemented; packaging remains an implementation decision)
 * M04–M09 as specified by future frozen gates
 * Interfaces and adapters outside the economic core
 
@@ -505,7 +507,7 @@ Architecture remains compatible with, and does **not** decide:
 | --- | --- | --- | --- | --- |
 | M01 | Frozen | Current | Implemented | PASS |
 | M02 | Frozen | Defined | Implemented | Gate 2 **CLOSED** / TASK-06 / TASK-06R |
-| M03 | Frozen | Defined | Not implemented (BLOCKED) | Gate 3 **CLOSED** / TASK-07F |
+| M03 | Frozen | Defined | Implemented | Gate 3 **CLOSED** / TASK-08 |
 | M04 | Future | Boundary only | Not implemented | Future |
 | M05 | Future | Boundary only | Not implemented | Future |
 | M06 | Future | Boundary only | Not implemented | Future |
@@ -519,7 +521,7 @@ Architecture remains compatible with, and does **not** decide:
 
 | # | Criterion | Status |
 | --- | --- | --- |
-| 1 | Every current implemented responsibility has an owner | PASS (M01/kernel; M02/invariant) |
+| 1 | Every current implemented responsibility has an owner | PASS (M01/kernel; M02/invariant; M03/simulator) |
 | 2 | Every frozen domain responsibility has an architectural home | PASS |
 | 3 | M01 authority unambiguous | PASS |
 | 4 | M02 authority unambiguous | PASS |
@@ -539,7 +541,8 @@ Architecture remains compatible with, and does **not** decide:
 | Created by | TASK-00B |
 | Consistency audit | TASK-00C — M03/M02 optional dependency clarified |
 | Remediation | TASK-06R — transaction actor + COUNT dimensionality |
-| Freeze | TASK-07F — Gate 3 M03 specification frozen (implementation still blocked) |
+| Freeze | TASK-07F — Gate 3 M03 specification frozen |
+| Implementation | TASK-08 — M03 deterministic simulator implemented |
 | Normative economic semantics | **None** (architecture only) |
 | ADR created by this task | **None** (no new implementation decision) |
 | Next | Future gates only when explicitly authorized |
