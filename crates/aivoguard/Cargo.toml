@@ -1,0 +1,23 @@
+[package]
+name = "aivoguard"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+description.workspace = true
+readme = "../../README.md"
+repository.workspace = true
+homepage.workspace = true
+keywords.workspace = true
+categories.workspace = true
+publish.workspace = true
+
+# This package is the workspace anchor crate. It contains no product domain
+# logic. Economic primitives, simulators, and related modules will be added
+# only after their normative specifications are frozen.
+
+[dependencies]
+# None. Keep the foundation dependency-free.
+
+[lints]
+workspace = true

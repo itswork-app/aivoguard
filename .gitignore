@@ -1,0 +1,42 @@
+# Rust / Cargo
+/target/
+**/target/
+Cargo.lock.bak
+**/*.rs.bk
+
+# Coverage / profiling
+*.profraw
+*.profdata
+coverage/
+lcov.info
+tarpaulin-report.html
+
+# IDE / editors
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+
+# OS
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Env / secrets (never commit)
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+credentials.json
+secrets/
+
+# Misc local artifacts
+*.log
+tmp/
+temp/
+.cache/

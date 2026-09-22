@@ -1,0 +1,44 @@
+---
+description: Repository foundation constraints for AivoGuard agents
+alwaysApply: true
+---
+
+# AivoGuard — Repository Foundation Rules
+
+## Before modifying anything
+
+1. Inspect the repository state first (layout, existing docs, specs, crates).
+2. Treat frozen normative specifications as authoritative when they exist.
+3. If no frozen specification covers the change, do not invent requirements.
+
+## Specification authority
+
+* Follow `docs/design/SPECIFICATION-POLICY.md`.
+* Hierarchy: frozen specs → ADRs → implementation → tests → examples → non-normative docs.
+* Code must not silently redefine specifications.
+* Ambiguity must be surfaced, not silently resolved.
+* Semantic changes require specification review / amendment (and an ADR when applicable).
+
+## Scope discipline
+
+* No speculative implementation.
+* No architectural invention without documentation (spec and/or ADR).
+* No silent scope expansion beyond the assigned task.
+* Do not create domain crates or modules ahead of frozen specifications
+  (for example economic kernel, invariant engine, simulator, adversarial engine).
+* Exact economic semantics will be defined later — do not encode them early.
+
+## Engineering principles (foundation)
+
+* Prefer deterministic behavior as a project principle.
+* No hidden mutable global state.
+* Do not treat LLM output as authoritative economic truth.
+* Tests are required for any implemented behavior.
+* Keep dependencies minimal; do not add “maybe useful later” crates.
+
+## Honesty
+
+* Do not claim features that do not exist.
+* Do not add fake APIs, placeholder business logic, or TODO-as-implementation.
+* Do not proceed into Gate 0 / Gate 1 / economic implementation unless the
+  assigned task explicitly authorizes that work.

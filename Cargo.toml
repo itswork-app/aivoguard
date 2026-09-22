@@ -1,0 +1,47 @@
+# AivoGuard Cargo workspace.
+#
+# This workspace exists solely as the repository foundation for subsequent
+# specification-driven development. Domain crates (economic kernel, invariant
+# engine, simulator, etc.) will be introduced only after their specifications
+# are frozen. The single member crate `aivoguard` is a minimal library package
+# that keeps the workspace buildable, testable, and CI-ready during bootstrap.
+#
+# License: undecided — see LICENSE.
+
+[workspace]
+resolver = "2"
+members = ["crates/aivoguard"]
+default-members = ["crates/aivoguard"]
+
+[workspace.package]
+version = "0.0.0"
+edition = "2021"
+rust-version = "1.85"
+authors = ["AivoGuard Contributors"]
+description = "Deterministic economic testing infrastructure for autonomous AI agents (foundation stage)"
+# readme is not inherited: package-relative paths would miss the root README.
+# License intentionally unset until a licensing decision is recorded.
+# See LICENSE for the current decision status.
+repository = "https://github.com/itswork-app/aivoguard"
+homepage = "https://github.com/itswork-app/aivoguard"
+keywords = ["agents", "deterministic", "economic-testing", "sandbox"]
+categories = ["development-tools", "simulation"]
+publish = false
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+missing_docs = "warn"
+unused_must_use = "deny"
+unused_crate_dependencies = "deny"
+
+[workspace.lints.clippy]
+all = { level = "warn", priority = -1 }
+pedantic = { level = "warn", priority = -1 }
+nursery = { level = "warn", priority = -1 }
+module_name_repetitions = "allow"
+missing_errors_doc = "allow"
+missing_panics_doc = "allow"
+
+[workspace.dependencies]
+# Intentionally empty during foundation bootstrap.
+# Dependencies are added only when a frozen specification requires them.

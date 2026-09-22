@@ -1,0 +1,7 @@
+# Clippy policy for the AivoGuard workspace.
+# Pedantic and nursery lints are enabled at workspace level in Cargo.toml
+# with narrowly scoped allows for documentation-style noise.
+
+cognitive-complexity-threshold = 30
+too-many-arguments-threshold = 8
+type-complexity-threshold = 250

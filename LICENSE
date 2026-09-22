@@ -1,0 +1,30 @@
+# Licensing Decision — Pending
+
+**Status:** OPEN — no license has been selected yet.
+
+This file is intentionally **not** a software license grant.
+
+AivoGuard is intended to be open-source, but the concrete OSS license
+(for example Apache-2.0, MIT, or dual licensing) has **not** been decided.
+
+Until a license decision is recorded:
+
+* Do **not** assume this project is licensed under any particular terms.
+* Do **not** copy or redistribute the repository under a presumed license.
+* Contributors should treat licensing as unresolved and ask maintainers
+  before relying on any redistribution rights.
+
+When a license is chosen, this file will be replaced with the verified
+license text, and project metadata (`Cargo.toml`, `README.md`, and related
+docs) will be updated accordingly.
+
+## Decision record
+
+| Field | Value |
+| --- | --- |
+| Decision | Undecided |
+| Chosen license | None |
+| Decision date | TBD |
+| Decision forum | See `GOVERNANCE.md` once governance processes are active |
+
+Do not invent a license silently.
