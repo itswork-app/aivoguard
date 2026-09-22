@@ -3,32 +3,32 @@
 | Field | Value |
 | --- | --- |
 | Document | `docs/design/payment-settlement-testing-specification.md` |
-| Task | **TASK-26**…**TASK-30**; **TASK-31** re-audit (CONDITIONAL); **TASK-32** (R-F1…R-F5); Gate 6 scope **TASK-25** |
+| Task | **TASK-26**…**TASK-34**; **TASK-35** re-audit **PASS**; **TASK-36** normative freeze; Gate 6 scope **TASK-25** |
 | Module | **M07 — Payment & Settlement Testing** |
 | Gate | **GATE 6** |
-| **STATUS** | **READY_FOR_REVIEW** — final semantic closure complete; pending final re-audit |
-| Normative freeze | **NOT FROZEN** |
-| Implementation | **BLOCKED** — this draft does **not** authorize implementation |
+| **STATUS** | **FROZEN** |
+| Normative freeze | **FROZEN** |
+| Implementation | **BLOCKED** — freeze does **not** authorize implementation |
 | Depends on | Product Scope (**FROZEN**); Domain Contract (**FROZEN**); M01–M04 (**FROZEN** / **IMPLEMENTED**); M06 (**FROZEN** / **IMPLEMENTED**, Gate 5 **CLOSED**, `e815c87`); Architecture baseline (boundary M07) |
 | Process | [`SPECIFICATION-POLICY.md`](SPECIFICATION-POLICY.md) |
 
 ```text
-STATUS: READY_FOR_REVIEW
-TASK-31: CONDITIONAL — REMEDIATION REQUIRED (recorded)
-TASK-32: REMEDIATION_COMPLETE_PENDING_REAUDIT
-NORMATIVE FREEZE: NOT FROZEN
+STATUS: FROZEN
+NORMATIVE FREEZE: FROZEN
+TASK-35: PASS
+TASK-36: FREEZE
 IMPLEMENTATION: BLOCKED
-GATE: GATE 6 — SPECIFICATION IN PROGRESS
-NEXT: TASK-33 — INDEPENDENT FINAL M07 SPECIFICATION RE-AUDIT
+GATE: GATE 6 — SPECIFICATION FROZEN
+NEXT: separate implementation-authorization task (not this freeze)
 ```
 
-This document is the **draft** normative specification for Gate-6 M07.
-TASK-31 found residual findings R-F1…R-F5. TASK-32 closed them. Freeze,
-implementation authorization, and implementation require TASK-33 PASS.
+This document is the **frozen** normative specification for Gate-6 M07.
+TASK-35 independently returned PASS. TASK-36 records the normative freeze.
+Implementation remains **BLOCKED** until an explicit later authorization task.
 
 Open decisions **AD-03**, **AD-12**, **AD-14**, **AD-15**, **M06-OD-01/02/03**,
-**DC-13**, **OD-07**, **DC-09**, and **DC-06** remain **OPEN**. This draft does
-**not** close or amend any of them.
+**DC-13**, **OD-07**, **DC-09**, and **DC-06** remain **OPEN**. This freeze does
+**not** close or amend any of them. M07-OD-01 / M07-OD-02 / M07-OD-03 remain OPEN.
 
 Related:
 
@@ -54,7 +54,7 @@ Domain Contract FROZEN
         ↓
 M01 / M02 / M03 / M04 / M06 FROZEN
         ↓
-This M07 specification (READY_FOR_REVIEW — not frozen)
+This M07 specification (FROZEN)
         ↓
 Accepted ADRs
         ↓
@@ -91,17 +91,17 @@ payment-provider settlement semantics to **DC-09** (**OPEN**).
 
 Domain Contract records reversal/refund accounting under **DC-06** (**OPEN**).
 
-This M07 draft:
+This frozen M07 specification:
 
 * defines a **testing-layer** settlement status taxonomy and observation contract;
 * does **not** close DC-09 or DC-06;
-* identifies exactly which semantics are independent vs constrained (§29–§30).
+* identifies exactly which semantics are independent vs constrained (§24–§25).
 
 ### 1.4 Product Scope alignment
 
 Product Scope §19 Gate 6 = Payment / Settlement Testing (M07).
 Payment-provider integrations remain out of scope unless a future amendment
-explicitly authorizes them. This draft keeps provider integration **OUT OF
+explicitly authorizes them. This freeze keeps provider integration **OUT OF
 SCOPE**.
 
 ---
@@ -248,7 +248,7 @@ snapshot** status of one payment flow (see §11.0):
 | `Authorized` | Authorization currently claimed; capture/settlement not claimed complete |
 | `Captured` | Capture currently claimed; settlement completion not claimed |
 | `Settled` | Full requested amount currently claimed settled under declared mode |
-| `PartiallySettled` | Some but not all of requested amount currently claimed settled; not a silent failure |
+| `PartiallySettled` | Strict partial settlement claim: `0 < settled < requested` with `unsettled > 0` and subtraction equality (§8.4 / R-G1); not a silent failure |
 | `Failed` | Current claim that the **settlement-lane** attempt failed (terminal for settlement lane) |
 | `Reversed` | Current claim that the application is reversed |
 | `Refunded` | Current claim of full refund (basis accounting is Domain/DC-06; M07 does not derive it — §9.1) |
@@ -676,18 +676,54 @@ settled_amount   : i128
 unsettled_amount : i128
 ```
 
-For `PartiallySettled` (§11.5): `requested_amount`, `settled_amount`, and
-`unsettled_amount` are **all required** on the observation.
+For `PartiallySettled` (§11.5 / R-G1): `requested_amount`, `settled_amount`,
+and `unsettled_amount` are **all required** on the observation.
 
-Consistency rule (structural; not MISMATCH):
+#### PartiallySettled strict amount invariant (R-G1; normative)
+
+The status definition “some but not all” is enforced **only** by the following
+structural rules — not by informal reading of the status label alone:
 
 ```text
-unsettled_amount
-=
-checked_sub(requested_amount, settled_amount)
+requested_amount >= 0          // §8.1 amount-domain
+settled_amount > 0
+settled_amount < requested_amount
+unsettled_amount > 0
+unsettled_amount == checked_sub(requested_amount, settled_amount)
 ```
 
-Violation → `ERROR` / `InvalidSettlementObservation`.
+Structural violations (any of):
+
+```text
+settled_amount <= 0
+OR settled_amount >= requested_amount
+OR unsettled_amount <= 0
+OR unsettled_amount ≠ checked_sub(requested_amount, settled_amount)
+OR checked_sub fails
+```
+
+→ `InvalidSettlementObservation`.
+
+Normative validation order for `PartiallySettled` amount fields (deterministic;
+implementations MUST NOT choose a different error class for the same input):
+
+```text
+1. required-field presence (requested, settled, unsettled)
+2. non-negative amount-domain validation (§8.1)
+3. PartiallySettled strict inequalities
+   (settled > 0; settled < requested; unsettled > 0)
+4. checked_sub(requested_amount, settled_amount)
+5. equality of unsettled_amount to that result
+```
+
+Conformance examples (normative):
+
+```text
+requested=100, settled=0,   unsettled=100  → InvalidSettlementObservation
+requested=100, settled=50,  unsettled=50   → valid (subject to other rules)
+requested=100, settled=100, unsettled=0    → InvalidSettlementObservation
+requested=100, settled=150                 → InvalidSettlementObservation
+```
 
 `settled_amount < requested_amount` alone does **not** imply `Failed`.
 
@@ -1045,10 +1081,25 @@ Normative prohibitions:
 
 Legend:
 
-* **R** = required present
-* **O** = optional
-* **A** = absent or ignored (if present with conflicting meaning →
-  `InvalidSettlementObservation`)
+* **R** = required present (`Some`). Absence → structural
+  `InvalidSettlementObservation` for fields required by status (distinct from
+  expectation-time `MissingObservationField`).
+* **O** = optional (`None` or `Some` permitted under other rules).
+* **A** = MUST be absent (`None`).
+
+```text
+A = MUST be absent (None).
+
+If a field marked A is present (Some(_)), the observation is invalid.
+
+Classification:
+InvalidSettlementObservation.
+```
+
+There is **no** “ignore” path. Presence of an A-marked field is never silently
+accepted. “Conflicting meaning” is not a separate concept — presence alone is
+the violation.
+
 * Amount fields that are **R** for an applicable expectation but missing →
   `MissingObservationField` when that expectation is evaluated; matrix below
   is structural validity of the snapshot independent of expectations.
@@ -1087,26 +1138,32 @@ Any failure → InvalidSettlementObservation.
 
 Additional normative checks:
 
-1. If `unsettled_amount` and both `requested_amount` and `settled_amount` are
+1. For every field marked **A** in the matrix for the observation’s
+   `settlement_status`: presence (`Some(_)`) →
+   `InvalidSettlementObservation` (R-G2).
+2. If `unsettled_amount` and both `requested_amount` and `settled_amount` are
    present → `unsettled` MUST equal `checked_sub(requested, settled)` else
    `InvalidSettlementObservation`.
-2. For `Settled` or `PartiallySettled`: `observation.requested_amount` MUST
+3. For `Settled` or `PartiallySettled`: `observation.requested_amount` MUST
    equal `settlement_declaration.requested_amount` else
    `InvalidSettlementObservation` (R-A1). M07 **MUST NOT** derive the
    observed value from `gross_amount`.
-3. For `Settled`: `settled_amount` MUST equal `requested_amount` else
+4. For `Settled`: `settled_amount` MUST equal `requested_amount` else
    `InvalidSettlementObservation` (R-A2).
-4. If `refund_outcome = Failed` → `refund_amount` is O; **MUST NOT** force
+5. For `PartiallySettled`: apply the R-G1 strict amount invariant and
+   validation order in §8.4 (`0 < settled < requested`, `unsettled > 0`,
+   subtraction equality) → `InvalidSettlementObservation` on failure.
+6. If `refund_outcome = Failed` → `refund_amount` is O; **MUST NOT** force
    `settlement_status = Failed`.
-5. If `refund_outcome = None` and `RefundStatusExact` / `RefundAmountExact` is
+7. If `refund_outcome = None` and `RefundStatusExact` / `RefundAmountExact` is
    applicable → `MissingObservationField`.
-6. Escrow fields: if `EscrowStatusExact` applicable and `escrow_status` absent →
+8. Escrow fields: if `EscrowStatusExact` applicable and `escrow_status` absent →
    `MissingObservationField` (unchanged §9.3).
-7. Delay: `delay_marker` / `settlement_delay_steps` remain optional context on
+9. Delay: `delay_marker` / `settlement_delay_steps` remain optional context on
    `Pending`. If an applicable future delay expectation class is added by
    amendment and a required delay field is absent → `MissingObservationField`.
    Gate 6 closed taxonomy has no DelayExact class.
-8. Status/phase validity is exclusively §11.4 (not examples).
+10. Status/phase validity is exclusively §11.4 (not examples).
 
 #### Cross-field lifecycle authority (M07-A10)
 
@@ -1130,8 +1187,11 @@ The explicit Gate-6 cross-field rules are limited to:
 settlement_status ↔ phase matrix (§11.4)
 settled/unsettled amount consistency (§8.4 / §11.5)
 Settled: settled_amount == requested_amount; unsettled_amount = 0 when present
+PartiallySettled: 0 < settled_amount < requested_amount;
+    unsettled_amount == checked_sub(requested, settled); unsettled_amount > 0
 Settled / PartiallySettled: observation.requested_amount ==
     settlement_declaration.requested_amount
+A-marked fields MUST be None (§11.5 / R-G2)
 Refunded ↔ SucceededFull
 PartiallyRefunded ↔ SucceededPartial
 Reversed ↔ Reverse phase (via ReversalStatusExact / §11.4)
@@ -1174,24 +1234,25 @@ SettlementStatusExact
 └── expected_status : SettlementStatus
 
 SettledAmountExact
-└── expected_settled_amount : i128   // MUST be >= 0 (§8.1)
+└── expected_settled_amount : i128   // MUST be >= 0 (§8.1 / R-G3)
 
 SettledAmountAbsoluteTolerance
-├── expected_settled_amount : i128   // MUST be >= 0
+├── expected_settled_amount : i128   // MUST be >= 0 (R-G3)
 └── tolerance : u128                 // M06 §11.3 procedure
 
 FeeExact
-└── expected_fee_amount : i128       // MUST be >= 0
+└── expected_fee_amount : i128       // MUST be >= 0 (R-G3)
 
 NetSettlementExact
 └── expected_net_settlement_amount : i128   // MAY be signed; §8.2 R-F2
+    // NOT subject to R-G3 non-negative expected-amount validation
 
 RefundStatusExact
 └── expected_refund_outcome : RefundOutcome
     // SucceededFull | SucceededPartial | Failed
 
 RefundAmountExact
-└── expected_refund_amount : i128    // MUST be >= 0
+└── expected_refund_amount : i128    // MUST be >= 0 (R-G3)
 
 ReversalStatusExact
 └── (no variable payload fields)
@@ -1206,6 +1267,41 @@ EscrowStatusExact
 SettlementExecutionExact
 ├── expected_execution : SettlementExecutionState   // required
 └── expected_phase     : Option<SettlementPhase>    // if Some, phase must match
+```
+
+#### Negative expected amount classification (R-G3)
+
+```text
+For every expectation payload whose amount domain is declared as >= 0,
+a negative expected amount is invalid during case validation and MUST
+produce InvalidPaymentCase before expectation evaluation begins.
+```
+
+Affected payloads (exhaustive for Gate 6):
+
+```text
+SettledAmountExact.expected_settled_amount
+SettledAmountAbsoluteTolerance.expected_settled_amount
+FeeExact.expected_fee_amount
+RefundAmountExact.expected_refund_amount
+```
+
+```text
+Negative expected amount in a Gate-6 expectation payload
+→ InvalidPaymentCase
+```
+
+This is a **case-validation** error (malformed declared test case), not an
+observation error and not a MISMATCH.
+
+`NetSettlementExact.expected_net_settlement_amount` remains signed and does
+**NOT** receive this non-negative validation.
+
+Observation-side negatives remain (§8.1 / R-F4):
+
+```text
+negative observed gross/requested/settled/unsettled/refund/fee
+→ InvalidSettlementObservation
 ```
 
 #### SettlementExecutionExact rules (F-01)
@@ -1347,11 +1443,13 @@ Evidence policy: **`ALL_MISMATCHES`**.
    (includes §7.3 terminal_partial static conflict only; forbids expected_status;
    fee = Some requires fee_amount/fee_asset/fee_timing/fee_mode — §8.2;
    declaration amount sign domain §8.1; NetSettlementExact expected vs
-   derived_net under FeeExclusive/Inclusive — §8.2 R-F2)
+   derived_net under FeeExclusive/Inclusive — §8.2 R-F2;
+   negative expected amounts on >=0 payloads → InvalidPaymentCase — R-G3)
 2. Validate status↔phase compatibility §11.4 → InvalidSettlementObservation
 3. Validate observation field matrix §11.5 → InvalidSettlementObservation
-   (includes Settled full-amount invariant; Settled/PartiallySettled
-    requested_amount binding; observation amount sign domain §8.1)
+   (A-marked Some(_) forbidden — R-G2; Settled full-amount invariant;
+    PartiallySettled R-G1 order; Settled/PartiallySettled requested binding;
+    observation amount sign domain §8.1)
 4. Validate binding vs observation → ObservationBindingMismatch
 5. Validate expectation ids unique / classes supported / payloads closed → InvalidPaymentCase
 6. Optional engine_pins exact compare → EnginePinMismatch (§14.1)
@@ -1638,7 +1736,7 @@ unless an explicit expectation / composition rule declares the relationship.
 
 | error_id | Meaning |
 | --- | --- |
-| `InvalidPaymentCase` | Case malformed / empty ids / duplicate expectation ids |
+| `InvalidPaymentCase` | Case malformed / empty ids / duplicate expectation ids / negative expected amount on a `>= 0` expectation payload (R-G3) |
 | `InvalidSettlementCase` | Settlement declaration inconsistent (incl. §7.3 static conflicts) |
 | `InvalidSettlementObservation` | Status/phase pair invalid, structural field rules violated, required observation amount consistency fails, observation amount sign domain violated (§8.1), or another explicit observation-structure rule fails |
 | `ObservationBindingMismatch` | Binding ≠ observation identity |
@@ -1832,6 +1930,12 @@ A conforming implementation **MUST** provide deterministic tests covering:
   (R-A1)
 * Settled: `settled_amount` == `requested_amount`; unsettled present ⇒ 0
   (R-A2)
+* PartiallySettled: `0 < settled < requested`, `unsettled > 0`, subtraction
+  equality; settled=0 / settled=requested / settled>requested invalid (R-G1)
+* matrix **A** fields MUST be `None`; `Some(_)` → InvalidSettlementObservation
+  (R-G2)
+* negative expected settled/fee/refund amounts → InvalidPaymentCase (R-G3);
+  NetSettlementExact expected remains signed
 * refund / partial refund / reversal as **current claims** (no history inference)
 * escrow observation-only; `EscrowStatusExact` only; `escrow_amount` unevaluated;
   missing `escrow_status` when applicable → MissingObservationField
@@ -1858,7 +1962,7 @@ A conforming implementation **MUST** provide deterministic tests covering:
 
 ## 27. Implementation boundary
 
-This draft **MUST NOT** be read as authorization to create:
+This frozen specification **MUST NOT** be read as authorization to create:
 
 ```text
 crates/aivoguard/src/payment/
@@ -1867,23 +1971,26 @@ crates/aivoguard/src/settlement/
 
 or any M07 crate, tests, serde, DB, HTTP, CLI, SDK, or provider adapters.
 
+Implementation requires a separate explicit authorization task after this freeze.
+
 ---
 
 ## 28. Self-audit checklist
 
-| Area | Status after TASK-32 |
+| Area | Status after TASK-34 |
 | --- | --- |
 | Authority matrix | Explicit §3 |
 | Lifecycle + statuses | §6–§7 |
 | Terminal partial metadata | §7.3 |
 | Amounts / asset / sign domain | §8.1 (R-F1 / R-F4) |
 | Fees / timing⊥mode / net consumer | §8.2 (R-F2 / R-F3) |
+| PartiallySettled strict invariant | §8.4 (R-G1) |
 | requested_amount / Settled invariants | §8.3–§8.4 |
 | Refund / reverse / escrow | §9 |
 | Delay without wall clock | §10 |
 | Single-snapshot observation | §11.0 |
-| Status↔phase + field matrix | §11.4–§11.5 |
-| Closed expectation payloads | §12 (R-F5) |
+| Status↔phase + field matrix A=absent | §11.4–§11.5 (R-G2) |
+| Closed expectation payloads + R-G3 | §12 |
 | Case model | §13 |
 | ERROR / pins / ordinals | §14 |
 | M06 composition | §15 |
@@ -1902,19 +2009,25 @@ TASK-26 draft
 + TASK-27A (R-01…R-04)
 + TASK-28 (M07-A1…A10)
 + TASK-29 / TASK-30 (R-A1…R-A5)
-+ TASK-31 independent re-audit: CONDITIONAL (R-F1…R-F5)
-+ TASK-32 (R-F1…R-F5)
++ TASK-31 / TASK-32 (R-F1…R-F5)
++ TASK-33 / TASK-34 (R-G1…R-G3)
++ TASK-35 independent final re-audit: PASS
++ TASK-36 normative freeze
 
-STATUS: READY_FOR_REVIEW
-TASK-32: REMEDIATION_COMPLETE_PENDING_REAUDIT
-NOT FROZEN
+STATUS: FROZEN
+NORMATIVE FREEZE: FROZEN
+TASK-35: PASS
+TASK-36: FREEZE
 IMPLEMENTATION_BLOCKED
 
-NEXT: TASK-33 — INDEPENDENT FINAL M07 SPECIFICATION RE-AUDIT
+OPEN DECISIONS PRESERVED:
+  AD-03, AD-12, AD-14, AD-15,
+  M06-OD-01/02/03, DC-13, OD-07,
+  DC-09, DC-06, M07-OD-01/02/03
 
 MUST NOT:
-  freeze
-  implement
+  implement without separate authorization
+  silently amend this frozen contract
   close DC-09 / DC-06 / AD-14 / AD-15 / M07-OD-01
   introduce M01 escrow primitives
   introduce provider-specific semantics
