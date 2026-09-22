@@ -3,25 +3,31 @@
 | Field | Value |
 | --- | --- |
 | Document | `docs/design/adversarial-scenario-engine-specification.md` |
-| Task | **TASK-10** … **TASK-10RRRR** (targeted freeze remediation R2-B-01/R2-B-02) |
+| Task | **TASK-10** … **TASK-10RRRR**; freeze **TASK-10G** |
 | Module | **M04 — Adversarial Scenario Engine** |
-| Gate | **GATE 4 — OPEN** |
-| **STATUS** | **READY_FOR_REVIEW** |
-| Normative freeze | **NOT FROZEN** |
-| Implementation | **BLOCKED** — this document does **not** authorize implementation |
+| Gate | **GATE 4 — CLOSED** |
+| **STATUS** | **FROZEN** |
+| Normative freeze | **FROZEN** |
+| Implementation | **BLOCKED** — freeze does **not** authorize implementation |
 | Depends on | Product Scope (**FROZEN**); Domain Contract (**FROZEN**); Economic Kernel Specification (**FROZEN**, Gate 1 **CLOSED**); Economic Invariant Engine Specification (**FROZEN**, Gate 2 **CLOSED**); Deterministic Simulator Specification (**FROZEN**, Gate 3 **CLOSED**); M01/M02/M03 implementation (**PASS**) |
+| Freeze authority | **TASK-10G** formal freeze (audit: **TASK-10F-R3** READY_TO_FREEZE) |
+| Normative baseline | `58f0e01` (M04 content identical at freeze HEAD) |
 
 ```text
-STATUS: READY_FOR_REVIEW
-NORMATIVE FREEZE: NOT FROZEN
+STATUS: FROZEN
+NORMATIVE FREEZE: FROZEN
 IMPLEMENTATION: BLOCKED
-GATE: GATE 4 — OPEN
+GATE: GATE 4 — CLOSED
 ```
 
-This document is the **reviewable normative candidate** for Gate-4 M04 after
-TASK-10R through TASK-10RRRR (including R2-B-01 / R2-B-02 closure). It is
-**not frozen**. Material freeze requires an explicit freeze audit task.
-Implementation requires a later explicit authorization task after freeze.
+This document is the **frozen** normative specification for Gate-4 M04.
+Material semantic changes require an explicit specification amendment. Freeze
+does **not** authorize M04 implementation, API/CLI/DSL design, or crate
+creation. A separate implementation authorization task is required.
+
+Open implementation-only decisions (including AD-03 identity algorithm,
+AD-14 serialization, AD-15 Rust types, CLI/API) remain **OPEN** and are not
+resolved by this freeze.
 
 Related:
 
@@ -50,11 +56,11 @@ Economic Invariant Engine Specification FROZEN (M02)
         ↓
 Deterministic Simulator Specification FROZEN (M03)
         ↓
-M04 Adversarial Scenario Engine Specification (this document; READY_FOR_REVIEW)
+M04 Adversarial Scenario Engine Specification (this document; **FROZEN**, Gate 4 **CLOSED**)
         ↓
 Accepted ADRs
         ↓
-Implementation (blocked)
+Implementation (blocked until separately authorized)
 ```
 
 M04 **MUST NOT** silently modify any frozen specification above.
@@ -1760,9 +1766,9 @@ If enabled in a future freeze:
 
 Do **not** assume byte equality equals semantic equality unless specified.
 
-Gate-4 default for READY_FOR_REVIEW: **no silent deduplication**; generators
-emit the finite declared candidate set under limits. Equivalence policy remains
-OPEN.
+Gate-4 default: **no silent deduplication**; generators emit the finite
+declared candidate set under limits. Equivalence policy remains OPEN
+(**AD-06**).
 
 ---
 
@@ -2159,16 +2165,16 @@ Do not resolve remaining OPEN items merely for convenience.
 ## 37. Implementation Status
 
 ```text
-STATUS: READY_FOR_REVIEW
-NORMATIVE FREEZE: NOT FROZEN
+STATUS: FROZEN
+NORMATIVE FREEZE: FROZEN
 IMPLEMENTATION: BLOCKED
-GATE 4: OPEN
+GATE 4: CLOSED
 ```
 
-TASK-10 does **NOT** authorize implementation.
+TASK-10G freezes the M04 normative contract. It does **NOT** authorize
+implementation.
 
-A separate implementation task is required after independent specification
-audit and freeze.
+A separate implementation task is required after explicit authorization.
 
 ---
 
@@ -2180,10 +2186,9 @@ audit and freeze.
 > applicability, composition, determinism, provenance, error boundaries, or
 > M01/M02/M03 authority splits.
 
-If materially different answers are possible to the checklist in TASK-10 §37,
-the document is **NOT** ready to freeze.
+**TASK-10F-R3 independent freeze re-audit:** criterion met → `READY_TO_FREEZE`.
 
-This TASK-10 document is **READY_FOR_REVIEW**, not frozen.
+**TASK-10G:** Gate 4 is **CLOSED**; M04 specification is **FROZEN**.
 
 ---
 
@@ -2283,17 +2288,30 @@ Identity stability is normative; identity derivation algorithm remains AD-03.
 | Item | Value |
 | --- | --- |
 | Created by | TASK-10 |
-| Remediation | **TASK-10R**…**TASK-10RRR**; **TASK-10RRRR** (R-19 occurrence; R-20 structural minima — closes R2-B-01 / R2-B-02) |
-| Status | **READY_FOR_REVIEW** |
-| Normative freeze | **NOT FROZEN** |
-| Implementation authorization | **NONE** (blocked) |
-| Gate | **GATE 4 — OPEN** |
-| Code / crates modified by this task | **None** |
-| Frozen specifications modified | **None** |
-| Next | Independent freeze re-audit (**TASK-10F-R3**) after authorization |
+| Remediation | **TASK-10R**…**TASK-10RRR**; **TASK-10RRRR** (R-19 / R-20) |
+| Freeze audit | **TASK-10F-R3** — `READY_TO_FREEZE` |
+| Freeze | **TASK-10G** — formal Gate-4 freeze |
+| Normative baseline | `58f0e01` |
+| Status | **FROZEN** |
+| Normative freeze | **FROZEN** |
+| Implementation authorization | **NONE** (blocked; requires separate authorization) |
+| Gate | **GATE 4 — CLOSED** |
+| Code / crates modified by freeze | **None** |
+| Frozen M01/M02/M03 specifications modified | **None** |
+| Next | Explicit M04 implementation authorization task (only when granted) |
+
+### Freeze statement
+
+```text
+TASK-10F-R3 independent Gate-4 freeze re-audit: READY_TO_FREEZE.
+TASK-10G formal freeze: M04 Adversarial Scenario Engine Specification is now
+the normative Gate-4 contract.
+Gate 4 is CLOSED.
+M04 implementation remains BLOCKED until explicit authorization.
+AD-03 / AD-14 / AD-15 and other OPEN implementation-only decisions remain OPEN.
+```
 
 ### Amendment rule
 
-Material semantic change after freeze requires explicit specification
-amendment. Until freeze, review comments may produce further remediation
-without treating this draft as implementation authority.
+Material semantic change after freeze requires an explicit specification
+amendment. Implementation must not silently redefine this contract.

@@ -22,11 +22,13 @@ once releases begin.
   (Gate 3 **CLOSED**); M03 implemented in `crates/aivoguard` (`simulator`).
 * Adversarial scenario engine specification
   (`docs/design/adversarial-scenario-engine-specification.md`) —
-  **READY_FOR_REVIEW** (Gate 4 **OPEN**; not frozen; implementation
-  **BLOCKED**). TASK-10 … TASK-10RRRR (R2-B-01 / R2-B-02 closed).
+  **FROZEN** (Gate 4 **CLOSED**; implementation **BLOCKED**). TASK-10G
+  (audit TASK-10F-R3; normative baseline `58f0e01`).
 
 ### Changed
 
+* TASK-10G: formal Gate-4 freeze of M04 adversarial scenario engine
+  specification (implementation remains blocked).
 * TASK-10R: M04 Gate-4 specification semantic remediation (transformation
   projection, initial-state contract, parameter candidates, error phases,
   NonApplicable policy, composition targeting, ordering, limit boundaries).
