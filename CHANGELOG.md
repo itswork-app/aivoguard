@@ -20,6 +20,10 @@ once releases begin.
 * Deterministic simulator specification
   (`docs/design/deterministic-simulator-specification.md`) — **FROZEN**
   (Gate 3 **CLOSED**); M03 implemented in `crates/aivoguard` (`simulator`).
+* Adversarial scenario engine specification
+  (`docs/design/adversarial-scenario-engine-specification.md`) —
+  **READY_FOR_REVIEW** (Gate 4 **OPEN**; not frozen; implementation
+  **BLOCKED**). TASK-10.
 
 ### Changed
 

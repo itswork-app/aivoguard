@@ -222,9 +222,19 @@ TASK-07 / TASK-07R / TASK-07F). Implementation: present under
 implementation audit: TASK-08F **PASS**. Implementation baseline commit:
 `c4ce9bb`.
 
-### M04 / M05 — Adversarial / Chaos (BOUNDARY ONLY)
+### M04 — Adversarial Scenario Engine (SPECIFICATION UNDER DEVELOPMENT)
 
-Generate or transform scenarios/actions/perturbations per future specs.
+Gate 4 **OPEN**. Normative candidate:
+[`docs/design/adversarial-scenario-engine-specification.md`](../design/adversarial-scenario-engine-specification.md)
+(**READY_FOR_REVIEW**, **NOT FROZEN**, implementation **BLOCKED**).
+
+M04 generates/transforms adversarial Scenario inputs for M03. It does **not**
+own economic truth (M01), invariant evaluation (M02), or simulation sequencing
+(M03). No M04 code in this repository yet.
+
+### M05 — Chaos (BOUNDARY ONLY)
+
+Economic fault-injection perturbations per future specs. Distinct from M04.
 Neither silently alters authoritative economic semantics. No detailed APIs here.
 
 ### M06 — Regression (BOUNDARY ONLY)
@@ -500,7 +510,8 @@ Architecture remains compatible with, and does **not** decide:
   (implemented; further packaging remains an implementation decision)
 * M03 as a read-only orchestration module under `crates/aivoguard/src/simulator/`
   (implemented; packaging remains an implementation decision)
-* M04–M09 as specified by future frozen gates
+* M04 as specified after Gate-4 freeze (currently READY_FOR_REVIEW only)
+* M05–M09 as specified by future frozen gates
 * Interfaces and adapters outside the economic core
 
 ---
@@ -512,7 +523,7 @@ Architecture remains compatible with, and does **not** decide:
 | M01 | Frozen | Current | Implemented / **PASS** | Gate 1 **CLOSED** / TASK-04 |
 | M02 | Frozen | Defined | Implemented / **PASS** | Gate 2 **CLOSED** / TASK-06 / TASK-06R |
 | M03 | Frozen | Defined | Implemented / **PASS** | Gate 3 **CLOSED** / TASK-08 / TASK-08R / TASK-08F / TASK-09 |
-| M04 | Future | Boundary only | Not implemented | Future |
+| M04 | **READY_FOR_REVIEW** | Gate-4 development | Not implemented | Gate 4 **OPEN** / TASK-10 |
 | M05 | Future | Boundary only | Not implemented | Future |
 | M06 | Future | Boundary only | Not implemented | Future |
 | M07 | Future | Boundary only | Not implemented | Future |
@@ -552,4 +563,4 @@ Architecture remains compatible with, and does **not** decide:
 | M03 implementation baseline | `c4ce9bb` |
 | Normative economic semantics | **None** (architecture only) |
 | ADR created by this task | **None** (no new implementation decision) |
-| Next | Future gates (M04+) only when explicitly authorized |
+| Next | Gate-4 M04 independent review / freeze authorization; then implementation only when authorized |
