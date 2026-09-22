@@ -41,8 +41,8 @@ Full hierarchy and process rules:
 | --- | --- |
 | [`design/SPECIFICATION-POLICY.md`](design/SPECIFICATION-POLICY.md) | Process policy (normative for process) |
 | [`design/product-scope.md`](design/product-scope.md) | Product scope — **FROZEN** |
-| Gate 0 / Domain Contract (TASK-02) | Authorized to begin; Gate 0 blocked until complete |
-| Gate 1 / economic semantics | Blocked |
+| [`design/domain-contract.md`](design/domain-contract.md) | Domain Contract / Gate 0 — **FROZEN** (Gate 0 **CLOSED**) |
+| Gate 1 / Economic Kernel | Blocked — not authorized; next: TASK-03 |
 
 Empty architecture/reference directories remain intentional placeholders for
 upcoming specification work.

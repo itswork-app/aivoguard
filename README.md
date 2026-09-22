@@ -28,8 +28,8 @@ foundation suitable for subsequent specification-driven development.
 * CLI, SDK, or agent adapters
 * Payment adapters (including x402 or similar)
 * Production APIs or network services
-* Gate 0 / Gate 1 specifications
-* Implemented economic modules
+* Gate 0 Domain Contract (**FROZEN**, Gate 0 **CLOSED**): [`docs/design/domain-contract.md`](docs/design/domain-contract.md)
+* Gate 1 / implemented economic modules
 
 The frozen product-scope specification is
 [`docs/design/product-scope.md`](docs/design/product-scope.md)
@@ -107,9 +107,10 @@ release.
 
 * Process: [`docs/design/SPECIFICATION-POLICY.md`](docs/design/SPECIFICATION-POLICY.md)
 * Product scope (**FROZEN**): [`docs/design/product-scope.md`](docs/design/product-scope.md)
+* Domain contract (Gate 0 **CLOSED**, **FROZEN**): [`docs/design/domain-contract.md`](docs/design/domain-contract.md)
 
 ## Next steps
 
-**TASK-02 — Domain Contract / Gate 0** is authorized to begin.
-Gate 0 remains blocked until TASK-02 completes. Gate 1 remains blocked.
+Next specification task: **TASK-03 — Economic Kernel Specification**.
+Gate 1 implementation is **not** authorized by Gate 0 closure.
 Do not treat this README as authorization to implement economic modules.

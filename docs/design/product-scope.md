@@ -8,13 +8,14 @@
 | Normative freeze | **FROZEN** — approved after review |
 | Freeze authority | Explicit approval recorded 2026-09-22 |
 | Implementation | **BLOCKED** until later gates authorize it |
-| Gate 0 | **BLOCKED** until TASK-02 (Domain Contract) is completed |
-| Gate 1 | **BLOCKED** |
+| Gate 0 | **CLOSED** — Domain Contract **FROZEN** |
+| Gate 1 | **BLOCKED** — not authorized by Gate 0 closure |
 
 This document is the **frozen** normative product-scope contract for AivoGuard.
 Material changes require an explicit specification amendment per §22.
-Freeze does **not** authorize domain implementation. Gate 0 remains blocked
-until TASK-02 is completed.
+Freeze does **not** authorize domain implementation. Gate 0 is **CLOSED**
+(`docs/design/domain-contract.md`, **FROZEN**). Gate 1 remains blocked until
+TASK-03 / Economic Kernel work is explicitly authorized.
 
 ---
 

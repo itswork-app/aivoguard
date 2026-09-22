@@ -13,11 +13,14 @@ once releases begin.
 * Repository foundation bootstrap: Cargo workspace, minimal `aivoguard` crate,
   CI, contribution docs, specification policy, and documentation layout.
 * Product scope specification (`docs/design/product-scope.md`) — **FROZEN**.
+* Domain contract (`docs/design/domain-contract.md`) — **FROZEN** (Gate 0 **CLOSED**).
 
 ### Changed
 
 * Product scope status updated from `READY_FOR_REVIEW` to `FROZEN` after
   explicit approval.
+* Domain contract progressed through TASK-02 / TASK-02R remediation and
+  TASK-02F freeze.
 
 ### Deprecated
 
