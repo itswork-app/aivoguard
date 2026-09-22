@@ -3,7 +3,7 @@
 | Field | Value |
 | --- | --- |
 | Document | `docs/design/adversarial-scenario-engine-specification.md` |
-| Task | **TASK-10** / **TASK-10R** / **TASK-10RR** (final semantic remediation) |
+| Task | **TASK-10** / **TASK-10R** / **TASK-10RR** / **TASK-10RRR** (final freeze remediation) |
 | Module | **M04 — Adversarial Scenario Engine** |
 | Gate | **GATE 4 — OPEN** |
 | **STATUS** | **READY_FOR_REVIEW** |
@@ -19,9 +19,9 @@ GATE: GATE 4 — OPEN
 ```
 
 This document is the **reviewable normative candidate** for Gate-4 M04 after
-TASK-10R and TASK-10RR semantic remediation. It is **not frozen**. Material
-freeze requires an explicit freeze audit task. Implementation requires a later
-explicit authorization task after freeze.
+TASK-10R, TASK-10RR, and TASK-10RRR (B-01/B-02/B-03 freeze remediation). It is
+**not frozen**. Material freeze requires an explicit freeze audit task.
+Implementation requires a later explicit authorization task after freeze.
 
 Related:
 
@@ -230,14 +230,14 @@ transformation whose preconditions fail. This is an **M04 error**:
 
 ### Valid Adversarial Scenario
 
-A DERIVED candidate that passed M04 structural validation (`DERIVED + VALID`).
-Does not guarantee M03 execution success or M01 economic success (§8.5 / §14).
+A DERIVED candidate that passed the closed M04 structural checklist
+(`DERIVED + VALID`, §8.5.1). Does not guarantee M03 execution success or M01
+economic success.
 
 ### Invalid Adversarial Scenario
 
-A DERIVED candidate that failed M04 structural validation
-(`DERIVED + INVALID`); not silently “fixed” into validity. Explicit invalid
-reason required (§8.5).
+A DERIVED candidate that failed the closed M04 structural checklist
+(`DERIVED + INVALID` with `StructuralInvalidReason`); not silently “fixed”.
 
 ### M04 Engine Failure
 
@@ -306,7 +306,8 @@ Base Scenario / Economic World
 * accept an explicit Base Scenario
 * apply declared AdversarialTransformations
 * compose transformations under explicit rules and limits
-* validate derived candidates against Domain/M03 structural requirements
+* validate derived candidates against the **closed** M04 structural checklist
+  (§8.5.1)
 * produce provenance and M04 evidence
 * declare which M03 invariant plan / stop policy a derived scenario carries
   (as Scenario fields — not by evaluating them)
@@ -581,17 +582,17 @@ unless that snapshot is still identical.
 | Insert / delete / replace / duplicate | Applied to the current intermediate sequence |
 | Action reference | Prefer stable `ActionId` when the referenced Action declares one; positional index is permitted (§10.3) |
 | Positional index | Refers to the **current** intermediate sequence after prior composition steps |
-| Duplicate Action | Inserts a copy at a declared insertion index; the duplicate’s `action_id` **MUST** be set by an explicit rule: either `INHERIT` the source id (allowed only if World/idempotency semantics permit duplicates) or `REPLACE_EXPLICITLY` / `REMOVE_EXPLICITLY` (`None`) per transformation parameters. Silent implicit id invention from host state is forbidden |
+| Duplicate Action | Inserts a copy at a declared insertion index. **Default identity rule (R-16):** the duplicate’s `action_id` is set to `None` (`REMOVE_EXPLICITLY`) unless TransformationParameters **explicitly** declare either (a) `REPLACE_EXPLICITLY` with a new ActionId that is unique in the resulting current sequence, or (b) `INHERIT` of the source ActionId. Silent implicit id invention from host state is forbidden. `INHERIT` that produces a non-unique ActionId is permitted as a Scenario payload, but subsequent ActionId target resolution against that id is ambiguous and fails deterministically (§10.3) |
 | Execution ordering | Resulting sequence order is the declared post-transformation order; M03 executes that order |
 | Unrelated Actions | Remain byte-for-byte / field-for-field unchanged |
 | Replacement parameters | Represented as explicit TransformationParameters naming the Action field(s) replaced |
-| Invalid resulting Action | If the transformation successfully emits a candidate whose Action fails M04 structural representability → `DERIVED + INVALID`. If parameters are outside the transformation’s declared ParameterDomain / type → `ERROR` / `INVALID_TRANSFORMATION_PARAMETER` |
+| Invalid resulting Action | If the transformation successfully emits a candidate that fails the closed M04 structural checklist (§8.5) → `DERIVED + INVALID` with a checklist reason code. If parameters are outside the transformation’s declared ParameterDomain / type → `ERROR` / `INVALID_TRANSFORMATION_PARAMETER` |
 
 A transformation **MUST NOT** silently alter unrelated Scenario fields
 (including World, initial state, plans, stop policy, or execution config)
 unless those fields have a declared non-`INHERIT_UNCHANGED` projection.
 
-### 8.5 Transformation result lifecycle and validation pipeline (R-12)
+### 8.5 Transformation result lifecycle and closed structural validation (R-12 / R-15)
 
 ```text
 TransformationApplicationResult
@@ -613,8 +614,8 @@ TransformationApplication
     ↓
 Candidate Artifact
     ↓
-M04 Structural Validation
-    ├── INVALID  → DERIVED + INVALID (explicit reason; not silently repaired)
+M04 Closed Structural Validation (§8.5.1)
+    ├── INVALID  → DERIVED + INVALID (StructuralInvalidReason; not silently repaired)
     └── VALID    → DERIVED + VALID
           ↓
         M03 Scenario acceptance / execution
@@ -624,30 +625,37 @@ M04 Structural Validation
         M02 invariant evaluation (if planned)
 ```
 
-Three-layer distinction:
-
 ```text
 M04 structural validation
         ≠
 M03 scenario acceptance / execution
         ≠
 M01 economic evaluation
+        ≠
+M02 invariant evaluation
 ```
 
 #### What `DERIVED + VALID` means
 
-M04 structural validation passed. The candidate is structurally representable
-as an M03 Scenario input under M04’s pre-execution checks.
+The candidate passed the **closed** M04 structural checklist (§8.5.1) in full.
 
 It does **NOT** mean M03 execution is guaranteed to succeed, nor that any
-economic Action will succeed.
+economic Action will succeed, nor any M02 result.
 
 #### What `DERIVED + INVALID` means
 
-M04 successfully produced a candidate artifact, but deterministic
-pre-execution structural validation found that the candidate does not satisfy
-the M04/M03 representability requirements necessary for execution. It **MUST**
-include an explicit invalid reason. It **MUST NOT** be silently repaired.
+M04 successfully produced a candidate artifact, but the closed M04 structural
+checklist failed. It **MUST** include exactly one primary
+`StructuralInvalidReason` (first failing check). It **MUST NOT** be silently
+repaired.
+
+`DERIVED + INVALID` does **NOT** mean:
+
+```text
+M03 rejected execution
+M01 Rejected / FailedEconomic / InvalidInput / ConfigurationError
+M02 PASS / FAIL / ERROR
+```
 
 Do **not** automatically promote `DERIVED + INVALID` to a transformation
 `ERROR`.
@@ -656,32 +664,45 @@ Do **not** automatically promote `DERIVED + INVALID` to a transformation
 generation success ≠ M04 structural validity ≠ M03 acceptance ≠ economic failure
 ```
 
-#### M04 may structurally validate
+#### 8.5.1 Closed M04 structural validation checklist (MUST)
+
+For every **emitted** candidate (and for any candidate classified `DERIVED`
+before emission classification), M04 **MUST** run exactly these checks, in
+this order. First failure wins; later checks are not evaluated for the
+primary reason.
+
+| Order | Check | MUST check | MUST NOT check | Failure reason |
+| --- | --- | --- | --- | --- |
+| 1 | Scenario envelope | Candidate has Scenario-shaped envelope (id, version, world, initial_state, actions, maximum_action_steps, configuration_id, declared_unix_secs, invariant_plan, stop_policy fields present as declared Scenario structure) | Economic truth of any Action | `INVALID_SCENARIO_STRUCTURE` |
+| 2 | Required fields | `id` non-empty; `version` non-empty; `configuration_id` non-empty; `maximum_action_steps` is a declared non-negative integer representable as M03 `u64` semantics; `actions` is an ordered sequence (length may be 0) | Whether the scenario “should” have actions | `INVALID_REQUIRED_FIELD` |
+| 3 | Projection consistency | Every Scenario field touched by the producing transformation(s) has a declared projection mode; no field changed without declared mode; metadata `id`/`version` updated when payload fields changed (§8.4.1) | Semantic desirability of the projection | `INVALID_PROJECTION` |
+| 4 | World / initial-state structure | `world` and `initial_state` are explicit declared structures; balance cells are `(account, asset, facet) → signed integer`; no host/env-derived cells; no fabricated Transactions/Events/Effects disguised as state (§8.7) | Balance sufficiency, fees, prices, authorization truth | `INVALID_INITIAL_STATE_STRUCTURE` (state) / `INVALID_SCENARIO_STRUCTURE` (world envelope malformed) |
+| 5 | Action sequence structure | Each Action is one of the Domain/M01 Action variants with required variant fields present and correctly typed (including `ECONOMIC_AMOUNT` vs `INTEGER` separation for numeric fields) | Whether M01 would Accept/Reject/Fail the Action | `INVALID_ACTION_STRUCTURE` |
+| 6 | Action identity / reference validity | Positional indexes used by the producing transform were in-range at application time (recorded in provenance); ActionId references used by the producing transform resolved with match-count = 1 (§10.3); no unresolved required reference left in the transform application record | Future M03 sequencing preferences | `INVALID_ACTION_REFERENCE` |
+| 7 | Domain reference representability | Actor/account/asset/facet/price identifiers appearing in Actions or initial_state cells are syntactically well-formed identifiers (non-empty where required). **Membership of those ids in World is NOT required here** (deferred to M01/M03) | World membership truth, ownership, authorization | `INVALID_DOMAIN_REFERENCE` only for malformed empty/ill-typed identifier tokens |
+| 8 | Execution configuration | `maximum_action_steps`, `configuration_id`, and `declared_unix_secs` (if `Some`) have structurally legal representations; `declared_unix_secs` is not sourced from host clock | Whether the limit is “wise” | `INVALID_EXECUTION_CONFIGURATION` |
+| 9 | Invariant-plan structure | `before_action` / `after_action` / `on_completion` vectors are present (may be empty); each declared invariant entry is structurally representable as an M02 Invariant envelope (identity present). **Does not evaluate invariants** | PASS/FAIL/ERROR | `INVALID_INVARIANT_PLAN_STRUCTURE` |
+| 10 | Stop-policy structure | `stop_policy.conditions` is an ordered vector (may be empty); each condition is one of the M03 `StopCondition` shapes with required fields present | Whether a condition will fire | `INVALID_STOP_POLICY_STRUCTURE` |
+| 11 | Hidden-input prohibition | No field of the candidate is marked or evidenced as derived from wall clock, env, filesystem, network, process state, global RNG, or unvalidated LLM output | — | `FORBIDDEN_HIDDEN_INPUT` |
+| 12 | Provenance completeness | Emitted candidate carries the provenance fields required by §20 for reconstruction | Beauty of provenance formatting | `INVALID_PROVENANCE` |
+
+If all twelve checks pass → `DERIVED + VALID`.
+
+#### 8.5.2 M04 MUST NOT check (closed exclusion)
 
 ```text
-required Scenario fields are present
-required transformation projection is complete
-Action references resolve where required
-parameter types are structurally valid
-declared sequence structure is well-formed
-required metadata is present
-configuration fields have structurally legal representations
-invariant-plan / stop-policy fields are structurally representable
-```
-
-The exact M03 acceptance/execution contract remains owned by M03.
-
-#### M04 MUST NOT claim via validation
-
-```text
-economic correctness
+economic correctness / balances after execution
 authorization truth
-fee / price / conversion correctness
+fee / price / conversion / settlement correctness
 balance sufficiency
-transaction success
-settlement correctness
+transaction success / M01 dispositions
 invariant PASS / FAIL / ERROR
+M03 termination / stop firing
+M03 Scenario acceptance beyond the closed checklist above
 ```
+
+The exact M03 acceptance/execution contract remains owned by M03 for any
+semantic not listed in §8.5.1.
 
 ### 8.6 ApplicabilityPolicy (R-05; closes AD-16)
 
@@ -751,10 +772,10 @@ M04 may construct candidate `EconomicState` content consisting solely of
 
 | Check | Owner |
 | --- | --- |
-| Structural Domain/M03 representability | M04 structural validation (§8.5) |
+| Structural Domain/M03 representability | Closed M04 checklist (§8.5.1); then M03 |
 | M03 Scenario acceptance / execution | M03 |
 | Authoritative economic consequences of Actions | M01 after M03 execution |
-| Intentionally invalid candidate | `DERIVED + INVALID` with explicit reason |
+| Intentionally invalid candidate | `DERIVED + INVALID` with `StructuralInvalidReason` |
 
 Critical rule:
 
@@ -881,47 +902,153 @@ T_0 ∘ T_1 ∘ … ∘ T_(k-1)
 | Ordering | Declared plan vector order is authoritative |
 | Associativity | **Not** assumed; only explicit ordered plans are normative |
 | Duplicates | Explicit repeated entries in the plan are **allowed** and applied in order; silent auto-dedupe of plan entries is **forbidden** (**AD-05** closed for Gate-4) |
-| Conflicts | Incompatible transformations → `INCOMPATIBLE_TRANSFORMATION` / `COMPOSITION_ERROR` |
+| Conflicts | Only via the closed incompatibility contract (§10.4). Default = compatible |
 | Depth | Bounded by `maximum_composition_depth` (§18) |
 | Identity | Derived scenario identity/provenance includes full ordered chain |
 | Explosion | Bounded by generation limits (§18) |
 
 No implicit composition outside a declared plan.
 
-### 10.3 Composition target identity (R-06)
+### 10.3 Composition target identity (R-06 / R-16)
 
 Transformation references **MUST** resolve against the ScenarioSnapshot on
 which the transformation is applied (the current intermediate scenario after
 every previous transformation in the declared composition sequence).
 
-#### Action addressing
+#### Addressing modes
 
-| Method | Rule |
+| Mode | Semantics |
 | --- | --- |
-| Stable `ActionId` | Preferred when the target Action declares `Some(ActionId)`. Resolution searches the **current** intermediate sequence for matching `action_id` |
-| Positional index | Permitted. Index `i` means `actions[i]` of the **current** intermediate scenario. Indices from the original base are invalid after earlier steps change length/order unless a stable `ActionId` is used |
+| `ActionId` addressing | Resolve by exact `action_id` equality in the **current** intermediate `actions` sequence |
+| Positional `INDEX` addressing | Zero-based index `i` means `actions[i]` of the **current** intermediate sequence only. Never original-base positions after prior mutations |
 
-No transformation may assume original-base indexes after an earlier
-transformation changes the action sequence unless it explicitly uses stable
-`ActionId`.
+No other addressing mode is normative for Gate-4 Action targets.
 
-#### Missing target after prior steps
+#### ActionId resolution (closed; R-16)
 
-When a referenced Action (by id or index) does not exist in the current
-snapshot:
+`ActionId` is a usable identity reference **only when unique** in the current
+intermediate action sequence.
+
+Let `N` = number of Actions in the current intermediate sequence whose
+`action_id` equals the requested id (`Some(id)` only; `None` never matches).
+
+| `N` | Classification |
+| --- | --- |
+| `0` | Missing reference: well-typed id with no match → `NON_APPLICABLE` under `ALLOW_NON_APPLICABLE`; `ERROR` / `NON_APPLICABLE_TRANSFORMATION` under `REQUIRE_APPLICABLE`. Malformed id parameter → `ERROR` / `INVALID_TRANSFORMATION_PARAMETER` |
+| `1` | Resolve to that unique Action |
+| `> 1` | **Ambiguous** → `ERROR` / `INVALID_TRANSFORMATION_PARAMETER` with reason `AMBIGUOUS_ACTION_ID`. **MUST NOT** silently select first/last/any match |
+
+Implementations **MUST NOT** choose among matches using HashMap/HashSet
+iteration, thread scheduling, memory address, or any incidental order.
+
+#### Positional INDEX resolution
 
 | Case | Classification |
 | --- | --- |
-| Reference value outside the transformation’s declared ParameterDomain (illegal index type/range declaration, malformed id parameter) | `ERROR` / `INVALID_TRANSFORMATION_PARAMETER` |
-| Reference is well-typed but the Action is absent (precondition of “target exists” fails) | `NON_APPLICABLE` under `ALLOW_NON_APPLICABLE`; `ERROR` / `NON_APPLICABLE_TRANSFORMATION` under `REQUIRE_APPLICABLE` |
+| Index not a non-negative integer / outside ParameterDomain | `ERROR` / `INVALID_TRANSFORMATION_PARAMETER` |
+| Index ≥ current sequence length | Missing reference → `NON_APPLICABLE` / required `NON_APPLICABLE_TRANSFORMATION` per §8.6 (same as absent ActionId) |
+| Index in range | Resolve to `actions[i]` |
 
-**Gate-4 rule:** absence of a previously expected Action is treated as an
-**applicability precondition failure** (`NON_APPLICABLE` / required error),
-not as automatic `INVALID_TRANSFORMATION_PARAMETER`, when the parameter itself
-is well-formed.
+#### Target-resolution provenance (MUST)
 
-Duplicate / delete / replace that cannot locate their target follow the same
-table.
+Every Action target resolution record **MUST** identify:
+
+```text
+addressing mode (ActionId | INDEX)
+requested identity or index
+match count N
+resolved target position (if N = 1)
+deterministic ambiguity / missing reason (if N ≠ 1)
+```
+
+### 10.4 Incompatible transformation contract (R-14; closes B-01)
+
+#### Declaration
+
+Incompatibility **MUST** be **explicitly declared** by the generation /
+composition plan as an ordered vector:
+
+```text
+IncompatibilityRules: ordered list of IncompatibilityRule
+```
+
+Each `IncompatibilityRule` **MUST** declare at least:
+
+```text
+rule identity
+left transformation identity (+ optional version)
+right transformation identity (+ optional version)
+optional composition-position constraint (plan indices), if any
+```
+
+Inference of incompatibility by implementation heuristics is **forbidden**.
+There is **no** closed inferred conflict rule set beyond the declared vector.
+
+#### Default
+
+If no `IncompatibilityRule` applies to the plan under evaluation:
+
+```text
+ordered transformations are COMPATIBLE
+```
+
+#### Detection
+
+A rule **matches** when both named transformations (identity, and version if
+the rule specifies versions) occur in the composition plan under evaluation
+and any declared position constraint is satisfied against the plan indices /
+current composition context.
+
+Matching is evaluated in Phase 6 (§15.3) against the declared plan and, where
+a rule names position constraints, against those indices in the current
+composition.
+
+#### Result (single class)
+
+When the first matching rule hits:
+
+```text
+ERROR class = INCOMPATIBLE_TRANSFORMATION
+```
+
+Implementations **MUST NOT** choose `COMPOSITION_ERROR` for declared semantic
+incompatibility.
+
+#### Error class separation
+
+| Class | Meaning |
+| --- | --- |
+| `INCOMPATIBLE_TRANSFORMATION` | Semantic conflict between otherwise individually valid transformations under an **explicit** declared `IncompatibilityRule` |
+| `COMPOSITION_ERROR` | Structural failure of the composition plan itself that is **not** a declared semantic incompatibility (e.g. missing transformation definition reference, malformed composition plan structure, illegal composition depth declaration at plan structure level) |
+
+#### Ordering
+
+```text
+Scan IncompatibilityRules in declared vector order index 0 .. n-1.
+First matching rule wins.
+```
+
+No implementation-defined rule ordering.
+
+#### Evidence (MUST)
+
+An `INCOMPATIBLE_TRANSFORMATION` error **MUST** record:
+
+```text
+matched rule identity
+left and right transformation identities / versions
+composition plan positions involved
+relevant current-intermediate context marker (if position constraint used)
+deterministic reason text/code tied to the rule
+```
+
+#### No heuristics
+
+```text
+FORBIDDEN: implementation-specific conflict detection,
+           overwrite heuristics, silent skip of conflicting steps,
+           converting incompatibility into NonApplicable without a rule.
+```
 
 ---
 
@@ -995,7 +1122,7 @@ Action insert/delete/replace/duplicate and parameter edits follow §8.4.2 and
 
 Validation of structural legality uses the three-layer boundary (§8.5):
 
-* M04 structural validation (pre-execution representability)
+* M04 **closed** structural checklist (§8.5.1)
 * M03 Scenario acceptance / execution
 * M01 economic evaluation (and M02 if planned)
 
@@ -1008,8 +1135,8 @@ structural validation succeeded.
 
 | Class | Meaning |
 | --- | --- |
-| `DERIVED + VALID` | M04 structural validation passed; candidate is structurally representable as M03 Scenario input. Does **not** guarantee M03 success or economic success |
-| `DERIVED + INVALID` | Candidate produced, but M04 structural validation failed representability requirements; explicit reason required; not silently repaired |
+| `DERIVED + VALID` | Closed M04 structural checklist (§8.5.1) passed. Does **not** guarantee M03 success or economic success |
+| `DERIVED + INVALID` | Candidate produced, but first failing §8.5.1 check yielded a `StructuralInvalidReason`; not silently repaired |
 | `NON_APPLICABLE` | Preconditions unmet (normal outcome under `ALLOW_NON_APPLICABLE`) |
 | M04 `ERROR` | M04 cannot correctly complete the application / generation unit |
 
@@ -1032,9 +1159,9 @@ per its frozen contract. M03 acceptance still does not imply economic success
 | `INVALID_ADVERSARIAL_CONFIGURATION` | Generator/limits/config illegal |
 | `INVALID_BASE_SCENARIO` | Base Scenario missing/invalid for M04 |
 | `NON_APPLICABLE_TRANSFORMATION` | Required applicability failed (`REQUIRE_APPLICABLE`) |
-| `INCOMPATIBLE_TRANSFORMATION` | Composition/conflict between transformations |
-| `INVALID_TRANSFORMATION_PARAMETER` | Parameter out of declared ParameterDomain |
-| `COMPOSITION_ERROR` | Composition plan cannot be applied correctly |
+| `INCOMPATIBLE_TRANSFORMATION` | Declared semantic incompatibility rule matched (§10.4) |
+| `INVALID_TRANSFORMATION_PARAMETER` | Parameter out of declared ParameterDomain, or ActionId resolution ambiguous (`AMBIGUOUS_ACTION_ID`, §10.3) |
+| `COMPOSITION_ERROR` | Structural composition-plan failure that is **not** a declared semantic incompatibility (§10.4) |
 | `GENERATION_ERROR` | Enumeration/generation cannot complete under declared rules (including limit breach without truncation policy) |
 | `ENGINE_ERROR` | Internal M04 fault |
 
@@ -1086,14 +1213,15 @@ Within a phase, the error reported is the first failure under the phase’s
 **declared deterministic order**:
 
 * Phase 1: transformation definitions in plan vector order
-* Phase 2: configuration fields in the declared configuration schema order
+* Phase 2: configuration fields in **plan-declared** configuration field order
 * Phase 3: base Scenario required-field checklist order (id → version → world →
   initial_state → actions → maximum_action_steps → configuration_id →
   declared_unix_secs → invariant_plan → stop_policy)
 * Phase 4: parameter dimensions in declared ParameterDomain dimension order
 * Phase 5: transformations in plan vector order
-* Phase 6: adjacent pairs `(T_i, T_(i+1))` in plan order; then declared
-  incompatibility rule order
+* Phase 6: (a) structural composition-plan checks in plan order →
+  `COMPOSITION_ERROR`; then (b) `IncompatibilityRules` in declared vector
+  order → first match `INCOMPATIBLE_TRANSFORMATION` (§10.4)
 * Phase 7: candidate enumeration order (§29 / §17A)
 * Phase 8: single engine fault (implementation-defined detail, but class is
   `ENGINE_ERROR`)
@@ -1521,7 +1649,9 @@ base scenario identity / version
 composition intermediates (identity/version markers per step; not auto-emitted)
 transformation identity / version
 transformation parameters (typed ParameterValues)
-target resolution method (ActionId vs positional INDEX)
+target resolution method (ActionId vs INDEX) + match count N
+IncompatibilityRule identity when INCOMPATIBLE_TRANSFORMATION
+StructuralInvalidReason when DERIVED+INVALID
 ApplicabilityPolicy
 candidate generation ordering (plan + dimension + value order)
 composition position
@@ -1569,7 +1699,9 @@ same composition target resolution outcomes
 same distinction of intermediates vs emitted scenarios
 same derived Scenario fields that affect M03 execution
 same adversarial category/intent labels
-same ValidationClassification (+ invalid reasons)
+same ValidationClassification (+ StructuralInvalidReason when INVALID)
+same ActionId resolution match counts / ambiguity classifications
+same IncompatibilityRule hits (if any)
 same provenance semantic fields listed in §20
 ```
 
@@ -1641,12 +1773,12 @@ M04 **MUST** remain fully usable without an LLM.
 | State adoption from KernelOutcome | M03 |
 | Scenario acceptance / fatal Scenario errors | M03 |
 | Adversarial derivation of Scenario inputs | M04 |
-| Pre-execution structural representability checks | M04 (§8.5 / §14) |
+| Pre-execution structural representability checks | M04 closed checklist (§8.5.1) |
 
 M04 **MUST NOT** duplicate M03 simulation semantics.
 
-`DERIVED + VALID` is M04 structural validation only. M03 may still reject or
-fail the Scenario per its frozen contract.
+`DERIVED + VALID` means the closed M04 checklist passed only. M03 may still
+reject or fail the Scenario per its frozen contract.
 
 ---
 
@@ -1942,11 +2074,13 @@ independent branches count as separate emitted scenarios
 FAIL_ON_EXCEED preserves prior emitted candidates + FAILED status
 TRUNCATE_AT_N yields TRUNCATED without GENERATION_ERROR
 incomplete composition branch not emitted on mid-chain breach
-DERIVED+VALID does not imply M03/M01 success
-DERIVED+INVALID has explicit reason and is not silently repaired
+DERIVED+VALID means closed checklist passed; does not imply M03/M01 success
+DERIVED+INVALID has StructuralInvalidReason and is not silently repaired
+ambiguous ActionId resolution is ERROR (never silent first-match)
+declared IncompatibilityRules only; default compatible; no heuristics
 generation limits
 deterministic candidate ordering by ParameterValue type
-provenance chain completeness (incl. GenerationStatus)
+provenance chain completeness (incl. GenerationStatus, resolution match counts)
 valid derived scenario executes via M03
 M04 does not mutate M01 state independently
 M02 not evaluated by M04
@@ -2018,14 +2152,14 @@ Identity stability is normative; identity derivation algorithm remains AD-03.
 | Item | Value |
 | --- | --- |
 | Created by | TASK-10 |
-| Remediation | **TASK-10R** (R-01…R-08); **TASK-10RR** (R-09…R-13) |
+| Remediation | **TASK-10R** (R-01…R-08); **TASK-10RR** (R-09…R-13); **TASK-10RRR** (R-14…R-16; B-01/B-02/B-03) |
 | Status | **READY_FOR_REVIEW** |
 | Normative freeze | **NOT FROZEN** |
 | Implementation authorization | **NONE** (blocked) |
 | Gate | **GATE 4 — OPEN** |
 | Code / crates modified by this task | **None** |
 | Frozen specifications modified | **None** |
-| Next | Independent freeze audit (**TASK-10F**) after authorization |
+| Next | Independent freeze re-audit (**TASK-10F-R2**) after authorization |
 
 ### Amendment rule
 
