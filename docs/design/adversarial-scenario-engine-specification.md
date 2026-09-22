@@ -3,7 +3,7 @@
 | Field | Value |
 | --- | --- |
 | Document | `docs/design/adversarial-scenario-engine-specification.md` |
-| Task | **TASK-10** / **TASK-10R** / **TASK-10RR** / **TASK-10RRR** (final freeze remediation) |
+| Task | **TASK-10** … **TASK-10RRRR** (targeted freeze remediation R2-B-01/R2-B-02) |
 | Module | **M04 — Adversarial Scenario Engine** |
 | Gate | **GATE 4 — OPEN** |
 | **STATUS** | **READY_FOR_REVIEW** |
@@ -19,7 +19,7 @@ GATE: GATE 4 — OPEN
 ```
 
 This document is the **reviewable normative candidate** for Gate-4 M04 after
-TASK-10R, TASK-10RR, and TASK-10RRR (B-01/B-02/B-03 freeze remediation). It is
+TASK-10R through TASK-10RRRR (including R2-B-01 / R2-B-02 closure). It is
 **not frozen**. Material freeze requires an explicit freeze audit task.
 Implementation requires a later explicit authorization task after freeze.
 
@@ -676,12 +676,12 @@ primary reason.
 | 1 | Scenario envelope | Candidate has Scenario-shaped envelope (id, version, world, initial_state, actions, maximum_action_steps, configuration_id, declared_unix_secs, invariant_plan, stop_policy fields present as declared Scenario structure) | Economic truth of any Action | `INVALID_SCENARIO_STRUCTURE` |
 | 2 | Required fields | `id` non-empty; `version` non-empty; `configuration_id` non-empty; `maximum_action_steps` is a declared non-negative integer representable as M03 `u64` semantics; `actions` is an ordered sequence (length may be 0) | Whether the scenario “should” have actions | `INVALID_REQUIRED_FIELD` |
 | 3 | Projection consistency | Every Scenario field touched by the producing transformation(s) has a declared projection mode; no field changed without declared mode; metadata `id`/`version` updated when payload fields changed (§8.4.1) | Semantic desirability of the projection | `INVALID_PROJECTION` |
-| 4 | World / initial-state structure | `world` and `initial_state` are explicit declared structures; balance cells are `(account, asset, facet) → signed integer`; no host/env-derived cells; no fabricated Transactions/Events/Effects disguised as state (§8.7) | Balance sufficiency, fees, prices, authorization truth | `INVALID_INITIAL_STATE_STRUCTURE` (state) / `INVALID_SCENARIO_STRUCTURE` (world envelope malformed) |
+| 4 | World / initial-state structure | **Sub-order (R-20):** **4a** World envelope structure first — World is present as the declared Scenario `world` structure. On failure → `INVALID_SCENARIO_STRUCTURE` (stop; do not evaluate 4b for primary reason). **4b** only after 4a passes — `initial_state` exists as declared structure; balance cells are explicit `(account, asset, facet) → signed integer minor-unit amount`; no hidden/internal M01 state; no fabricated Transaction/Event/Effect embedded as state; no host/env-derived amounts (§8.7). On failure → `INVALID_INITIAL_STATE_STRUCTURE` | Membership truth, authorization, economic validity, fees, prices, settlement, Action success | `INVALID_SCENARIO_STRUCTURE` (4a) / `INVALID_INITIAL_STATE_STRUCTURE` (4b) |
 | 5 | Action sequence structure | Each Action is one of the Domain/M01 Action variants with required variant fields present and correctly typed (including `ECONOMIC_AMOUNT` vs `INTEGER` separation for numeric fields) | Whether M01 would Accept/Reject/Fail the Action | `INVALID_ACTION_STRUCTURE` |
 | 6 | Action identity / reference validity | Positional indexes used by the producing transform were in-range at application time (recorded in provenance); ActionId references used by the producing transform resolved with match-count = 1 (§10.3); no unresolved required reference left in the transform application record | Future M03 sequencing preferences | `INVALID_ACTION_REFERENCE` |
-| 7 | Domain reference representability | Actor/account/asset/facet/price identifiers appearing in Actions or initial_state cells are syntactically well-formed identifiers (non-empty where required). **Membership of those ids in World is NOT required here** (deferred to M01/M03) | World membership truth, ownership, authorization | `INVALID_DOMAIN_REFERENCE` only for malformed empty/ill-typed identifier tokens |
-| 8 | Execution configuration | `maximum_action_steps`, `configuration_id`, and `declared_unix_secs` (if `Some`) have structurally legal representations; `declared_unix_secs` is not sourced from host clock | Whether the limit is “wise” | `INVALID_EXECUTION_CONFIGURATION` |
-| 9 | Invariant-plan structure | `before_action` / `after_action` / `on_completion` vectors are present (may be empty); each declared invariant entry is structurally representable as an M02 Invariant envelope (identity present). **Does not evaluate invariants** | PASS/FAIL/ERROR | `INVALID_INVARIANT_PLAN_STRUCTURE` |
+| 7 | Domain reference representability | Every required Actor/Account/Asset/Facet/Price/ActionId (when `Some`) appearing in Actions or initial_state cells is an `IdentifierToken` (§8.5.3): UTF-8 string length ≥ 1; exact equality; case-sensitive; no trim/normalize/case-fold. Empty → fail. **World membership is NOT checked** | World membership, account/asset existence, actor authorization, ownership, balance sufficiency | `INVALID_DOMAIN_REFERENCE` |
+| 8 | Execution configuration | `maximum_action_steps`, `configuration_id`, and `declared_unix_secs` (if `Some`) have structurally legal representations; `configuration_id` is an `IdentifierToken` / non-empty string per §8.5.3; `declared_unix_secs` is not sourced from host clock | Whether the limit is “wise” | `INVALID_EXECUTION_CONFIGURATION` |
+| 9 | Invariant-plan structure | `before_action` / `after_action` / `on_completion` vectors are present (may be empty); each declared invariant entry has the **minimum** envelope `{ id, definition_version }` where both are non-empty UTF-8 strings under §8.5.3 exact-token rules. **Does not evaluate invariants** | PASS/FAIL/ERROR, applicability, target compatibility, quantification, aggregation | `INVALID_INVARIANT_PLAN_STRUCTURE` |
 | 10 | Stop-policy structure | `stop_policy.conditions` is an ordered vector (may be empty); each condition is one of the M03 `StopCondition` shapes with required fields present | Whether a condition will fire | `INVALID_STOP_POLICY_STRUCTURE` |
 | 11 | Hidden-input prohibition | No field of the candidate is marked or evidenced as derived from wall clock, env, filesystem, network, process state, global RNG, or unvalidated LLM output | — | `FORBIDDEN_HIDDEN_INPUT` |
 | 12 | Provenance completeness | Emitted candidate carries the provenance fields required by §20 for reconstruction | Beauty of provenance formatting | `INVALID_PROVENANCE` |
@@ -703,6 +703,50 @@ M03 Scenario acceptance beyond the closed checklist above
 
 The exact M03 acceptance/execution contract remains owned by M03 for any
 semantic not listed in §8.5.1.
+
+#### 8.5.3 IdentifierToken minimum (R-20)
+
+For all identifier tokens checked by M04 structural validation (and for
+ActionId / transformation-identity equality elsewhere in M04):
+
+```text
+IdentifierToken:
+    UTF-8 string
+    length >= 1
+```
+
+Normative comparison rules:
+
+```text
+exact string equality
+case-sensitive
+NO trimming
+NO Unicode normalization
+NO case-folding
+NO whitespace collapsing
+NO fuzzy matching
+```
+
+Examples (token structure only — not World membership):
+
+```text
+"abc"       VALID token
+" A "       VALID token
+"abc def"   VALID token
+"Ä"         VALID token
+""          INVALID token
+```
+
+Empty required identifier → `INVALID_DOMAIN_REFERENCE` under Check #7 (or
+`INVALID_INVARIANT_PLAN_STRUCTURE` / `INVALID_REQUIRED_FIELD` when the empty
+token is the Scenario `id` / invariant `id` / `definition_version` under the
+check that owns that field).
+
+M04 MUST NOT impose a richer identifier grammar unless already required by a
+frozen upstream specification. A valid token does **not** establish World
+membership.
+
+No automatic repair, canonicalization, or schema normalization.
 
 ### 8.6 ApplicabilityPolicy (R-05; closes AD-16)
 
@@ -934,9 +978,12 @@ Let `N` = number of Actions in the current intermediate sequence whose
 
 | `N` | Classification |
 | --- | --- |
-| `0` | Missing reference: well-typed id with no match → `NON_APPLICABLE` under `ALLOW_NON_APPLICABLE`; `ERROR` / `NON_APPLICABLE_TRANSFORMATION` under `REQUIRE_APPLICABLE`. Malformed id parameter → `ERROR` / `INVALID_TRANSFORMATION_PARAMETER` |
+| `0` | Missing reference: well-typed non-empty `IdentifierToken` id with no match → `NON_APPLICABLE` under `ALLOW_NON_APPLICABLE`; `ERROR` / `NON_APPLICABLE_TRANSFORMATION` under `REQUIRE_APPLICABLE`. Empty or non-`IdentifierToken` id parameter → `ERROR` / `INVALID_TRANSFORMATION_PARAMETER` (malformed) |
 | `1` | Resolve to that unique Action |
 | `> 1` | **Ambiguous** → `ERROR` / `INVALID_TRANSFORMATION_PARAMETER` with reason `AMBIGUOUS_ACTION_ID`. **MUST NOT** silently select first/last/any match |
+
+ActionId equality uses `IdentifierToken` exact rules (§8.5.3).
+
 
 Implementations **MUST NOT** choose among matches using HashMap/HashSet
 iteration, thread scheduling, memory address, or any incidental order.
@@ -961,7 +1008,7 @@ resolved target position (if N = 1)
 deterministic ambiguity / missing reason (if N ≠ 1)
 ```
 
-### 10.4 Incompatible transformation contract (R-14; closes B-01)
+### 10.4 Incompatible transformation contract (R-14 / R-19)
 
 #### Declaration
 
@@ -972,82 +1019,161 @@ composition plan as an ordered vector:
 IncompatibilityRules: ordered list of IncompatibilityRule
 ```
 
-Each `IncompatibilityRule` **MUST** declare at least:
+Each `IncompatibilityRule` has the conceptual shape:
 
 ```text
-rule identity
-left transformation identity (+ optional version)
-right transformation identity (+ optional version)
-optional composition-position constraint (plan indices), if any
+IncompatibilityRule:
+    rule_id
+    left_transformation_identity
+    right_transformation_identity
+    optional left_version
+    optional right_version
+    optional position_constraint
 ```
 
+`position_constraint`, when present, **MUST** be exactly:
+
+```text
+EXACT_PAIR(left_index, right_index)
+```
+
+Indices are **zero-based plan positions**. No other position-constraint
+grammar is normative for Gate 4.
+
 Inference of incompatibility by implementation heuristics is **forbidden**.
-There is **no** closed inferred conflict rule set beyond the declared vector.
+
+#### Transformation occurrence
+
+A transformation **occurrence** is one concrete position in the declared
+composition plan. Identity alone does **not** collapse repeats.
+
+```text
+plan[0] = TRANSFORM_A
+plan[1] = TRANSFORM_B
+plan[2] = TRANSFORM_A
+```
+
+```text
+occurrences: A@0, B@1, A@2
+```
+
+#### Identity / version matching
+
+An occurrence matches a side of a rule when:
+
+1. its transformation identity equals the rule’s side identity by
+   `IdentifierToken` exact equality (§8.5.3); and
+2. if the rule specifies a version for that side, the occurrence version equals
+   that version by exact equality.
+
+If a side omits version → version is a **wildcard** for that side.
+
+No fuzzy / case-folded / normalized matching.
 
 #### Default
 
-If no `IncompatibilityRule` applies to the plan under evaluation:
+If no `IncompatibilityRule` produces a match:
 
 ```text
 ordered transformations are COMPATIBLE
 ```
 
-#### Detection
+#### Self-rules
 
-A rule **matches** when both named transformations (identity, and version if
-the rule specifies versions) occur in the composition plan under evaluation
-and any declared position constraint is satisfied against the plan indices /
-current composition context.
+If `left_transformation_identity == right_transformation_identity`, the rule
+is a **self-rule** and requires **two distinct** plan positions
+(`left_index != right_index`).
 
-Matching is evaluated in Phase 6 (§15.3) against the declared plan and, where
-a rule names position constraints, against those indices in the current
-composition.
+A single occurrence of `A` does **not** satisfy `A` incompatible with `A`.
 
-#### Result (single class)
+`EXACT_PAIR(a,a)` **MUST NOT** match (not an engine error — the rule is
+deterministically non-matching).
 
-When the first matching rule hits:
+#### Matching without position constraint
+
+Enumerate candidate ordered pairs `(left_index, right_index)` where:
 
 ```text
-ERROR class = INCOMPATIBLE_TRANSFORMATION
+left_index != right_index
 ```
 
-Implementations **MUST NOT** choose `COMPOSITION_ERROR` for declared semantic
-incompatibility.
+and both occurrences satisfy their side’s identity/version constraints
+(self-rules included).
 
-#### Error class separation
+Order candidates lexicographically:
 
-| Class | Meaning |
-| --- | --- |
-| `INCOMPATIBLE_TRANSFORMATION` | Semantic conflict between otherwise individually valid transformations under an **explicit** declared `IncompatibilityRule` |
-| `COMPOSITION_ERROR` | Structural failure of the composition plan itself that is **not** a declared semantic incompatibility (e.g. missing transformation definition reference, malformed composition plan structure, illegal composition depth declaration at plan structure level) |
+```text
+(left_index ASC, right_index ASC)
+```
 
-#### Ordering
+Example — plan `A@0, B@1, A@2, B@3`, rule `A` incompatible with `B`:
+
+```text
+(0,1), (0,3), (2,1), (2,3)
+```
+
+Self-rule with `A` at 0 and 2:
+
+```text
+(0,2), (2,0)   → first match (0,2) wins
+```
+
+First candidate pair that satisfies the constraints is the match for that rule.
+
+#### Matching with `EXACT_PAIR(a,b)`
+
+Evaluate **only** `(a,b)`:
+
+1. both positions exist;
+2. left occurrence matches left identity/version;
+3. right occurrence matches right identity/version;
+4. `a != b` (required; `a == b` never matches).
+
+If all pass → rule matches. Otherwise → rule does not match.
+**No** alternative pair may be searched.
+
+#### Rule ordering and result
 
 ```text
 Scan IncompatibilityRules in declared vector order index 0 .. n-1.
-First matching rule wins.
+First matching rule wins → ERROR class = INCOMPATIBLE_TRANSFORMATION
 ```
 
-No implementation-defined rule ordering.
+Later incompatibility rules are not evaluated for the primary error.
+
+| Class | Meaning |
+| --- | --- |
+| `INCOMPATIBLE_TRANSFORMATION` | Declared rule matched under §10.4 |
+| `COMPOSITION_ERROR` | Structural composition-plan failure that is **not** declared semantic incompatibility |
 
 #### Evidence (MUST)
 
-An `INCOMPATIBLE_TRANSFORMATION` error **MUST** record:
-
 ```text
-matched rule identity
-left and right transformation identities / versions
-composition plan positions involved
-relevant current-intermediate context marker (if position constraint used)
-deterministic reason text/code tied to the rule
+rule_id
+left_transformation_identity
+right_transformation_identity
+left_version (if declared)
+right_version (if declared)
+left_plan_index
+right_plan_index
+position_constraint (if present)
 ```
+
+The recorded pair **MUST** be exactly the pair that caused the first matching
+rule (lexicographically first matching pair when unconstrained). Recording all
+possible pairs is **not** normative for the primary match.
+
+Two conforming implementations **MUST** produce the same matching rule,
+`left_plan_index`, `right_plan_index`, error class, and evidence for the same
+plan and rule vector.
 
 #### No heuristics
 
 ```text
 FORBIDDEN: implementation-specific conflict detection,
            overwrite heuristics, silent skip of conflicting steps,
-           converting incompatibility into NonApplicable without a rule.
+           converting incompatibility into NonApplicable without a rule,
+           unordered / HashSet occurrence traversal.
 ```
 
 ---
@@ -1221,7 +1347,8 @@ Within a phase, the error reported is the first failure under the phase’s
 * Phase 5: transformations in plan vector order
 * Phase 6: (a) structural composition-plan checks in plan order →
   `COMPOSITION_ERROR`; then (b) `IncompatibilityRules` in declared vector
-  order → first match `INCOMPATIBLE_TRANSFORMATION` (§10.4)
+  order with occurrence-pair semantics (§10.4 / R-19) → first match
+  `INCOMPATIBLE_TRANSFORMATION`
 * Phase 7: candidate enumeration order (§29 / §17A)
 * Phase 8: single engine fault (implementation-defined detail, but class is
   `ENGINE_ERROR`)
@@ -1651,7 +1778,9 @@ transformation identity / version
 transformation parameters (typed ParameterValues)
 target resolution method (ActionId vs INDEX) + match count N
 IncompatibilityRule identity when INCOMPATIBLE_TRANSFORMATION
-StructuralInvalidReason when DERIVED+INVALID
+left_plan_index / right_plan_index of the winning occurrence pair
+StructuralInvalidReason when DERIVED+INVALID (incl. 4a/4b distinction)
+IdentifierToken equality inputs where relevant
 ApplicabilityPolicy
 candidate generation ordering (plan + dimension + value order)
 composition position
@@ -1699,9 +1828,9 @@ same composition target resolution outcomes
 same distinction of intermediates vs emitted scenarios
 same derived Scenario fields that affect M03 execution
 same adversarial category/intent labels
+same IncompatibilityRule hits with same left_plan_index / right_plan_index
 same ValidationClassification (+ StructuralInvalidReason when INVALID)
 same ActionId resolution match counts / ambiguity classifications
-same IncompatibilityRule hits (if any)
 same provenance semantic fields listed in §20
 ```
 
@@ -2077,7 +2206,9 @@ incomplete composition branch not emitted on mid-chain breach
 DERIVED+VALID means closed checklist passed; does not imply M03/M01 success
 DERIVED+INVALID has StructuralInvalidReason and is not silently repaired
 ambiguous ActionId resolution is ERROR (never silent first-match)
-declared IncompatibilityRules only; default compatible; no heuristics
+declared IncompatibilityRules with occurrence pairs / EXACT_PAIR / self-rule ≥2 occurrences
+check 4a world before 4b initial-state; IdentifierToken length≥1 exact equality
+invariant entries require id + definition_version (non-evaluating)
 generation limits
 deterministic candidate ordering by ParameterValue type
 provenance chain completeness (incl. GenerationStatus, resolution match counts)
@@ -2152,14 +2283,14 @@ Identity stability is normative; identity derivation algorithm remains AD-03.
 | Item | Value |
 | --- | --- |
 | Created by | TASK-10 |
-| Remediation | **TASK-10R** (R-01…R-08); **TASK-10RR** (R-09…R-13); **TASK-10RRR** (R-14…R-16; B-01/B-02/B-03) |
+| Remediation | **TASK-10R**…**TASK-10RRR**; **TASK-10RRRR** (R-19 occurrence; R-20 structural minima — closes R2-B-01 / R2-B-02) |
 | Status | **READY_FOR_REVIEW** |
 | Normative freeze | **NOT FROZEN** |
 | Implementation authorization | **NONE** (blocked) |
 | Gate | **GATE 4 — OPEN** |
 | Code / crates modified by this task | **None** |
 | Frozen specifications modified | **None** |
-| Next | Independent freeze re-audit (**TASK-10F-R2**) after authorization |
+| Next | Independent freeze re-audit (**TASK-10F-R3**) after authorization |
 
 ### Amendment rule
 

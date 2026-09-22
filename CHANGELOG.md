@@ -23,7 +23,7 @@ once releases begin.
 * Adversarial scenario engine specification
   (`docs/design/adversarial-scenario-engine-specification.md`) —
   **READY_FOR_REVIEW** (Gate 4 **OPEN**; not frozen; implementation
-  **BLOCKED**). TASK-10; TASK-10R; TASK-10RR; TASK-10RRR (B-01…B-03).
+  **BLOCKED**). TASK-10 … TASK-10RRRR (R2-B-01 / R2-B-02 closed).
 
 ### Changed
 
@@ -36,6 +36,9 @@ once releases begin.
 * TASK-10RRR: M04 freeze-blocker remediation — declared incompatibility
   contract (B-01), closed structural validation checklist (B-02), duplicate
   ActionId resolution (B-03).
+* TASK-10RRRR: targeted freeze remediation — incompatibility occurrence /
+  self-match / `EXACT_PAIR` (R2-B-01); check-4a/4b order, IdentifierToken,
+  invariant `{id, definition_version}` minimum (R2-B-02).
 * Product scope status updated from `READY_FOR_REVIEW` to `FROZEN` after
   explicit approval.
 * Domain contract progressed through TASK-02 / TASK-02R remediation and
