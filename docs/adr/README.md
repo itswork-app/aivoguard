@@ -52,5 +52,7 @@ Example: `0001-workspace-layout.md` (only when a real decision is being made).
 
 ## Current records
 
-None yet. This directory is intentionally empty of decision records during
-repository foundation bootstrap.
+| ADR | Title | Status |
+| --- | --- | --- |
+| [0001](0001-kernel-integer-representation.md) | Kernel integer representation (`i128`) | Accepted |
+| [0002](0002-kernel-collection-ordering.md) | Kernel collection ordering (`BTreeMap`) | Accepted |

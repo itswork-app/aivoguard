@@ -12,12 +12,11 @@ keywords.workspace = true
 categories.workspace = true
 publish.workspace = true
 
-# This package is the workspace anchor crate. It contains no product domain
-# logic. Economic primitives, simulators, and related modules will be added
-# only after their normative specifications are frozen.
+# This package hosts the Gate-1 M01 Economic Kernel and remains free of
+# M02+ modules, network, database, and LLM dependencies.
 
 [dependencies]
-# None. Keep the foundation dependency-free.
+# None. Keep the Gate-1 kernel dependency-free (std only).
 
 [lints]
 workspace = true

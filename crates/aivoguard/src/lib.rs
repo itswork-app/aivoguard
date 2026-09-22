@@ -1,22 +1,17 @@
-//! `AivoGuard` library crate (foundation stage).
+//! `AivoGuard` — deterministic economic testing infrastructure.
 //!
-//! This crate currently exists only to anchor the Cargo workspace so the
-//! repository remains buildable, testable, and CI-ready during bootstrap.
-//!
-//! Product scope, Gate 0, Gate 1, and economic implementation are **not**
-//! present here. Domain modules must not be invented ahead of frozen
-//! specifications. See `docs/design/SPECIFICATION-POLICY.md`.
+//! Gate-1 **M01 Economic Kernel** is implemented under [`kernel`].
+//! Later modules (M02+) are intentionally absent.
 
 #![forbid(unsafe_code)]
+#![warn(missing_docs)]
 
-#[cfg(test)]
-mod foundation_tests {
-    #[test]
-    fn workspace_anchor_package_identity() {
-        // Smoke test: confirms the foundation crate links and exposes the
-        // expected package identity under `cargo test`. No product behavior
-        // is asserted.
-        assert_eq!(env!("CARGO_PKG_NAME"), "aivoguard");
-        assert_eq!(env!("CARGO_PKG_VERSION"), "0.0.0");
-    }
-}
+pub mod kernel;
+
+pub use kernel::{
+    divide_with_rounding, evaluate, Account, AccountId, Action, ActorId, ArithError, Asset,
+    AssetId, BalanceFacetModel, ConversionRule, EconomicDisposition, EconomicEvent, EconomicState,
+    EconomicWorld, Evidence, ExecutionContext, FacetId, FeeRule, KernelError, KernelErrorKind,
+    KernelOutcome, Money, Price, PriceCategory, PriceId, RoundingMode, StateEffect, Transaction,
+    TransferRule, ENGINE_VERSION,
+};
