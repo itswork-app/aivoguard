@@ -23,7 +23,7 @@ pub(crate) mod transaction;
 pub(crate) mod world;
 
 pub use account::{Account, AccountId, ActorId};
-pub use action::Action;
+pub use action::{Action, ActionId};
 pub use asset::{Asset, AssetId};
 pub use balance::{BalanceFacetModel, FacetId};
 pub use effect::StateEffect;

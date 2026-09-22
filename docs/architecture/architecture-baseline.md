@@ -222,17 +222,18 @@ TASK-07 / TASK-07R / TASK-07F). Implementation: present under
 implementation audit: TASK-08F **PASS**. Implementation baseline commit:
 `c4ce9bb`.
 
-### M04 — Adversarial Scenario Engine (SPECIFICATION FROZEN)
+### M04 — Adversarial Scenario Engine (IMPLEMENTED; Gate 4 CLOSED)
 
 Gate 4 **CLOSED**. Normative specification:
 [`docs/design/adversarial-scenario-engine-specification.md`](../design/adversarial-scenario-engine-specification.md)
-(**FROZEN**; implementation **BLOCKED** until separately authorized).
+(**FROZEN**). Authorized by **TASK-10H**; implemented under
+`crates/aivoguard/src/adversarial/` (**TASK-11**).
 
 Normative baseline: `58f0e01`. Freeze: **TASK-10G** (audit **TASK-10F-R3**).
 
 M04 generates/transforms adversarial Scenario inputs for M03. It does **not**
 own economic truth (M01), invariant evaluation (M02), or simulation sequencing
-(M03). No M04 code in this repository yet.
+(M03). Open decisions AD-03 / AD-14 / AD-15 remain OPEN.
 
 ### M05 — Chaos (BOUNDARY ONLY)
 
@@ -493,14 +494,16 @@ Architecture remains compatible with, and does **not** decide:
 
 ### CURRENT
 
-* Single crate `aivoguard` with `kernel` (M01), `invariant` (M02), and
-  `simulator` (M03)
+* Single crate `aivoguard` with `kernel` (M01), `invariant` (M02),
+  `simulator` (M03), and `adversarial` (M04)
 * Frozen Product Scope, Domain Contract, Economic Kernel Specification
 * M02 specification: **FROZEN** (Gate 2 **CLOSED**); implemented / **PASS**
   (TASK-06 / TASK-06R)
 * M03 specification: **FROZEN** (Gate 3 **CLOSED**); implemented / **PASS**
   (TASK-08 / TASK-08R; TASK-08F audit **PASS**; baseline `c4ce9bb`)
-* M04–M09: product boundaries only; no code
+* M04 specification: **FROZEN** (Gate 4 **CLOSED**); implemented (TASK-11;
+  authorized TASK-10H)
+* M05–M09: product boundaries only; no code
 * No network/DB/LLM in the authoritative core
 
 ### TARGET (conceptual)
@@ -512,7 +515,7 @@ Architecture remains compatible with, and does **not** decide:
   (implemented; further packaging remains an implementation decision)
 * M03 as a read-only orchestration module under `crates/aivoguard/src/simulator/`
   (implemented; packaging remains an implementation decision)
-* M04 as specified by frozen Gate-4 contract (**FROZEN**; not implemented)
+* M04 as specified by frozen Gate-4 contract (**FROZEN**; implemented TASK-11)
 * M05–M09 as specified by future frozen gates
 * Interfaces and adapters outside the economic core
 
@@ -525,7 +528,7 @@ Architecture remains compatible with, and does **not** decide:
 | M01 | Frozen | Current | Implemented / **PASS** | Gate 1 **CLOSED** / TASK-04 |
 | M02 | Frozen | Defined | Implemented / **PASS** | Gate 2 **CLOSED** / TASK-06 / TASK-06R |
 | M03 | Frozen | Defined | Implemented / **PASS** | Gate 3 **CLOSED** / TASK-08 / TASK-08R / TASK-08F / TASK-09 |
-| M04 | **FROZEN** | Defined | Not implemented | Gate 4 **CLOSED** / TASK-10G |
+| M04 | **FROZEN** | Defined | **IMPLEMENTED** (TASK-11) | Gate 4 **CLOSED** / TASK-10G / TASK-10H |
 | M05 | Future | Boundary only | Not implemented | Future |
 | M06 | Future | Boundary only | Not implemented | Future |
 | M07 | Future | Boundary only | Not implemented | Future |
@@ -538,7 +541,7 @@ Architecture remains compatible with, and does **not** decide:
 
 | # | Criterion | Status |
 | --- | --- | --- |
-| 1 | Every current implemented responsibility has an owner | PASS (M01/kernel; M02/invariant; M03/simulator) |
+| 1 | Every current implemented responsibility has an owner | PASS (M01/kernel; M02/invariant; M03/simulator; M04/adversarial) |
 | 2 | Every frozen domain responsibility has an architectural home | PASS |
 | 3 | M01 authority unambiguous | PASS |
 | 4 | M02 authority unambiguous | PASS |
@@ -565,4 +568,4 @@ Architecture remains compatible with, and does **not** decide:
 | M03 implementation baseline | `c4ce9bb` |
 | Normative economic semantics | **None** (architecture only) |
 | ADR created by this task | **None** (no new implementation decision) |
-| Next | M04 implementation only when explicitly authorized; then Gate 5+ |
+| Next | Gate 5+ / independent M04 implementation audit when authorized |

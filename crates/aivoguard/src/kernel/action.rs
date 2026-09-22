@@ -14,6 +14,12 @@ impl ActionId {
     pub fn new(id: impl Into<String>) -> Self {
         Self(id.into())
     }
+
+    /// Borrow the identity string (`IdentifierToken` inspection; non-economic).
+    #[must_use]
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
 }
 
 /// Explicit Action intent submitted for evaluation.
