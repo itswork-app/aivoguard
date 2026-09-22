@@ -43,7 +43,7 @@ Full hierarchy and process rules:
 | [`design/product-scope.md`](design/product-scope.md) | Product scope — **FROZEN** |
 | [`design/domain-contract.md`](design/domain-contract.md) | Domain Contract / Gate 0 — **FROZEN** (Gate 0 **CLOSED**) |
 | [`design/economic-kernel-specification.md`](design/economic-kernel-specification.md) | Economic Kernel (M01) — **FROZEN** (Gate 1 **CLOSED**) |
-| [`design/economic-invariant-engine-specification.md`](design/economic-invariant-engine-specification.md) | Invariant Engine (M02) — **READY_FOR_REVIEW** |
+| [`design/economic-invariant-engine-specification.md`](design/economic-invariant-engine-specification.md) | Invariant Engine (M02) — **FROZEN** (Gate 2 **CLOSED**) |
 | [`architecture/architecture-baseline.md`](architecture/architecture-baseline.md) | Architecture baseline (TASK-00B) — structural only |
 | M01 implementation | Present in `crates/aivoguard` (`kernel`); TASK-04 |
 | Gate 2+ modules (M02 impl, M03+) | Not implemented |

@@ -469,7 +469,7 @@ Architecture remains compatible with, and does **not** decide:
 
 * Single crate `aivoguard` with `kernel` (M01) only
 * Frozen Product Scope, Domain Contract, Economic Kernel Specification
-* M02 specification candidate: READY_FOR_REVIEW / NOT FROZEN
+* M02 specification: **FROZEN** (Gate 2 **CLOSED**); implementation **BLOCKED**
 * M03–M09: product boundaries only; no code
 * No network/DB/LLM in the authoritative core
 
@@ -489,7 +489,7 @@ Architecture remains compatible with, and does **not** decide:
 | Module | Specification | Architecture | Implementation | Gate |
 | --- | --- | --- | --- | --- |
 | M01 | Frozen | Current | Implemented | PASS |
-| M02 | Ready for review | Defined | Not implemented | Gate 2 open |
+| M02 | Frozen | Defined | Not implemented | Gate 2 **CLOSED** |
 | M03 | Future | Boundary only | Not implemented | Future |
 | M04 | Future | Boundary only | Not implemented | Future |
 | M05 | Future | Boundary only | Not implemented | Future |

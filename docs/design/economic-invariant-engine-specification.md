@@ -3,18 +3,24 @@
 | Field | Value |
 | --- | --- |
 | Document | `docs/design/economic-invariant-engine-specification.md` |
-| Task | TASK-05 / TASK-05R / TASK-05R2 / TASK-05R3 / TASK-05R4 |
+| Task | TASK-05 / TASK-05R / TASK-05R2 / TASK-05R3 / TASK-05R4 / **TASK-05F** |
 | Module | **M02 — Economic Invariant Engine** |
-| Gate | Gate 2 — Invariant Engine |
-| **STATUS** | **READY_FOR_REVIEW** |
-| Normative freeze | **NOT FROZEN** |
-| Implementation | **BLOCKED** |
-| Remediation | TASK-05R…R4 semantic closure |
+| Gate | **GATE 2 — CLOSED** |
+| **STATUS** | **FROZEN** |
+| Normative freeze | **FROZEN** |
+| Implementation | **BLOCKED** — freeze does **not** authorize implementation |
+| Freeze authority | TASK-05F independent freeze review |
 | Depends on | Product Scope (**FROZEN**); Domain Contract (**FROZEN**); Economic Kernel Specification (**FROZEN**); M01 implementation (TASK-04 **PASS**) |
 
-This document is the candidate normative specification for M02 after TASK-05R4
-history range/index semantic closure. It does **not** authorize M02
-implementation. Freeze requires explicit TASK-05F approval.
+```text
+M02 specification is frozen.
+M02 implementation is NOT authorized by this task.
+A separate implementation task is required.
+```
+
+This document is the **frozen** normative specification for Gate-2 M02. Material
+semantic changes require an explicit specification amendment. Freeze does **not**
+authorize M02 implementation, DSL/API design, or crate creation.
 
 Related:
 
@@ -61,7 +67,7 @@ Domain Contract FROZEN
         ↓
 Economic Kernel Specification FROZEN
         ↓
-M02 Invariant Engine Specification (this document; READY_FOR_REVIEW)
+M02 Invariant Engine Specification (this document; **FROZEN**, Gate 2 **CLOSED**)
         ↓
 M02 Implementation (blocked)
 ```
@@ -130,7 +136,7 @@ or balances.
 * producing deterministic invariant results
 * producing violations
 * associating violations with evaluation/state/transition/history location
-* evaluating invariants over state, transition, and history (where supported)
+* evaluating invariants over State, Transition, and History targets
 * preserving deterministic evidence
 * distinguishing invariant failure from invariant engine error
 * supporting reproducible invariant evaluation
@@ -957,14 +963,17 @@ MAX
 
 | Op | Empty input | Missing input | Asset rules | Overflow |
 | --- | --- | --- | --- | --- |
-| `COUNT` | `0` | `ERROR` | N/A (cardinality) | N/A |
-| `SUM` | `0` in the **declared** Asset domain of the aggregation | `ERROR` | all terms same Asset unless declared conversion first | `ERROR` (`ARITHMETIC_ERROR`) |
-| `MIN` | `ERROR` (no mathematically valid value) | `ERROR` | same Asset domain | N/A |
-| `MAX` | `ERROR` | `ERROR` | same Asset domain | N/A |
+| `COUNT` | `0` | `ERROR` (`MISSING_REQUIRED_DATA`) | N/A (cardinality) | N/A |
+| `SUM` | `0` in the **declared** Asset domain of the aggregation | `ERROR` (`MISSING_REQUIRED_DATA`) | all terms same Asset unless declared conversion first | `ERROR` (`ARITHMETIC_ERROR`) |
+| `MIN` | `ERROR` (`ARITHMETIC_ERROR`) — no mathematically valid value / invalid numeric domain | `ERROR` (`MISSING_REQUIRED_DATA`) | same Asset domain | N/A |
+| `MAX` | `ERROR` (`ARITHMETIC_ERROR`) — no mathematically valid value / invalid numeric domain | `ERROR` (`MISSING_REQUIRED_DATA`) | same Asset domain | N/A |
 
 No silent sentinel monetary values for MIN/MAX empty sets.
 
 `SUM` of mixed Assets without conversion → `ERROR` (`INCOMPATIBLE_OPERANDS`).
+
+**Aggregation ERROR class note (TASK-05F):** empty `MIN`/`MAX` is always
+`ARITHMETIC_ERROR`, never an unspecified generic ERROR and never FAIL.
 
 ---
 
@@ -1167,7 +1176,7 @@ Empty / zero-cardinality selected domain after a valid range:
 * If the invariant selects “all records actually present within bounds” and
   none are present → empty selected domain (cardinality 0); subsequent
   quantifiers/aggregations apply §25A / §25B / §31F explicitly
-  (FOR_ALL→PASS, EXISTS→FAIL, COUNT→0, SUM→0, MIN/MAX→ERROR).
+  (FOR_ALL→PASS, EXISTS→FAIL, COUNT→0, SUM→0, MIN/MAX→ERROR(`ARITHMETIC_ERROR`)).
 * `start == end` is never an empty range by definition: it is a one-position
   range that either resolves to one record, missing-required, or (for
   present-only selection) empty if that position is not present and not
@@ -1705,7 +1714,7 @@ These concepts MUST NOT be collapsed:
 
 | Concept | Meaning | Typical result |
 | --- | --- | --- |
-| EMPTY DOMAIN | Collection present; cardinality 0 | FOR_ALL→PASS; EXISTS→FAIL; COUNT→0; SUM→0 (declared Asset); MIN/MAX→ERROR |
+| EMPTY DOMAIN | Collection present; cardinality 0 | FOR_ALL→PASS; EXISTS→FAIL; COUNT→0; SUM→0 (declared Asset); MIN/MAX→ERROR(`ARITHMETIC_ERROR`) |
 | MISSING REQUIRED DATA | Needed authoritative input absent | ERROR(`MISSING_REQUIRED_DATA`) |
 | ZERO VALUE | Explicit authoritative 0 | valid observation |
 | ABSENT ENTITY | Required entity not in target | ERROR(`MISSING_REQUIRED_DATA`) unless invariant declares absence semantics |
@@ -1838,18 +1847,19 @@ NONE identified
 
 ---
 
-## 38. Semantic closure status (TASK-05R4)
+## 38. Semantic closure / freeze status (TASK-05F)
 
 ```text
-SEMANTIC_CLOSURE: COMPLETE for Gate-2 PASS/FAIL/ERROR + ERROR-class determinism
-  including history range/span, 0-based ordinal index vs logical position,
-  reverse traversal, range+reverse order, total-order/duplicate keys
-TASK-05F: AUTHORIZED FOR INDEPENDENT FREEZE REVIEW only
-  (not auto-started; not claimed complete/frozen)
-IMPLEMENTATION: BLOCKED until freeze + explicit implementation task
-STATUS: READY_FOR_REVIEW
-NORMATIVE FREEZE: NOT FROZEN
-GATE 2: NOT CLOSED
+SEMANTIC_CLOSURE: COMPLETE (independent TASK-05F audit)
+FINAL_FREEZE_DECISION: FROZEN
+STATUS: FROZEN
+NORMATIVE FREEZE: FROZEN
+GATE 2: CLOSED
+IMPLEMENTATION: BLOCKED
+M02 implementation is NOT authorized by TASK-05F.
+A separate implementation task (TASK-06) is required.
+TASK-05F freeze correction applied:
+  empty MIN/MAX → ERROR(ARITHMETIC_ERROR) class made explicit
 ```
 
 ---
@@ -1857,10 +1867,11 @@ GATE 2: NOT CLOSED
 ## 39. Next step
 
 ```text
-TASK-05F — Economic Invariant Engine Specification Freeze
+TASK-06 — M02 Economic Invariant Engine Implementation
 ```
 
-Do not implement M02; do not start TASK-05F automatically.
+Do **not** start TASK-06 automatically. Explicit implementation authorization
+is required.
 
 ---
 
@@ -1870,7 +1881,9 @@ Do not implement M02; do not start TASK-05F automatically.
 | --- | --- |
 | Created by | TASK-05 |
 | Remediated by | TASK-05R, TASK-05R2, TASK-05R3, TASK-05R4 |
-| Status | READY_FOR_REVIEW |
-| Normative freeze | NOT FROZEN |
-| Implementation | BLOCKED |
+| Frozen by | TASK-05F |
+| Status | **FROZEN** |
+| Normative freeze | **FROZEN** |
+| Gate 2 | **CLOSED** |
+| Implementation | **BLOCKED** |
 | Module | M02 |
