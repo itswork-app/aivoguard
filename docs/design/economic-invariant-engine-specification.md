@@ -3,18 +3,18 @@
 | Field | Value |
 | --- | --- |
 | Document | `docs/design/economic-invariant-engine-specification.md` |
-| Task | TASK-05 / TASK-05R / TASK-05R2 / TASK-05R3 |
+| Task | TASK-05 / TASK-05R / TASK-05R2 / TASK-05R3 / TASK-05R4 |
 | Module | **M02 — Economic Invariant Engine** |
 | Gate | Gate 2 — Invariant Engine |
 | **STATUS** | **READY_FOR_REVIEW** |
 | Normative freeze | **NOT FROZEN** |
 | Implementation | **BLOCKED** |
-| Remediation | TASK-05R / TASK-05R2 / TASK-05R3 semantic closure |
+| Remediation | TASK-05R…R4 semantic closure |
 | Depends on | Product Scope (**FROZEN**); Domain Contract (**FROZEN**); Economic Kernel Specification (**FROZEN**); M01 implementation (TASK-04 **PASS**) |
 
-This document is the candidate normative specification for M02 after TASK-05R3
-final semantic closure. It does **not** authorize M02 implementation.
-Freeze requires explicit TASK-05F approval.
+This document is the candidate normative specification for M02 after TASK-05R4
+history range/index semantic closure. It does **not** authorize M02
+implementation. Freeze requires explicit TASK-05F approval.
 
 Related:
 
@@ -832,6 +832,8 @@ from M01 state), without inventing a sorting rule that changes economic meaning.
 ## 23. Ordering and history
 
 History/transition invariants use **authoritative logical ordering** only.
+Detailed range, ordinal-index, reverse, and total-order rules are normative in
+§26 (TASK-05R4).
 
 * Ordered authoritative history → evaluate.
 * History target type incompatible (e.g. State supplied) →
@@ -840,6 +842,7 @@ History/transition invariants use **authoritative logical ordering** only.
   `ERROR(MISSING_REQUIRED_DATA)`.
 * Never infer order from wall-clock, arrival, DB insertion, filesystem order,
   or thread scheduling.
+* Ordinal index ≠ logical position (§26).
 
 ---
 
@@ -1001,14 +1004,29 @@ Conceptual traversal operations:
 ```text
 ordered iteration (forward)
 ordered iteration (reverse)
-position / indexed access (by authoritative logical position)
-range/span selection
+logical-position access (by authoritative logical position key)
+ordinal indexed access (by 0-based traversal ordinal; §26 indexed access)
+range/span selection (inclusive logical range; §26 range/span)
 relationship/order inspection
 ```
 
 **Required authoritative ordering:** history must carry World/M01-authoritative
 logical order keys. M02 MUST consume that order; it MUST NOT manufacture
 economic history or silently repair/sort using implementation-specific order.
+
+Any history operation whose semantics depend on sequence order MUST require a
+deterministic **total traversal order**. This includes at minimum: forward
+traversal, reverse traversal, ordinal indexed access, range/span traversal,
+before/after relationship checks, and position-dependent evaluation.
+
+If authoritative history does not provide enough information to establish the
+required deterministic order → `ERROR(MISSING_REQUIRED_DATA)`.
+
+Do **not** silently: sort by implementation order, arrival time, timestamp,
+database insertion, filesystem order, HashMap iteration, or invent a secondary
+key. If the World/invariant **explicitly** declares an authoritative tie-break
+key, that declared key may be used. Otherwise duplicate ordering keys where a
+total order is required → `ERROR(MISSING_REQUIRED_DATA)`.
 
 ### Completeness for required domain (TASK-05R3)
 
@@ -1044,7 +1062,8 @@ Required history record exists but its required ordering key is absent.
 → ERROR(MISSING_REQUIRED_DATA)
 
 E:
-Duplicate logical ordering keys where a total order is required.
+Duplicate logical ordering keys where a total order is required
+(and no declared authoritative tie-break).
 → ERROR(MISSING_REQUIRED_DATA)
 ```
 
@@ -1083,20 +1102,216 @@ empty authoritative history domain (compatible, ordered, present, empty)
 Never infer history ordering from wall clock, arrival time, database insertion
 order, filesystem order, thread scheduling, or HashMap iteration.
 
-Traversal is **read-only**.
+Traversal is **read-only**. Reverse traversal MUST NOT mutate or rewrite
+authoritative history. The authoritative logical order remains unchanged; only
+traversal direction / traversal ordinals change.
 
-### Range / span semantics
+### Range / span semantics (TASK-05R4)
 
-If an invariant requests a history span:
+Normative inclusive logical range — **exactly one** convention:
 
-* `start <= end` must be valid under authoritative logical ordering.
-* Invalid range binding → `ERROR(INVALID_INVARIANT_DEFINITION)`.
-* Missing records required by the declared range →
-  `ERROR(MISSING_REQUIRED_DATA)`.
-* Contiguity inside the span is required only when World/invariant explicitly
-  declares contiguous logical positions (§26 completeness examples A/C).
-* Do not silently shrink the range.
-* Do not silently skip missing records that the invariant requires.
+```text
+range(start, end)  ≡  start <= logical_position <= end
+```
+
+Both `start` and `end` are inclusive under the authoritative logical ordering.
+Inclusive/exclusive behavior is **not** configurable unless the invariant’s
+structured definition itself explicitly declares a different Gate-2-supported
+bound mode; absent such declaration, inclusive-inclusive applies.
+
+Start/end rules:
+
+```text
+start < end  → valid multi-position range
+start == end → valid single-position range (cardinality 1 if that position
+               exists in the selected domain / is required and present)
+start > end  → ERROR(INVALID_INVARIANT_DEFINITION)
+```
+
+Range binding / classification (deterministic; no alternatives):
+
+```text
+malformed range syntax/binding
+→ INVALID_INVARIANT_DEFINITION
+
+well-formed range but start > end
+→ INVALID_INVARIANT_DEFINITION
+
+target is not History
+→ INCOMPATIBLE_TARGET
+
+valid range against compatible History target
+→ select records whose authoritative logical_position ∈ [start, end]
+
+declared required range + explicitly required record absent
+→ MISSING_REQUIRED_DATA
+  (do not silently shrink the range)
+
+sparse supplied history + no declared contiguity/range requirement
+→ not automatically missing (§26 completeness B; TASK-05R3 preserved)
+```
+
+Missing-record example (declared required range):
+
+```text
+requested range: 10..20 inclusive
+present: 10,11,12,14,...,20
+record 13 missing (and required by the declared contiguous/required range)
+→ ERROR(MISSING_REQUIRED_DATA)
+```
+
+Empty / zero-cardinality selected domain after a valid range:
+
+* If the invariant declares a required range and no required records exist for
+  that range → `ERROR(MISSING_REQUIRED_DATA)` (do not treat as empty PASS).
+* If the invariant selects “all records actually present within bounds” and
+  none are present → empty selected domain (cardinality 0); subsequent
+  quantifiers/aggregations apply §25A / §25B / §31F explicitly
+  (FOR_ALL→PASS, EXISTS→FAIL, COUNT→0, SUM→0, MIN/MAX→ERROR).
+* `start == end` is never an empty range by definition: it is a one-position
+  range that either resolves to one record, missing-required, or (for
+  present-only selection) empty if that position is not present and not
+  required.
+
+### Indexed access semantics (TASK-05R4)
+
+**Ordinal index is 0-based.** This is normative for Gate-2 conceptual indexed
+access:
+
+```text
+index 0 → first element of the selected traversal domain
+index 1 → second element
+…
+```
+
+**Ordinal index ≠ authoritative logical position.**
+
+```text
+history logical positions = 10, 20, 30
+
+ordinal indexes (forward):
+0 → logical position 10
+1 → logical position 20
+2 → logical position 30
+```
+
+Therefore `index 10` does **not** mean logical position 10 unless an explicit
+logical-position access operation is used. Likewise logical position 10 does
+**not** imply ordinal index 10.
+
+Distinguish:
+
+```text
+authoritative logical position  — World/M01 order key on the record
+traversal ordinal (index)       — 0-based position in the directed traversal
+                                  of the selected domain
+```
+
+Index binding / classification (deterministic; no alternatives):
+
+```text
+malformed index expression/binding
+→ INVALID_INVARIANT_DEFINITION
+
+target is not a compatible History domain
+→ INCOMPATIBLE_TARGET
+
+indexed operation outside Gate-2 supported operations
+→ UNSUPPORTED_OPERATION
+
+valid index within selected domain
+→ resolve that record
+
+index < 0
+→ INVALID_INVARIANT_DEFINITION
+  (even if a host language uses unsigned indexes; a negative index in the
+   invariant definition is malformed)
+
+index >= domain cardinality
+→ MISSING_REQUIRED_DATA
+```
+
+Out-of-range index is **never** `FAIL`. Absent required indexed record is
+missing authoritative data, not an observed property violation.
+
+Do **not** classify the same valid indexed-access condition as either
+`INVALID_INVARIANT_DEFINITION` or `INCOMPATIBLE_OPERANDS` interchangeably.
+
+### Reverse traversal and ordinal indexes (TASK-05R4)
+
+```text
+forward:
+index 0 → first record in authoritative logical order (within selected domain)
+
+reverse:
+index 0 → last record in authoritative logical order (within selected domain)
+index 1 → second-to-last
+…
+```
+
+Reverse does not rewrite authoritative logical positions; only traversal
+ordinals change.
+
+### Range + reverse interaction (TASK-05R4)
+
+Deterministic evaluation order:
+
+```text
+1. Resolve the range using authoritative logical ordering.
+2. Select the records belonging to that range.
+3. Apply traversal direction (forward | reverse).
+4. Apply ordinal indexing, if requested.
+```
+
+Example:
+
+```text
+authoritative history: 10,11,12,13,14
+range 11..13 inclusive
+→ selected domain: 11,12,13
+
+forward: 11,12,13
+reverse: 13,12,11
+```
+
+Implementations MUST NOT reinterpret the range bounds themselves under reverse
+traversal.
+
+### Normative history examples (TASK-05R4)
+
+```text
+A — sparse history without contiguity
+History logical positions = 10, 20, 30
+Invariant: traverse all supplied history records
+→ valid ordered domain (not missing)
+
+B — explicit range of present required positions
+Requested range 10..30 inclusive; required present positions 10,20,30
+→ valid
+
+C — missing required record inside declared range
+Requested range 10..30 inclusive; required logical position 20; actual 10,30
+→ ERROR(MISSING_REQUIRED_DATA)
+
+D — ordinal index (forward)
+History 10,20,30
+index 0 → logical 10
+index 2 → logical 30
+
+E — reverse ordinal index
+History 10,20,30
+reverse index 0 → logical 30
+reverse index 2 → logical 10
+
+F — out of range ordinal
+History cardinality = 3
+index 3 → ERROR(MISSING_REQUIRED_DATA)
+
+G — duplicate ordering key
+two required records share identical logical ordering keys
++ no authoritative tie-breaker
+→ ERROR(MISSING_REQUIRED_DATA)
+```
 
 ---
 
@@ -1623,15 +1838,14 @@ NONE identified
 
 ---
 
-## 38. Semantic closure status (TASK-05R3)
+## 38. Semantic closure status (TASK-05R4)
 
 ```text
 SEMANTIC_CLOSURE: COMPLETE for Gate-2 PASS/FAIL/ERROR + ERROR-class determinism
-  (deterministic 8-class taxonomy; domain binding; relationship classes;
-   World vs Gate-2 unsupported refs; history completeness vs contiguity;
-   applicability vs missing data)
-TASK-05F: AUTHORIZED for independent freeze review only (not auto-started;
-  not claimed complete/frozen)
+  including history range/span, 0-based ordinal index vs logical position,
+  reverse traversal, range+reverse order, total-order/duplicate keys
+TASK-05F: AUTHORIZED FOR INDEPENDENT FREEZE REVIEW only
+  (not auto-started; not claimed complete/frozen)
 IMPLEMENTATION: BLOCKED until freeze + explicit implementation task
 STATUS: READY_FOR_REVIEW
 NORMATIVE FREEZE: NOT FROZEN
@@ -1655,7 +1869,7 @@ Do not implement M02; do not start TASK-05F automatically.
 | Item | Value |
 | --- | --- |
 | Created by | TASK-05 |
-| Remediated by | TASK-05R, TASK-05R2, TASK-05R3 |
+| Remediated by | TASK-05R, TASK-05R2, TASK-05R3, TASK-05R4 |
 | Status | READY_FOR_REVIEW |
 | Normative freeze | NOT FROZEN |
 | Implementation | BLOCKED |
