@@ -31,6 +31,10 @@ once releases begin.
 * M03 specification frozen after TASK-07 / TASK-07R remediation and TASK-07F
   independent Gate-3 freeze audit.
 * M03 deterministic simulator implemented (TASK-08).
+* M03 scheduling / stop-condition remediation (TASK-08R).
+* TASK-08F independent M03 implementation audit — **PASS**.
+* TASK-09 Gate-3 closure: M03 implementation baseline `c4ce9bb`; M01/M02/M03
+  recorded as Implemented / **PASS**; Gates 0–3 **CLOSED**.
 
 ### Deprecated
 
