@@ -5,6 +5,7 @@
 //! * Gate-3 **M03 Deterministic Simulator** — [`simulator`] (orchestration)
 //! * Gate-4 **M04 Adversarial Scenario Engine** — [`adversarial`] (scenario generation)
 //! * Gate-5 **M06 Economic Regression Engine** — [`regression`] (expectation comparison)
+//! * Gate-6 **M07 Payment & Settlement Testing** — [`payment_settlement`] (types foundation)
 
 #![forbid(unsafe_code)]
 #![warn(missing_docs)]
@@ -12,6 +13,7 @@
 pub mod adversarial;
 pub mod invariant;
 pub mod kernel;
+pub mod payment_settlement;
 pub mod regression;
 pub mod simulator;
 
@@ -46,6 +48,22 @@ pub use kernel::{
     EconomicState, EconomicWorld, Evidence, ExecutionContext, FacetId, FeeRule, KernelError,
     KernelErrorKind, KernelOutcome, Money, Price, PriceCategory, PriceId, RoundingMode,
     StateEffect, Transaction, TransferRule, ENGINE_VERSION,
+};
+pub use payment_settlement::{
+    adapt_settlement_observation, compose_m06, evaluate_payment_settlement, is_valid_status_phase,
+    m06_verdict_label, validate_case_observation_binding, validate_case_scenario_binding,
+    validate_engine_pins, validate_expectation_set, validate_payment_settlement_case,
+    validate_requested_amount_case_binding, validate_scenario_binding,
+    validate_settlement_observation, validate_status_phase, AdapterProvenance,
+    ComparisonOperator as PaymentComparisonOperator, EscrowStatus,
+    ExternalPaymentSettlementObservation, FeeDeclaration, FeeMode, FeeTiming, M06Binding,
+    M06ComposeOutcome, M07EnginePins, PaymentDeclaration, PaymentMismatchEvidence,
+    PaymentScenarioBinding, PaymentSettlementBinding, PaymentSettlementCase,
+    PaymentSettlementError, PaymentSettlementErrorId, PaymentSettlementProvenance,
+    PaymentSettlementResult, PaymentSettlementVerdict, RefundOutcome, SemanticSettlementAdapter,
+    SettlementDeclaration, SettlementExecutionState, SettlementExpectation,
+    SettlementExpectationClass, SettlementObservation, SettlementObservationAdapter,
+    SettlementPhase, SettlementStatus,
 };
 pub use regression::{
     compare_absolute_tolerance, evaluate_regression, ComparisonOperator, EnginePins, Expectation,

@@ -118,9 +118,12 @@ Conceptual layers (dependency flows **downward**):
 
 ```text
 INTERFACES          CLI / SDK / HTTP / language bindings (future; not frozen)
-ADAPTERS            M07 / M08 external translation (future)
+ADAPTERS            M07 payment/settlement testing + semantic adapter boundary
+                    (IMPLEMENTED / FROZEN_FOR_CURRENT_SCOPE; Gate 6);
+                    M08 x402 external translation (future)
 ORCHESTRATION       M03 simulator (IMPLEMENTED / PASS; Gate 3 CLOSED); M09 multi-agent (future)
-EVALUATION          M02 invariants (IMPLEMENTED / PASS; Gate 2 CLOSED); M06 regression (future)
+EVALUATION          M02 invariants (IMPLEMENTED / PASS; Gate 2 CLOSED);
+                    M06 regression (IMPLEMENTED; Gate 5 CLOSED)
 ECONOMIC AUTHORITY  M01 kernel (IMPLEMENTED / PASS; Gate 1 CLOSED)
 DOMAIN              World / State / Action / Asset / Money primitives (in M01)
 ```
@@ -137,11 +140,15 @@ Prefer **one crate** with clear modules over premature multi-crate splits:
 crates/aivoguard/
   src/
     lib.rs
-    kernel/     ← ECONOMIC AUTHORITY + DOMAIN (M01)
-    invariant/  ← EVALUATION (M02; read-only)
-    simulator/  ← ORCHESTRATION (M03; sequential; read-only over M01/M02)
-    # future seams (NOT created):
-    # adversarial/ chaos/ regression/ adapters/ …
+    kernel/              ← ECONOMIC AUTHORITY + DOMAIN (M01)
+    invariant/           ← EVALUATION (M02; read-only)
+    simulator/           ← ORCHESTRATION (M03; sequential; read-only over M01/M02)
+    adversarial/         ← M04 adversarial scenario generation (IMPLEMENTED)
+    regression/          ← M06 expectation comparison (IMPLEMENTED)
+    payment_settlement/  ← M07 payment/settlement testing + semantic adapter
+                           (IMPLEMENTED / FROZEN_FOR_CURRENT_SCOPE)
+    # future seams (NOT created as product modules):
+    # chaos/ x402 provider adapters / multi-agent …
 ```
 
 Additional crates are authorized only when a frozen specification and explicit
@@ -240,12 +247,12 @@ own economic truth (M01), invariant evaluation (M02), or simulation sequencing
 Economic fault-injection perturbations per future specs. Distinct from M04.
 Neither silently alters authoritative economic semantics. No detailed APIs here.
 
-### M06 — Regression (**FROZEN** specification; not implemented)
+### M06 — Regression (**FROZEN** specification; IMPLEMENTED)
 
 Compares declared expectations against authoritative outputs per
 [`docs/design/economic-regression-engine-specification.md`](../design/economic-regression-engine-specification.md)
-(**FROZEN**, Gate 5 **CLOSED**, TASK-19; audit TASK-18). Implementation
-**BLOCKED**.
+(**FROZEN**, Gate 5 **CLOSED**, TASK-19; audit TASK-18). Implementation under
+`crates/aivoguard/src/regression/`.
 
 ```text
 Economic Truth ≠ Invariant Evaluation ≠ Test Expectation
@@ -255,14 +262,49 @@ A regression mismatch is not automatically an invariant violation.
 M06 is not an economic authority. DC-13 remains formally OPEN in the Domain
 Contract; M06 freeze does not close DC-13.
 
-### M07 / M08 — Payment / x402 adapters (BOUNDARY ONLY)
+### M07 — Payment & Settlement Testing (**IMPLEMENTED** / **FROZEN_FOR_CURRENT_SCOPE**)
+
+Specification:
+[`docs/design/payment-settlement-testing-specification.md`](../design/payment-settlement-testing-specification.md)
+(**FROZEN** @ `b7d1874`; Gate 6). Implementation under
+`crates/aivoguard/src/payment_settlement/` (TASK-38…41 core; TASK-43 semantic
+adapter; audits TASK-42 / TASK-44 **PASS**; freeze evidence TASK-45).
+
+Owns (testing layer only):
+
+* PaymentSettlementCase / declarations / SettlementObservation / result
+* status↔phase matrix, R/O/A field matrix, Settled / PartiallySettled invariants
+* amount-domain and fee semantics, closed settlement expectations
+* deterministic evaluation, mismatch/ERROR dominance, binding, engine pins
+* M06 composition (**consume-only**)
+* semantic external-observation adapter boundary (no provider I/O)
+
+```text
+External semantic observation
+        ↓
+M07 semantic adapter
+        ↓
+SettlementObservation
+        ↓
+M07 validation / evaluation
+```
+
+Does **not** own: M01 economic truth, M02 invariants, M03 simulation, M04
+generation, M06 expectation engine internals, provider payment execution,
+HTTP/RPC/webhook/DB, or a frozen external wire format (**AD-14 OPEN**).
+
+Provider-specific integrations remain **NOT AUTHORIZED**. Open decisions
+AD-03 / AD-12 / AD-14 / AD-15, DC-06 / DC-09 / DC-13, OD-07, M06-OD-*, and
+M07-OD-* remain **OPEN**.
+
+### M08 — x402 adapters (BOUNDARY ONLY)
 
 ```text
 External System → Adapter / Translator → AivoGuard authoritative model
 ```
 
 Adapters translate; they must not inject external behavior into the
-deterministic kernel. No implementation in this task.
+deterministic kernel. No M08 implementation in this baseline.
 
 ### M09 — Multi-Agent World (BOUNDARY ONLY)
 
@@ -274,11 +316,12 @@ through M01. Does not replace M01. No detailed multi-agent APIs here.
 ## 6. Dependency direction
 
 ```text
-Interfaces / CLI / adapters
+Interfaces / CLI / provider adapters (future)
           ↓
 Orchestration (M03 / M09)
           ↓
-Evaluation (M02) / regression (M06)
+Evaluation (M02) / regression (M06) /
+payment-settlement testing (M07; semantic adapter boundary)
           ↓
 Economic authority (M01)
           ↓
@@ -300,8 +343,9 @@ M03 → M01 (required); M02 optional when invariant evaluation is requested
 M04 → scenario / economic interfaces
 M05 → simulation / test interfaces
 M06 → M01 outputs; optionally M02 / M03 outputs
-M07 → external integration boundary
-M08 → x402 integration boundary
+M07 → payment/settlement testing; consumes M06; semantic adapter boundary
+      (not provider truth; not wire protocol)
+M08 → x402 integration boundary (future)
 M09 → M01 + agent / world composition
 ```
 
@@ -375,7 +419,10 @@ No hidden state between stages. Reporting is not a second economic authority.
 | PASS / FAIL / ERROR (invariants) | M02 |
 | Scenario | M03 / scenario layer |
 | Regression expectation | M06 |
-| External translation | M07 / M08 adapters |
+| Payment/settlement testing observation & expectations | M07 |
+| External semantic adapter mapping (non-authority) | M07 |
+| External provider wire / production payment execution | NOT AUTHORIZED (AD-14 / DC-09 OPEN) |
+| External translation (x402) | M08 |
 | Multi-agent composition | M09 |
 
 Alignment check: matches Product Scope module boundaries and Domain Contract
@@ -393,7 +440,8 @@ specification (Gate 2 **CLOSED**).
 | M03 | Holds simulation state only by invoking authoritative transitions |
 | M04 / M05 | Inputs / perturbations only — not economic truth |
 | M06 | Read / compare |
-| Adapters | Translate |
+| M07 | Read / validate / evaluate settlement observations; no payment execution |
+| Provider / wire adapters | NOT AUTHORIZED (AD-14 OPEN); translate only when separately authorized |
 
 Prefer immutable / read-only views for M02 inputs. M02 consumes M01
 authoritative records (`EconomicWorld`, `EconomicState`, `Transaction`,
@@ -490,7 +538,9 @@ Architecture remains compatible with, and does **not** decide:
 | Plugin / adapter architecture (product OD-08) | OPEN |
 | Language bindings | OPEN |
 | Multi-crate split beyond `aivoguard` | OPEN until a frozen spec requires it |
-| M03–M09 detailed APIs / serialization | Deferred; M03 execution semantics FROZEN and implemented (TASK-08); public API/serialization remain open |
+| M03–M09 detailed APIs / serialization | Deferred where not frozen; M03/M06/M07 testing surfaces implemented for authorized scope; M07 provider wire (AD-14) and public product APIs remain OPEN |
+| AD-14 external payment/settlement wire format | OPEN |
+| M07-OD-01 / M07-OD-02 / M07-OD-03 | OPEN |
 
 ---
 
@@ -499,7 +549,8 @@ Architecture remains compatible with, and does **not** decide:
 ### CURRENT
 
 * Single crate `aivoguard` with `kernel` (M01), `invariant` (M02),
-  `simulator` (M03), and `adversarial` (M04)
+  `simulator` (M03), `adversarial` (M04), `regression` (M06), and
+  `payment_settlement` (M07)
 * Frozen Product Scope, Domain Contract, Economic Kernel Specification
 * M02 specification: **FROZEN** (Gate 2 **CLOSED**); implemented / **PASS**
   (TASK-06 / TASK-06R)
@@ -508,8 +559,13 @@ Architecture remains compatible with, and does **not** decide:
 * M04 specification: **FROZEN** (Gate 4 **CLOSED**); implemented (TASK-11;
   authorized TASK-10H)
 * M06 specification: **FROZEN** (Gate 5 **CLOSED**; TASK-19; audit TASK-18);
-  implementation **BLOCKED**
-* M05 / M07–M09: product boundaries only; no code
+  implemented under `src/regression/`
+* M07 specification: **FROZEN** (Gate 6; @ `b7d1874`); **IMPLEMENTED** /
+  **FROZEN_FOR_CURRENT_SCOPE** (core TASK-38…41; semantic adapter TASK-43;
+  audits TASK-42 / TASK-44 **PASS**; freeze evidence TASK-45)
+* M07 provider integrations and external wire formats: **NOT AUTHORIZED**
+  (**AD-14 OPEN**)
+* M05 / M08 / M09: product boundaries only; no code
 * No network/DB/LLM in the authoritative core
 
 ### TARGET (conceptual)
@@ -522,8 +578,11 @@ Architecture remains compatible with, and does **not** decide:
 * M03 as a read-only orchestration module under `crates/aivoguard/src/simulator/`
   (implemented; packaging remains an implementation decision)
 * M04 as specified by frozen Gate-4 contract (**FROZEN**; implemented TASK-11)
-* M05–M09 as specified by future frozen gates
-* Interfaces and adapters outside the economic core
+* M06 as specified by frozen Gate-5 contract (**FROZEN**; implemented)
+* M07 as specified by frozen Gate-6 contract (**FROZEN**; implemented for
+  current authorized scope; provider/wire require separate authorization)
+* M05 / M08 / M09 as specified by future frozen gates
+* Interfaces and provider adapters outside the economic core
 
 ---
 
@@ -536,8 +595,8 @@ Architecture remains compatible with, and does **not** decide:
 | M03 | Frozen | Defined | Implemented / **PASS** | Gate 3 **CLOSED** / TASK-08 / TASK-08R / TASK-08F / TASK-09 |
 | M04 | **FROZEN** | Defined | **IMPLEMENTED** (TASK-11) | Gate 4 **CLOSED** / TASK-10G / TASK-10H |
 | M05 | Future | Boundary only | Not implemented | Future |
-| M06 | **FROZEN** | Defined | Not implemented (**BLOCKED**) | Gate 5 **CLOSED** / TASK-19 (audit TASK-18) |
-| M07 | Future | Boundary only | Not implemented | Future |
+| M06 | **FROZEN** | Defined | **IMPLEMENTED** | Gate 5 **CLOSED** / TASK-19 (audit TASK-18) |
+| M07 | **FROZEN** | Defined | **IMPLEMENTED** / **FROZEN_FOR_CURRENT_SCOPE** (semantic adapter; no provider/wire) | Gate 6 / TASK-45 (audits TASK-42 / TASK-44) |
 | M08 | Future | Boundary only | Not implemented | Future |
 | M09 | Future | Boundary only | Not implemented | Future |
 
@@ -547,7 +606,7 @@ Architecture remains compatible with, and does **not** decide:
 
 | # | Criterion | Status |
 | --- | --- | --- |
-| 1 | Every current implemented responsibility has an owner | PASS (M01/kernel; M02/invariant; M03/simulator; M04/adversarial) |
+| 1 | Every current implemented responsibility has an owner | PASS (M01/kernel; M02/invariant; M03/simulator; M04/adversarial; M06/regression; M07/payment_settlement) |
 | 2 | Every frozen domain responsibility has an architectural home | PASS |
 | 3 | M01 authority unambiguous | PASS |
 | 4 | M02 authority unambiguous | PASS |
@@ -574,4 +633,5 @@ Architecture remains compatible with, and does **not** decide:
 | M03 implementation baseline | `c4ce9bb` |
 | Normative economic semantics | **None** (architecture only) |
 | ADR created by this task | **None** (no new implementation decision) |
-| Next | M06 implementation authorization when separately authorized; M05/M07+ remain future |
+| M07 architecture sync | TASK-46 — baseline status synchronized to IMPLEMENTED / FROZEN_FOR_CURRENT_SCOPE |
+| Next | Provider/wire/open-decision work requires separate authorization; M05/M08/M09 remain future |
