@@ -510,18 +510,24 @@ network order. If the domain has no deterministic authoritative ordering →
 **ERROR precedence over incomplete FAIL:**
 
 If any **required** subdomain cannot be evaluated (`ERROR` cause), the overall
-invariant result is `ERROR`. Do **not** report a complete `FAIL` while omitting
-unevaluable required subdomains.
+invariant result is `ERROR`. A retained Violation MUST NOT hide an ERROR.
+Do **not** report overall `FAIL` while any required subdomain ERRORed.
 
-Example:
+Normative scenarios (`first-only`, ordered accounts `1..10`):
 
-```text
-10 accounts; account 3 violates; account 7 missing required data
-→ overall ERROR (MISSING_REQUIRED_DATA)
-  (may attach diagnostic context for account 3; result remains ERROR)
-```
+| Situation | Overall | Retained Violations |
+| --- | --- | --- |
+| Account 3 violates; account 7 missing required data | `ERROR(MISSING_REQUIRED_DATA)` | may record diagnostic for account 3; **not** a complete FAIL |
+| Accounts 3 and 7 violate; no ERROR | `FAIL` | only account 3 Violation |
+| Accounts 3 and 7 both missing required data | `ERROR` | none (errors are not Violations); class via §21 precedence among discovered errors |
+| Account 2 missing required data; account 5 violates | `ERROR` | Violation may be observed diagnostically; overall remains ERROR |
+| Account 5 violates; later account 8 missing required data | `ERROR` | first Violation (account 5) may be diagnostic; overall ERROR |
 
 Evaluation errors are **not** converted into Violations.
+
+When multiple ERROR causes are discovered in the required domain, select the
+reported class by §21 precedence among causes **actually discovered** — do not
+manufacture higher-precedence causes.
 
 ---
 
@@ -918,11 +924,22 @@ History
 Conceptual traversal operations:
 
 ```text
-ordered iteration
-position access
+ordered iteration (forward)
+ordered iteration (reverse)
+position / indexed access (by authoritative logical position)
 range/span selection
 relationship/order inspection
 ```
+
+**Required authoritative ordering:** history must carry World/M01-authoritative
+logical order keys. M02 MUST consume that order; it MUST NOT manufacture
+economic history or silently repair/sort using implementation-specific order.
+
+Traversal membership is whatever the invariant’s structured definition
+**explicitly selects** (e.g. all transitions, only transactions, only selected
+target kinds). Filtering is declared by the invariant — not inferred by M02.
+If the invariant does not declare a filter, traverse the full authoritative
+history domain provided as the target.
 
 Rules:
 
@@ -933,12 +950,25 @@ authoritative + ordered + complete for required domain
 compatible History target; required record/order absent
 → ERROR(MISSING_REQUIRED_DATA)
 
+duplicate logical order keys within required domain
+→ ERROR(MISSING_REQUIRED_DATA)
+  (ordering data is not a valid total order for evaluation)
+
+unordered / non-deterministic history presented as History
+→ ERROR(MISSING_REQUIRED_DATA)
+  (never silently sort)
+
 supplied target is not a History target
 → ERROR(INCOMPATIBLE_TARGET)
+
+empty authoritative history domain (compatible, ordered, present, empty)
+→ empty domain for quantification/aggregation (§25A / §25B / §31F)
 ```
 
 Never infer history ordering from wall clock, arrival time, database insertion
-order, filesystem order, or thread scheduling.
+order, filesystem order, thread scheduling, or HashMap iteration.
+
+Traversal is **read-only**.
 
 ### Range / span semantics
 
@@ -1099,15 +1129,30 @@ Balance facet
 other explicitly authoritative state component
 ```
 
-Lookup outcomes:
+A **valid state reference** is a structured binding that names a component
+allowed by the invariant definition and resolvable against the authoritative
+evaluation target (§9 / lookup scope below). Lookup is **read-only**: it MUST
+NEVER create, normalize, repair, or mutate authoritative state.
 
-| Outcome | Result |
-| --- | --- |
-| Found authoritative value | continue |
-| Explicit zero | valid value; **not** missing |
-| Missing required component | `ERROR(MISSING_REQUIRED_DATA)` |
-| Invalid/malformed lookup binding | `ERROR(INVALID_INVARIANT_DEFINITION)` or configuration error where appropriate |
-| Unrelated Asset without declared relationship | `ERROR(INCOMPATIBLE_OPERANDS)` or configuration error |
+#### Zero vs absent vs missing facet
+
+| Situation | Classification | Result |
+| --- | --- | --- |
+| Referenced entity/component exists; observed value is explicit zero | ZERO VALUE | continue (zero is a valid observation) |
+| Account/asset exists; balance quantity is explicit `0` in declared facet | ZERO VALUE | continue |
+| Required entity (account/actor/asset/…) not present in authoritative target | ABSENT ENTITY | `ERROR(MISSING_REQUIRED_DATA)` |
+| Entity exists; required balance facet not present | ABSENT FACET | `ERROR(MISSING_REQUIRED_DATA)` |
+| Required collection present but empty | EMPTY DOMAIN | apply §25A / §25B / §31F (not “missing”) |
+| Malformed / unbound lookup identifier in the invariant definition | INVALID REFERENCE | `ERROR(INVALID_INVARIANT_DEFINITION)` |
+| Well-formed reference to a kind not present in this World’s declared model | UNSUPPORTED REFERENCE | `ERROR(INVALID_INVARIANT_CONFIGURATION)` or `UNSUPPORTED_OPERATION` per declared binding |
+| Unrelated Asset without declared relationship/conversion | INCOMPATIBLE OPERANDS | `ERROR(INCOMPATIBLE_OPERANDS)` |
+
+**World-declared absence:** if a World/invariant **explicitly** declares that
+absence of a named entity is a legitimate observed value for that invariant
+(e.g. absence means “no such account” as a boolean observation), then treat
+that declared absence semantics as the observation — do **not** invent a
+universal default. If absence is required data and no such declaration exists →
+`ERROR(MISSING_REQUIRED_DATA)`.
 
 Prohibited silent conversions:
 
@@ -1115,6 +1160,7 @@ Prohibited silent conversions:
 missing account → zero balance
 missing asset → zero
 missing facet → zero
+absent entity → FAIL (unless invariant explicitly defines absence as false)
 ```
 
 **Lookup scope** resolves only against the authoritative target:
@@ -1136,6 +1182,11 @@ Do not invent hidden state snapshots.
 
 ### 31B. Transition lookup semantics (TASK-05R2)
 
+A **valid transition reference** binds to an authoritative M01 transition
+record identified by the invariant’s declared identity (e.g. logical
+transition id / transaction correlation as provided by the authoritative
+target). M02 does not invent transition ids.
+
 A transition consists conceptually of the authoritative:
 
 ```text
@@ -1145,14 +1196,25 @@ StateAfter
 Disposition (where explicitly relevant)
 ```
 
-Lookup outcomes:
+Lookup is **read-only**.
 
-| Outcome | Result |
-| --- | --- |
-| Valid component lookup | continue |
-| Required transition component absent | `ERROR(MISSING_REQUIRED_DATA)` |
-| Transition invariant bound to non-transition target | `ERROR(INCOMPATIBLE_TARGET)` |
-| Invalid invariant reference to a transition component | `ERROR(INVALID_INVARIANT_DEFINITION)` |
+| Situation | Classification | Result |
+| --- | --- | --- |
+| Transition exists; all required components present | found | continue |
+| Transition exists; effects collection empty (zero effects) | ZERO / EMPTY EFFECTS | continue — **not** missing transition |
+| Transition exists; a required named component/field absent | ABSENT COMPONENT | `ERROR(MISSING_REQUIRED_DATA)` |
+| Required transition not present in target | ABSENT ENTITY | `ERROR(MISSING_REQUIRED_DATA)` |
+| Transition invariant bound to non-transition target | target kind mismatch | `ERROR(INCOMPATIBLE_TARGET)` |
+| Malformed transition component binding | INVALID REFERENCE | `ERROR(INVALID_INVARIANT_DEFINITION)` |
+
+**Disposition observation:** M02 may observe `AcceptedEffective`, `Rejected`,
+and `FailedEconomic` transition records when they are present in the
+authoritative target. Respect M01:
+
+* zero-effect `AcceptedEffective` is a valid transition
+* `Rejected` / `FailedEconomic` may have zero effects unless World semantics
+  declare otherwise
+* absence of an effect MUST NOT imply absence of the transition
 
 M02 must **NOT**:
 
@@ -1163,26 +1225,39 @@ M02 consumes authoritative M01 transition data only.
 
 ### 31C. Relationship checking semantics (TASK-05R2)
 
-Relationship checking evaluates a **declared** relation between authoritative
-values/entities/records. Examples:
+A **relationship** is a declared predicate relating authoritative
+values/entities/records. Relationships are **not** a generic graph engine.
+
+Origins:
 
 ```text
-transaction actor == account owner
-event.transaction_id == transition.transaction_id
-StateBefore balance relates to StateAfter balance
-  through declared authoritative effects
+intrinsic identity/equality over authoritative identifiers
+    (e.g. same transaction_id)
+World-declared / invariant-declared relations
+    (e.g. actor owns account; effect links StateBefore→StateAfter)
 ```
 
-| Situation | Result |
-| --- | --- |
-| Relationship exists and satisfies relation | contribute toward `PASS` |
-| Relationship exists but violates relation | `FAIL` + Violation |
-| Required relationship/reference absent | `ERROR(MISSING_REQUIRED_DATA)` |
-| Relationship operands incompatible | `ERROR(INCOMPATIBLE_OPERANDS)` |
-| Relationship expression malformed | `ERROR(INVALID_INVARIANT_DEFINITION)` |
+Unsupported undeclared relationship kinds →
+`ERROR(UNSUPPORTED_OPERATION)` or `ERROR(INVALID_INVARIANT_DEFINITION)`
+(definition problem vs unsupported op per §21 precedence when both could apply).
 
-Do not silently interpret missing relationship as false unless the invariant
-explicitly defines absence as the observed value.
+Operands must be resolvable authoritative lookups (§31A / §31B) or literal
+constants allowed by the invariant definition. Cross actor/account/asset
+relationships are allowed **only** when the invariant/World explicitly
+declares that relation; otherwise `ERROR(INCOMPATIBLE_OPERANDS)` or
+`UNSUPPORTED_OPERATION`.
+
+| Situation | Classification | Result |
+| --- | --- | --- |
+| Relationship exists and satisfies relation | exists + holds | contribute toward `PASS` |
+| Relationship exists but violates relation | exists + fails | `FAIL` + Violation |
+| Relationship declared; required endpoint/reference absent | unknown / missing | `ERROR(MISSING_REQUIRED_DATA)` |
+| Relationship declared absent as an explicit observation | declared non-existence | evaluate per invariant (may be PASS or FAIL); **not** missing-data ERROR |
+| Relationship operands incompatible | incompatible | `ERROR(INCOMPATIBLE_OPERANDS)` |
+| Relationship expression malformed | invalid | `ERROR(INVALID_INVARIANT_DEFINITION)` |
+
+Do not silently interpret missing relationship data as false unless the
+invariant explicitly defines absence as the observed value.
 
 ```text
 missing data ≠ observed violation
@@ -1239,6 +1314,44 @@ Where applicability is `NotApplicable`, the invariant does **not** evaluate its
 property and returns `PASS` + `applicability_status = NotApplicable` (§10A).
 
 No hidden partial evaluation.
+
+### 31F. Empty / missing / zero consistency (TASK-05R2)
+
+These concepts MUST NOT be collapsed:
+
+| Concept | Meaning | Typical result |
+| --- | --- | --- |
+| EMPTY DOMAIN | Collection present; cardinality 0 | FOR_ALL→PASS; EXISTS→FAIL; COUNT→0; SUM→0 (declared Asset); MIN/MAX→ERROR |
+| MISSING REQUIRED DATA | Needed authoritative input absent | ERROR(`MISSING_REQUIRED_DATA`) |
+| ZERO VALUE | Explicit authoritative 0 | valid observation |
+| ABSENT ENTITY | Required entity not in target | ERROR(`MISSING_REQUIRED_DATA`) unless invariant declares absence semantics |
+| ABSENT FACET | Entity present; required facet absent | ERROR(`MISSING_REQUIRED_DATA`) |
+| UNSUPPORTED REFERENCE | Kind not supported for World/invariant | ERROR(`UNSUPPORTED_OPERATION` / configuration) |
+| INVALID REFERENCE | Malformed binding in definition | ERROR(`INVALID_INVARIANT_DEFINITION`) |
+
+Preserve closed aggregation/quantification/comparison semantics (§25 / §25A /
+§25B). Zero is never a silent substitute for missing.
+
+### 31G. Deterministic ordering scope (TASK-05R2)
+
+Deterministic authoritative order governs:
+
+```text
+domain enumeration
+target / history traversal
+relationship operand evaluation order (when multiple independent checks)
+lookup resolution over ordered collections
+violation discovery order
+error discovery order
+retained first-only Violation
+```
+
+Ordering MUST come from authoritative inputs (e.g. World/M01 deterministic
+key order, declared logical history order). Do not prescribe a Rust collection
+type here beyond decisions already recorded in accepted ADRs for M01.
+
+Prohibited influences: HashMap iteration, filesystem order, thread scheduling,
+wall clock, environment, network, process state, LLM output.
 
 ### Gate-2 implementation-readiness criterion (TASK-05R / TASK-05R2)
 
@@ -1344,10 +1457,16 @@ NONE identified
 
 ```text
 SEMANTIC_CLOSURE: COMPLETE for Gate-2 PASS/FAIL/ERROR determinism
-  (includes first-only vs ERROR discovery, ERROR class boundary,
-   state/transition lookup, history traversal, relationship checking)
+  (first-only vs ERROR discovery cases; INCOMPATIBLE_TARGET vs
+   MISSING_REQUIRED_DATA; state/transition lookup zero-vs-absent;
+   history traversal forward/reverse/filter/duplicates;
+   relationship exists/missing/unsupported; empty/missing/zero matrix;
+   deterministic ordering scope)
 TASK-05F: AUTHORIZED for freeze review (not auto-started)
 IMPLEMENTATION: BLOCKED until freeze + explicit implementation task
+STATUS: READY_FOR_REVIEW
+NORMATIVE FREEZE: NOT FROZEN
+GATE 2: NOT CLOSED
 ```
 
 ---
