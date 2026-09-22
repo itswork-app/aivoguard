@@ -2,17 +2,19 @@
 
 use crate::adversarial::error::{AdversarialError, AdversarialErrorClass};
 use crate::adversarial::incompatibility::{find_first_incompatibility, plan_occurrences};
-use crate::adversarial::parameters::{enumerate_parameter_candidates, ParameterTuple};
+use crate::adversarial::parameters::{ParameterCandidateIter, ParameterTuple};
 use crate::adversarial::provenance::ScenarioProvenance;
 use crate::adversarial::result::{
     GeneratedAdversarialScenario, GenerationCounters, GenerationResult, NonApplicableRecord,
 };
 use crate::adversarial::token::IdentifierToken;
 use crate::adversarial::transform::{
-    apply_transformation, TransformApplication, TransformationDefinition,
+    apply_transformation, validate_definition_projections, TransformApplication,
+    TransformationDefinition,
 };
 use crate::adversarial::types::{
-    ApplicabilityPolicy, GenerationStatus, GeneratorConfig, TruncationPolicy, ENGINE_VERSION,
+    ApplicabilityPolicy, GenerationStatus, GeneratorConfig, LimitBreachEvidence, LimitCounterId,
+    ParameterDomain, TruncationPolicy, ENGINE_VERSION,
 };
 use crate::adversarial::validation::validate_scenario;
 use crate::simulator::Scenario;
@@ -63,6 +65,12 @@ fn run_generation_inner(request: &GenerationRequest) -> Result<GenerationResult,
                 format!("plan[{i}]: transformation identity/version invalid"),
             ));
         }
+        if let Err(detail) = validate_definition_projections(t) {
+            return Err(AdversarialError::new(
+                AdversarialErrorClass::InvalidAdversarialDefinition,
+                format!("plan[{i}]: projection contract: {detail}"),
+            ));
+        }
     }
 
     // Phase 2 — generator configuration validation
@@ -70,22 +78,36 @@ fn run_generation_inner(request: &GenerationRequest) -> Result<GenerationResult,
 
     let plan_len = request.plan.transformations.len() as u64;
     if plan_len > request.config.limits.maximum_transformations_per_plan {
-        return Err(AdversarialError::new(
-            AdversarialErrorClass::InvalidAdversarialConfiguration,
-            format!(
+        let evidence = LimitBreachEvidence {
+            counter: LimitCounterId::MaximumTransformationsPerPlan,
+            observed: plan_len,
+            limit: request.config.limits.maximum_transformations_per_plan,
+        };
+        return Err(AdversarialError {
+            class: AdversarialErrorClass::InvalidAdversarialConfiguration,
+            reason: format!(
                 "plan length {plan_len} exceeds maximum_transformations_per_plan {}",
-                request.config.limits.maximum_transformations_per_plan
+                evidence.limit
             ),
-        ));
+            incompatibility: None,
+            limit_breach: Some(evidence),
+        });
     }
     if plan_len > request.config.limits.maximum_composition_depth {
-        return Err(AdversarialError::new(
-            AdversarialErrorClass::InvalidAdversarialConfiguration,
-            format!(
+        let evidence = LimitBreachEvidence {
+            counter: LimitCounterId::MaximumCompositionDepth,
+            observed: plan_len,
+            limit: request.config.limits.maximum_composition_depth,
+        };
+        return Err(AdversarialError {
+            class: AdversarialErrorClass::InvalidAdversarialConfiguration,
+            reason: format!(
                 "composition depth {plan_len} exceeds maximum_composition_depth {}",
-                request.config.limits.maximum_composition_depth
+                evidence.limit
             ),
-        ));
+            incompatibility: None,
+            limit_breach: Some(evidence),
+        });
     }
 
     // Phase 3 — base scenario validation
@@ -166,14 +188,17 @@ fn try_increment(
     counter: &mut u64,
     limit: u64,
     policy: TruncationPolicy,
-    name: &str,
+    id: LimitCounterId,
 ) -> LimitDecision {
     let next = counter.saturating_add(1);
     if next > limit {
         return match policy {
-            TruncationPolicy::FailOnExceed => LimitDecision::Fail(AdversarialError::new(
-                AdversarialErrorClass::GenerationError,
-                format!("{name} exceeded (limit={limit})"),
+            TruncationPolicy::FailOnExceed => LimitDecision::Fail(AdversarialError::limit_breach(
+                LimitBreachEvidence {
+                    counter: id,
+                    observed: next,
+                    limit,
+                },
             )),
             TruncationPolicy::TruncateAtN => LimitDecision::Truncate,
         };
@@ -198,6 +223,7 @@ fn generate_candidates(request: &GenerationRequest) -> Result<GenerationResult, 
             None,
             &mut emitted,
             &mut counters,
+            &crate::adversarial::projection::inherit_all_projections(),
         ) {
             EmitOutcome::Emitted => {}
             EmitOutcome::Fail(err) => {
@@ -222,21 +248,17 @@ fn generate_candidates(request: &GenerationRequest) -> Result<GenerationResult, 
         });
     }
 
-    let per_transform_params: Vec<Vec<ParameterTuple>> = request
-        .plan
-        .transformations
-        .iter()
-        .map(|t| enumerate_parameter_candidates(&t.parameter_domain))
-        .collect::<Result<Vec<_>, _>>()?;
+    // Flatten all transform parameter dimensions into one lex domain so the
+    // Cartesian product streams without materializing the full product (F-03).
+    let (flat_domain, splits) = flatten_plan_domains(&request.plan.transformations);
+    let param_iter = ParameterCandidateIter::try_from_domain(&flat_domain)?;
 
-    let param_products = cartesian_param_plans(&per_transform_params);
-
-    for product in param_products {
+    for flat_tuple in param_iter {
         match try_increment(
             &mut counters.parameter_candidates_evaluated,
             request.config.limits.maximum_parameter_candidates,
             request.config.truncation_policy,
-            "maximum_parameter_candidates",
+            LimitCounterId::MaximumParameterCandidates,
         ) {
             LimitDecision::Ok => {}
             LimitDecision::Fail(err) => {
@@ -254,6 +276,7 @@ fn generate_candidates(request: &GenerationRequest) -> Result<GenerationResult, 
             }
         }
         let param_eval_index = counters.parameter_candidates_evaluated.saturating_sub(1);
+        let product = split_flat_tuple(&flat_tuple, &splits);
 
         let mut snapshot = request.base.clone();
         let mut chain = Vec::new();
@@ -284,7 +307,7 @@ fn generate_candidates(request: &GenerationRequest) -> Result<GenerationResult, 
                             &mut counters.action_mutations,
                             request.config.limits.maximum_action_mutations,
                             request.config.truncation_policy,
-                            "maximum_action_mutations",
+                            LimitCounterId::MaximumActionMutations,
                         ) {
                             LimitDecision::Ok => {}
                             LimitDecision::Fail(err) => {
@@ -302,23 +325,26 @@ fn generate_candidates(request: &GenerationRequest) -> Result<GenerationResult, 
                                 break;
                             }
                         }
-                        // try_increment already added 1; if action_mutations > 1, add remainder
                         if action_mutations > 1 {
-                            counters.action_mutations = counters
+                            let next = counters
                                 .action_mutations
                                 .saturating_add(action_mutations - 1);
-                            if counters.action_mutations
-                                > request.config.limits.maximum_action_mutations
-                            {
+                            if next > request.config.limits.maximum_action_mutations {
                                 match request.config.truncation_policy {
                                     TruncationPolicy::FailOnExceed => {
                                         return Ok(GenerationResult {
                                             status: GenerationStatus::Failed,
                                             emitted,
                                             non_applicable,
-                                            error: Some(AdversarialError::new(
-                                                AdversarialErrorClass::GenerationError,
-                                                "maximum_action_mutations exceeded",
+                                            error: Some(AdversarialError::limit_breach(
+                                                LimitBreachEvidence {
+                                                    counter: LimitCounterId::MaximumActionMutations,
+                                                    observed: next,
+                                                    limit: request
+                                                        .config
+                                                        .limits
+                                                        .maximum_action_mutations,
+                                                },
                                             )),
                                             counters,
                                         });
@@ -330,6 +356,7 @@ fn generate_candidates(request: &GenerationRequest) -> Result<GenerationResult, 
                                     }
                                 }
                             }
+                            counters.action_mutations = next;
                         }
                     }
                     chain.push((def.identity.clone(), def.version.clone()));
@@ -365,6 +392,10 @@ fn generate_candidates(request: &GenerationRequest) -> Result<GenerationResult, 
             continue;
         }
 
+        let projections = request.plan.transformations.last().map_or_else(
+            crate::adversarial::projection::inherit_all_projections,
+            |t| t.projections.clone(),
+        );
         match try_emit(
             request,
             snapshot,
@@ -374,6 +405,7 @@ fn generate_candidates(request: &GenerationRequest) -> Result<GenerationResult, 
             Some(param_eval_index),
             &mut emitted,
             &mut counters,
+            &projections,
         ) {
             EmitOutcome::Emitted => {}
             EmitOutcome::Fail(err) => {
@@ -401,12 +433,36 @@ fn generate_candidates(request: &GenerationRequest) -> Result<GenerationResult, 
     })
 }
 
+fn flatten_plan_domains(
+    transforms: &[TransformationDefinition],
+) -> (ParameterDomain, Vec<(usize, usize)>) {
+    let mut dimensions = Vec::new();
+    let mut splits = Vec::with_capacity(transforms.len());
+    for t in transforms {
+        let start = dimensions.len();
+        dimensions.extend(t.parameter_domain.dimensions.clone());
+        let end = dimensions.len();
+        splits.push((start, end));
+    }
+    (ParameterDomain { dimensions }, splits)
+}
+
+fn split_flat_tuple(flat: &ParameterTuple, splits: &[(usize, usize)]) -> Vec<ParameterTuple> {
+    splits
+        .iter()
+        .map(|&(start, end)| ParameterTuple {
+            bindings: flat.bindings.get(start..end).unwrap_or(&[]).to_vec(),
+        })
+        .collect()
+}
+
 enum EmitOutcome {
     Emitted,
     Fail(AdversarialError),
     Truncate,
 }
 
+#[allow(clippy::too_many_arguments)]
 fn try_emit(
     request: &GenerationRequest,
     scenario: Scenario,
@@ -416,12 +472,13 @@ fn try_emit(
     parameter_candidate_index: Option<u64>,
     emitted: &mut Vec<GeneratedAdversarialScenario>,
     counters: &mut GenerationCounters,
+    projections: &[crate::adversarial::projection::FieldProjection],
 ) -> EmitOutcome {
     match try_increment(
         &mut counters.emitted_scenarios,
         request.config.limits.maximum_generated_scenarios,
         request.config.truncation_policy,
-        "maximum_generated_scenarios",
+        LimitCounterId::MaximumGeneratedScenarios,
     ) {
         LimitDecision::Ok => {}
         LimitDecision::Fail(err) => return EmitOutcome::Fail(err),
@@ -429,7 +486,7 @@ fn try_emit(
     }
 
     let emitted_index = counters.emitted_scenarios.saturating_sub(1);
-    let structural = validate_scenario(&scenario, true);
+    let structural = validate_scenario(&scenario, true, projections);
     let validation = structural.classification;
     let provenance = ScenarioProvenance {
         base_scenario_id: request.base.id.as_str().to_owned(),
@@ -446,6 +503,7 @@ fn try_emit(
         generator_config_id: request.generator_config_id.clone(),
         emitted_index,
         parameter_candidate_index,
+        limit_breach: None,
     };
 
     emitted.push(GeneratedAdversarialScenario {
@@ -454,25 +512,6 @@ fn try_emit(
         provenance,
     });
     EmitOutcome::Emitted
-}
-
-fn cartesian_param_plans(per_transform: &[Vec<ParameterTuple>]) -> Vec<Vec<ParameterTuple>> {
-    if per_transform.is_empty() {
-        return vec![Vec::new()];
-    }
-    let mut result: Vec<Vec<ParameterTuple>> = vec![Vec::new()];
-    for options in per_transform {
-        let mut next = Vec::new();
-        for prefix in &result {
-            for opt in options {
-                let mut row = prefix.clone();
-                row.push(opt.clone());
-                next.push(row);
-            }
-        }
-        result = next;
-    }
-    result
 }
 
 /// Check incompatibility rules against a plan without running generation.

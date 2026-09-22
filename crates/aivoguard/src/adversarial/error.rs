@@ -1,6 +1,6 @@
 //! M04 error taxonomy (Gate-4 minimum; §15.1).
 
-use crate::adversarial::types::IncompatibilityEvidence;
+use crate::adversarial::types::{IncompatibilityEvidence, LimitBreachEvidence};
 
 /// M04 error class.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -30,20 +30,23 @@ pub enum AdversarialErrorClass {
 pub struct AdversarialError {
     /// Error classification.
     pub class: AdversarialErrorClass,
-    /// Deterministic reason (not host tracing).
+    /// Deterministic reason (human diagnostic; not machine authority for limits).
     pub reason: String,
     /// Optional incompatibility evidence when class is `IncompatibleTransform`.
     pub incompatibility: Option<IncompatibilityEvidence>,
+    /// Optional structured limit-breach evidence (F-04).
+    pub limit_breach: Option<LimitBreachEvidence>,
 }
 
 impl AdversarialError {
-    /// Construct an error without incompatibility evidence.
+    /// Construct an error without extra evidence.
     #[must_use]
     pub fn new(class: AdversarialErrorClass, reason: impl Into<String>) -> Self {
         Self {
             class,
             reason: reason.into(),
             incompatibility: None,
+            limit_breach: None,
         }
     }
 
@@ -60,6 +63,22 @@ impl AdversarialError {
             class: AdversarialErrorClass::IncompatibleTransform,
             reason,
             incompatibility: Some(evidence),
+            limit_breach: None,
+        }
+    }
+
+    /// Construct a generation limit-breach error with structured evidence.
+    #[must_use]
+    pub fn limit_breach(evidence: LimitBreachEvidence) -> Self {
+        let reason = format!(
+            "{:?} exceeded (observed={}, limit={})",
+            evidence.counter, evidence.observed, evidence.limit
+        );
+        Self {
+            class: AdversarialErrorClass::GenerationError,
+            reason,
+            incompatibility: None,
+            limit_breach: Some(evidence),
         }
     }
 }

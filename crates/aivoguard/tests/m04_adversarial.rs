@@ -4,16 +4,19 @@
 #![allow(clippy::too_many_lines)]
 
 use aivoguard::{
-    apply_mutation, check_plan_incompatibility, find_first_incompatibility, plan_occurrences,
-    resolve_action_id, run_generation, validate_checklist, Account, AccountId, Action, ActionId,
-    ActionTarget, ActorId, AdversarialErrorClass, Applicability, ApplicabilityPolicy, Asset,
-    AssetId, BalanceFacetModel, CandidateOperator, ChecklistView, CmpOp, CompositionPlan,
-    DuplicateIdMode, EconomicState, EconomicWorld, FacetId, GenerationRequest, GenerationStatus,
-    GeneratorConfig, GeneratorLimits, IdentifierToken, IncompatibilityRule, Invariant,
-    InvariantEvaluationPlan, InvariantId, InvariantScope, ParameterDimension, ParameterDomain,
-    ParameterTuple, ParameterType, PositionConstraint, PropertyExpr, ResolutionClass, Scenario,
-    StructuralInvalidReason, TransformationDefinition, TransformationKind, TruncationPolicy,
-    ValidationClassification, ValueExpr, ViolationPolicy, M04_ENGINE_VERSION,
+    apply_mutation, check_plan_incompatibility, definition_with_kind_projections,
+    find_first_incompatibility, inherit_all_projections, plan_occurrences, projections_for_kind,
+    resolve_action_id, run_generation, take_parameter_candidates, validate_checklist,
+    validate_projection_table, Account, AccountId, Action, ActionId, ActionTarget, ActorId,
+    AdversarialErrorClass, Applicability, ApplicabilityPolicy, Asset, AssetId, BalanceFacetModel,
+    CandidateOperator, ChecklistView, CmpOp, CompositionPlan, DuplicateIdMode, EconomicState,
+    EconomicWorld, FacetId, FieldProjection, GenerationRequest, GenerationStatus, GeneratorConfig,
+    GeneratorLimits, IdentifierToken, IncompatibilityRule, Invariant, InvariantEvaluationPlan,
+    InvariantId, InvariantScope, LimitCounterId, ParameterDimension, ParameterDomain,
+    ParameterTuple, ParameterType, ParameterValue, PositionConstraint, ProjectionMode,
+    PropertyExpr, ResolutionClass, Scenario, ScenarioField, StructuralInvalidReason,
+    TransformationDefinition, TransformationKind, TruncationPolicy, ValidationClassification,
+    ValueExpr, ViolationPolicy, M04_ENGINE_VERSION,
 };
 
 fn tok(s: &str) -> IdentifierToken {
@@ -86,15 +89,19 @@ fn config_with_rules(rules: Vec<IncompatibilityRule>) -> GeneratorConfig {
 }
 
 fn meta(id: &str, ver: &str) -> TransformationDefinition {
-    TransformationDefinition {
-        identity: tok(id),
-        version: tok(ver),
-        kind: TransformationKind::MetadataSuffix {
+    definition_with_kind_projections(
+        tok(id),
+        tok(ver),
+        TransformationKind::MetadataSuffix {
             id_suffix: tok(id),
             new_version: tok(ver),
         },
-        parameter_domain: ParameterDomain::default(),
-    }
+        ParameterDomain::default(),
+    )
+}
+
+fn proj() -> Vec<FieldProjection> {
+    inherit_all_projections()
 }
 
 #[test]
@@ -323,7 +330,7 @@ fn action_id_n0_n1_n_gt1() {
 
 #[test]
 fn structural_4a_failure_precedes_4b() {
-    let mut view = ChecklistView::from_scenario(&base_scenario(vec![]), true);
+    let mut view = ChecklistView::from_scenario(&base_scenario(vec![]), true, proj());
     view.world_present = false;
     view.initial_state_present = false;
     let r = validate_checklist(&view);
@@ -336,7 +343,7 @@ fn structural_4a_failure_precedes_4b() {
 
 #[test]
 fn structural_4b_only_after_4a_passes() {
-    let mut view = ChecklistView::from_scenario(&base_scenario(vec![]), true);
+    let mut view = ChecklistView::from_scenario(&base_scenario(vec![]), true, proj());
     view.world_present = true;
     view.initial_state_present = false;
     let r = validate_checklist(&view);
@@ -369,7 +376,7 @@ fn invariant_envelope_requires_id_and_definition_version() {
     // Empty id fails at check 9 — but empty invariant id: InvariantId::new("")
     // Actually check 2 runs first on scenario id which is fine; check 9 catches empty inv id.
     // Wait - empty InvariantId - IdentifierToken::is_valid("") is false.
-    let r = validate_checklist(&ChecklistView::from_scenario(&scenario, true));
+    let r = validate_checklist(&ChecklistView::from_scenario(&scenario, true, proj()));
     // Empty inv id → InvalidRequiredField? No - scenario id is "base". Check 9.
     // But InvariantId::new("") - as_str is "" → InvalidInvariantPlanStructure
     // However check 2 doesn't look at invariants.
@@ -396,7 +403,7 @@ fn invariant_envelope_requires_id_and_definition_version() {
         after_action: vec![],
         on_completion: vec![],
     };
-    let r2 = validate_checklist(&ChecklistView::from_scenario(&scenario2, true));
+    let r2 = validate_checklist(&ChecklistView::from_scenario(&scenario2, true, proj()));
     assert_eq!(
         r2.primary_reason,
         Some(StructuralInvalidReason::InvalidInvariantPlanStructure)
@@ -405,7 +412,7 @@ fn invariant_envelope_requires_id_and_definition_version() {
 
 #[test]
 fn empty_domain_reference_in_balance_rejected() {
-    let mut view = ChecklistView::from_scenario(&base_scenario(vec![]), true);
+    let mut view = ChecklistView::from_scenario(&base_scenario(vec![]), true, proj());
     view.balance_cells = vec![(String::new(), "USD".into(), "available".into(), 1)];
     let r = validate_checklist(&view);
     assert_eq!(
@@ -475,16 +482,16 @@ fn generation_emits_derived_with_provenance_chain() {
 #[test]
 fn duplicate_action_default_removes_id() {
     let base = base_scenario(vec![noop_named("keep")]);
-    let def = TransformationDefinition {
-        identity: tok("dup"),
-        version: tok("1"),
-        kind: TransformationKind::DuplicateAction {
+    let def = definition_with_kind_projections(
+        tok("dup"),
+        tok("1"),
+        TransformationKind::DuplicateAction {
             source: ActionTarget::ById(tok("keep")),
             insert_at: 1,
             id_mode: DuplicateIdMode::RemoveExplicitly,
         },
-        parameter_domain: ParameterDomain::default(),
-    };
+        ParameterDomain::default(),
+    );
     match apply_mutation(
         &base,
         &def,
@@ -502,14 +509,14 @@ fn duplicate_action_default_removes_id() {
 #[test]
 fn ambiguous_action_id_is_parameter_error() {
     let base = base_scenario(vec![noop_named("x"), noop_named("x")]);
-    let def = TransformationDefinition {
-        identity: tok("del"),
-        version: tok("1"),
-        kind: TransformationKind::DeleteAction {
+    let def = definition_with_kind_projections(
+        tok("del"),
+        tok("1"),
+        TransformationKind::DeleteAction {
             target: ActionTarget::ById(tok("x")),
         },
-        parameter_domain: ParameterDomain::default(),
-    };
+        ParameterDomain::default(),
+    );
     match apply_mutation(
         &base,
         &def,
@@ -527,14 +534,14 @@ fn ambiguous_action_id_is_parameter_error() {
 #[test]
 fn missing_action_non_applicable_under_allow() {
     let base = base_scenario(vec![noop_named("a")]);
-    let def = TransformationDefinition {
-        identity: tok("del"),
-        version: tok("1"),
-        kind: TransformationKind::DeleteAction {
+    let def = definition_with_kind_projections(
+        tok("del"),
+        tok("1"),
+        TransformationKind::DeleteAction {
             target: ActionTarget::ById(tok("missing")),
         },
-        parameter_domain: ParameterDomain::default(),
-    };
+        ParameterDomain::default(),
+    );
     match apply_mutation(
         &base,
         &def,
@@ -560,14 +567,14 @@ fn missing_action_non_applicable_under_allow() {
 #[test]
 fn generation_limit_fail_on_exceed() {
     let plan = CompositionPlan {
-        transformations: vec![TransformationDefinition {
-            identity: tok("amt"),
-            version: tok("1"),
-            kind: TransformationKind::ReplaceTransferAmount {
+        transformations: vec![definition_with_kind_projections(
+            tok("amt"),
+            tok("1"),
+            TransformationKind::ReplaceTransferAmount {
                 target: ActionTarget::ByIndex(0),
                 fallback_amount: 1,
             },
-            parameter_domain: ParameterDomain {
+            ParameterDomain {
                 dimensions: vec![ParameterDimension {
                     id: tok("amount"),
                     value_type: ParameterType::EconomicAmount,
@@ -581,7 +588,7 @@ fn generation_limit_fail_on_exceed() {
                     explicit_values: vec![],
                 }],
             },
-        }],
+        )],
     };
     let mut limits = generous_limits();
     limits.maximum_generated_scenarios = 2;
@@ -611,16 +618,16 @@ fn determinism_identical_inputs_identical_outputs() {
     let plan = CompositionPlan {
         transformations: vec![
             meta("A", "1"),
-            TransformationDefinition {
-                identity: tok("dup"),
-                version: tok("1"),
-                kind: TransformationKind::DuplicateAction {
+            definition_with_kind_projections(
+                tok("dup"),
+                tok("1"),
+                TransformationKind::DuplicateAction {
                     source: ActionTarget::ByIndex(0),
                     insert_at: 1,
                     id_mode: DuplicateIdMode::RemoveExplicitly,
                 },
-                parameter_domain: ParameterDomain::default(),
-            },
+                ParameterDomain::default(),
+            ),
         ],
     };
     let req = GenerationRequest {
@@ -637,7 +644,7 @@ fn determinism_identical_inputs_identical_outputs() {
 
 #[test]
 fn multiple_structural_failures_first_wins() {
-    let mut view = ChecklistView::from_scenario(&base_scenario(vec![]), false);
+    let mut view = ChecklistView::from_scenario(&base_scenario(vec![]), false, proj());
     view.id = String::new();
     view.world_present = false;
     view.provenance_complete = false;
@@ -661,4 +668,249 @@ fn whitespace_and_case_are_distinct_tokens_in_rules() {
         position_constraint: None,
     };
     assert!(find_first_incompatibility(&occ, &[rule]).is_none());
+}
+
+// --- F-02 projection contract ---
+
+#[test]
+fn projection_valid_complete_declaration() {
+    let table = projections_for_kind(&TransformationKind::MetadataSuffix {
+        id_suffix: tok("x"),
+        new_version: tok("1"),
+    });
+    assert!(validate_projection_table(&table).is_ok());
+    let view = ChecklistView::from_scenario(&base_scenario(vec![]), true, table);
+    assert!(validate_checklist(&view).is_valid());
+}
+
+#[test]
+fn projection_missing_declaration_fails_check3() {
+    let mut table = inherit_all_projections();
+    table.pop();
+    assert!(validate_projection_table(&table).is_err());
+    let view = ChecklistView::from_scenario(&base_scenario(vec![]), true, table);
+    let r = validate_checklist(&view);
+    assert_eq!(
+        r.primary_reason,
+        Some(StructuralInvalidReason::InvalidProjection)
+    );
+}
+
+#[test]
+fn projection_duplicate_field_rejected() {
+    let mut table = inherit_all_projections();
+    table.push(FieldProjection {
+        field: ScenarioField::World,
+        mode: ProjectionMode::InheritUnchanged,
+    });
+    let err = validate_projection_table(&table).unwrap_err();
+    assert!(err.contains("duplicate"));
+}
+
+#[test]
+fn projection_inconsistent_with_kind_rejected_at_phase1() {
+    let mut def = definition_with_kind_projections(
+        tok("bad"),
+        tok("1"),
+        TransformationKind::MetadataSuffix {
+            id_suffix: tok("x"),
+            new_version: tok("1"),
+        },
+        ParameterDomain::default(),
+    );
+    // Force inconsistency: claim Actions REPLACE while kind only derives metadata.
+    if let Some(p) = def
+        .projections
+        .iter_mut()
+        .find(|p| p.field == ScenarioField::Actions)
+    {
+        p.mode = ProjectionMode::ReplaceExplicitly;
+    }
+    let req = GenerationRequest {
+        base: base_scenario(vec![]),
+        plan: CompositionPlan {
+            transformations: vec![def],
+        },
+        config: config_with_rules(vec![]),
+        generator_config_id: "gen1".into(),
+    };
+    let out = run_generation(&req);
+    assert_eq!(out.status, GenerationStatus::Failed);
+    assert_eq!(
+        out.error.as_ref().unwrap().class,
+        AdversarialErrorClass::InvalidAdversarialDefinition
+    );
+    assert!(out.error.as_ref().unwrap().reason.contains("projection"));
+}
+
+#[test]
+fn projection_cannot_pass_via_boolean_flag() {
+    // Empty declarations fail even if provenance/world flags look healthy.
+    let view = ChecklistView::from_scenario(&base_scenario(vec![]), true, vec![]);
+    let r = validate_checklist(&view);
+    assert_eq!(
+        r.primary_reason,
+        Some(StructuralInvalidReason::InvalidProjection)
+    );
+}
+
+// --- F-03 bounded parameter generation ---
+
+#[test]
+fn parameter_limit_one_on_huge_cartesian_is_bounded() {
+    // 200 x 200 = 40_000 product; limit 1 must not require full materialization.
+    let mut values_a = Vec::new();
+    let mut values_b = Vec::new();
+    for i in 0..200 {
+        values_a.push(ParameterValue::Integer(i));
+        values_b.push(ParameterValue::Integer(i));
+    }
+    let domain = ParameterDomain {
+        dimensions: vec![
+            ParameterDimension {
+                id: tok("a"),
+                value_type: ParameterType::Integer,
+                lo: Some(0),
+                hi: Some(199),
+                operators: vec![],
+                explicit_values: values_a,
+            },
+            ParameterDimension {
+                id: tok("b"),
+                value_type: ParameterType::Integer,
+                lo: Some(0),
+                hi: Some(199),
+                operators: vec![],
+                explicit_values: values_b,
+            },
+        ],
+    };
+    let err = take_parameter_candidates(&domain, 1).unwrap_err();
+    let ev = err.limit_breach.expect("structured evidence");
+    assert_eq!(ev.counter, LimitCounterId::MaximumParameterCandidates);
+    assert_eq!(ev.limit, 1);
+    assert_eq!(ev.observed, 2);
+}
+
+#[test]
+fn parameter_ordering_first_candidate_stable() {
+    let domain = ParameterDomain {
+        dimensions: vec![
+            ParameterDimension {
+                id: tok("a"),
+                value_type: ParameterType::Integer,
+                lo: None,
+                hi: None,
+                operators: vec![],
+                explicit_values: vec![
+                    ParameterValue::Integer(1),
+                    ParameterValue::Integer(2),
+                ],
+            },
+            ParameterDimension {
+                id: tok("b"),
+                value_type: ParameterType::Integer,
+                lo: None,
+                hi: None,
+                operators: vec![],
+                explicit_values: vec![
+                    ParameterValue::Integer(10),
+                    ParameterValue::Integer(20),
+                ],
+            },
+        ],
+    };
+    let a = take_parameter_candidates(&domain, 10).unwrap();
+    let b = take_parameter_candidates(&domain, 10).unwrap();
+    assert_eq!(a, b);
+    assert_eq!(a[0].bindings[0].1, ParameterValue::Integer(1));
+    assert_eq!(a[0].bindings[1].1, ParameterValue::Integer(10));
+}
+
+#[test]
+fn generation_parameter_limit_structured_and_deterministic() {
+    let plan = CompositionPlan {
+        transformations: vec![definition_with_kind_projections(
+            tok("amt"),
+            tok("1"),
+            TransformationKind::ReplaceTransferAmount {
+                target: ActionTarget::ByIndex(0),
+                fallback_amount: 1,
+            },
+            ParameterDomain {
+                dimensions: vec![ParameterDimension {
+                    id: tok("amount"),
+                    value_type: ParameterType::EconomicAmount,
+                    lo: Some(1),
+                    hi: Some(5),
+                    operators: vec![
+                        CandidateOperator::Exact(1),
+                        CandidateOperator::Exact(2),
+                        CandidateOperator::Exact(3),
+                    ],
+                    explicit_values: vec![],
+                }],
+            },
+        )],
+    };
+    let mut limits = generous_limits();
+    limits.maximum_parameter_candidates = 1;
+    limits.maximum_generated_scenarios = 10;
+    let req = GenerationRequest {
+        base: base_scenario(vec![transfer(100)]),
+        plan,
+        config: GeneratorConfig {
+            limits,
+            applicability_policy: ApplicabilityPolicy::AllowNonApplicable,
+            truncation_policy: TruncationPolicy::FailOnExceed,
+            incompatibility_rules: vec![],
+        },
+        generator_config_id: "gen1".into(),
+    };
+    let out1 = run_generation(&req);
+    let out2 = run_generation(&req);
+    assert_eq!(out1, out2);
+    assert_eq!(out1.status, GenerationStatus::Failed);
+    let ev = out1.error.as_ref().unwrap().limit_breach.as_ref().unwrap();
+    assert_eq!(ev.counter, LimitCounterId::MaximumParameterCandidates);
+    assert_eq!(ev.limit, 1);
+    assert_eq!(ev.observed, 2);
+    assert_eq!(out1.emitted.len(), 1);
+}
+
+// --- F-04 structured limit-breach evidence ---
+
+#[test]
+fn action_mutation_limit_breach_structured() {
+    let plan = CompositionPlan {
+        transformations: vec![definition_with_kind_projections(
+            tok("dup"),
+            tok("1"),
+            TransformationKind::DuplicateAction {
+                source: ActionTarget::ByIndex(0),
+                insert_at: 1,
+                id_mode: DuplicateIdMode::RemoveExplicitly,
+            },
+            ParameterDomain::default(),
+        )],
+    };
+    let mut limits = generous_limits();
+    limits.maximum_action_mutations = 0;
+    let req = GenerationRequest {
+        base: base_scenario(vec![noop_named("a")]),
+        plan,
+        config: GeneratorConfig {
+            limits,
+            applicability_policy: ApplicabilityPolicy::AllowNonApplicable,
+            truncation_policy: TruncationPolicy::FailOnExceed,
+            incompatibility_rules: vec![],
+        },
+        generator_config_id: "gen1".into(),
+    };
+    let out = run_generation(&req);
+    assert_eq!(out.status, GenerationStatus::Failed);
+    let ev = out.error.as_ref().unwrap().limit_breach.as_ref().unwrap();
+    assert_eq!(ev.counter, LimitCounterId::MaximumActionMutations);
+    assert_eq!(ev.limit, 0);
+    assert_eq!(ev.observed, 1);
 }

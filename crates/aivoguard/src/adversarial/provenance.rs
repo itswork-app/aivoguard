@@ -38,4 +38,6 @@ pub struct ScenarioProvenance {
     pub emitted_index: u64,
     /// Parameter candidate index evaluated for this emission (if any).
     pub parameter_candidate_index: Option<u64>,
+    /// Structured limit-breach evidence when emission was under a failed generation (optional).
+    pub limit_breach: Option<crate::adversarial::types::LimitBreachEvidence>,
 }

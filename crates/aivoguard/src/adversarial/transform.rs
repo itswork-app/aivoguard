@@ -2,6 +2,10 @@
 
 use crate::adversarial::error::{AdversarialError, AdversarialErrorClass};
 use crate::adversarial::parameters::ParameterTuple;
+use crate::adversarial::projection::{
+    inherit_all_projections, validate_projection_table, FieldProjection, ProjectionMode,
+    ScenarioField,
+};
 use crate::adversarial::resolve::{ActionTarget, ResolutionClass};
 use crate::adversarial::token::IdentifierToken;
 use crate::adversarial::types::{ApplicabilityPolicy, ParameterValue};
@@ -103,6 +107,8 @@ pub struct TransformationDefinition {
     pub version: IdentifierToken,
     /// Kind / semantics.
     pub kind: TransformationKind,
+    /// Explicit per-field projection declarations (§8.4; F-02).
+    pub projections: Vec<crate::adversarial::projection::FieldProjection>,
     /// Optional parameter domain (empty = single application).
     pub parameter_domain: crate::adversarial::types::ParameterDomain,
 }
@@ -417,5 +423,116 @@ fn replace_transfer_amount(action: &mut Action, amount: i128) -> Result<(), Stri
             Ok(())
         }
         _ => Err("ReplaceTransferAmount requires Transfer or TransferWithFee".into()),
+    }
+}
+
+/// Canonical projection table for a closed kind (§8.4.1 defaults).
+#[must_use]
+pub fn projections_for_kind(kind: &TransformationKind) -> Vec<FieldProjection> {
+    let mut table = inherit_all_projections();
+    let set = |table: &mut [FieldProjection], field: ScenarioField, mode: ProjectionMode| {
+        if let Some(slot) = table.iter_mut().find(|p| p.field == field) {
+            slot.mode = mode;
+        }
+    };
+    match kind {
+        TransformationKind::MetadataSuffix { .. } => {
+            set(&mut table, ScenarioField::Id, ProjectionMode::DeriveExplicitly);
+            set(
+                &mut table,
+                ScenarioField::Version,
+                ProjectionMode::DeriveExplicitly,
+            );
+        }
+        TransformationKind::DuplicateAction { .. }
+        | TransformationKind::DeleteAction { .. }
+        | TransformationKind::InsertAction { .. }
+        | TransformationKind::ReplaceAction { .. }
+        | TransformationKind::ReorderActions { .. }
+        | TransformationKind::ReplaceTransferAmount { .. } => {
+            set(
+                &mut table,
+                ScenarioField::Actions,
+                ProjectionMode::ReplaceExplicitly,
+            );
+            set(&mut table, ScenarioField::Id, ProjectionMode::DeriveExplicitly);
+            set(
+                &mut table,
+                ScenarioField::Version,
+                ProjectionMode::DeriveExplicitly,
+            );
+        }
+        TransformationKind::SetInitialBalance { .. } => {
+            set(
+                &mut table,
+                ScenarioField::InitialState,
+                ProjectionMode::ReplaceExplicitly,
+            );
+            set(&mut table, ScenarioField::Id, ProjectionMode::DeriveExplicitly);
+            set(
+                &mut table,
+                ScenarioField::Version,
+                ProjectionMode::DeriveExplicitly,
+            );
+        }
+        TransformationKind::ReplaceMaximumActionSteps { .. } => {
+            set(
+                &mut table,
+                ScenarioField::MaximumActionSteps,
+                ProjectionMode::ReplaceExplicitly,
+            );
+            set(&mut table, ScenarioField::Id, ProjectionMode::DeriveExplicitly);
+            set(
+                &mut table,
+                ScenarioField::Version,
+                ProjectionMode::DeriveExplicitly,
+            );
+        }
+    }
+    table
+}
+
+/// Validate projection table completeness and consistency with `kind`.
+pub fn validate_definition_projections(def: &TransformationDefinition) -> Result<(), String> {
+    validate_projection_table(&def.projections)?;
+    validate_projection_matches_kind(def, &def.projections)
+}
+
+fn validate_projection_matches_kind(
+    def: &TransformationDefinition,
+    decls: &[FieldProjection],
+) -> Result<(), String> {
+    let expected = projections_for_kind(&def.kind);
+    for e in &expected {
+        let Some(actual) = decls.iter().find(|p| p.field == e.field) else {
+            return Err(format!("missing field {}", e.field.as_str()));
+        };
+        if actual.mode != e.mode {
+            return Err(format!(
+                "projection for {} declared {:?}, inconsistent with kind (expected {:?})",
+                e.field.as_str(),
+                actual.mode,
+                e.mode
+            ));
+        }
+    }
+    Ok(())
+}
+
+/// Construct a definition with projections matching `kind`.
+#[must_use]
+pub fn definition_with_kind_projections(
+    identity: IdentifierToken,
+    version: IdentifierToken,
+    kind: TransformationKind,
+    parameter_domain: crate::adversarial::types::ParameterDomain,
+) -> TransformationDefinition {
+    let projections = projections_for_kind(&kind);
+    TransformationDefinition {
+        identity,
+        version,
+        kind,
+        projections,
+        parameter_domain,
     }
 }

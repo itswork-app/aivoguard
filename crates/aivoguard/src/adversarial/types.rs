@@ -259,3 +259,29 @@ pub struct GeneratorConfig {
     /// Ordered incompatibility rules (may be empty).
     pub incompatibility_rules: Vec<IncompatibilityRule>,
 }
+
+/// Which generation counter breached a configured maximum (§18 / F-04).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum LimitCounterId {
+    /// `maximum_generated_scenarios`.
+    MaximumGeneratedScenarios,
+    /// `maximum_transformations_per_plan`.
+    MaximumTransformationsPerPlan,
+    /// `maximum_composition_depth`.
+    MaximumCompositionDepth,
+    /// `maximum_action_mutations`.
+    MaximumActionMutations,
+    /// `maximum_parameter_candidates`.
+    MaximumParameterCandidates,
+}
+
+/// Structured limit-breach evidence (machine-readable; F-04).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct LimitBreachEvidence {
+    /// Which counter breached.
+    pub counter: LimitCounterId,
+    /// Exact deterministic count at breach (the `N+1` attempt under FAIL_ON_EXCEED).
+    pub observed: u64,
+    /// Exact configured limit `N`.
+    pub limit: u64,
+}

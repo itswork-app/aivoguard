@@ -69,8 +69,8 @@ pub struct ChecklistView {
     pub invariant_plan: InvariantEvaluationPlan,
     /// Stop policy.
     pub stop_policy: StopPolicy,
-    /// Whether projection consistency holds (check 3).
-    pub projection_consistent: bool,
+    /// Declared projection table for check 3 (F-02). Must be complete when present.
+    pub projection_declarations: Vec<crate::adversarial::projection::FieldProjection>,
     /// Whether provenance is complete (check 12).
     pub provenance_complete: bool,
     /// Whether any field is marked as host/env-derived (check 11).
@@ -82,7 +82,11 @@ pub struct ChecklistView {
 impl ChecklistView {
     /// Build a checklist view from an M03 Scenario (world always present).
     #[must_use]
-    pub fn from_scenario(scenario: &Scenario, provenance_complete: bool) -> Self {
+    pub fn from_scenario(
+        scenario: &Scenario,
+        provenance_complete: bool,
+        projection_declarations: Vec<crate::adversarial::projection::FieldProjection>,
+    ) -> Self {
         let balance_cells = scenario
             .initial_state
             .balances()
@@ -108,7 +112,7 @@ impl ChecklistView {
             declared_unix_secs: scenario.declared_unix_secs,
             invariant_plan: scenario.invariant_plan.clone(),
             stop_policy: scenario.stop_policy.clone(),
-            projection_consistent: true,
+            projection_declarations,
             provenance_complete,
             has_forbidden_hidden_input: false,
             action_references_valid: true,
@@ -143,11 +147,13 @@ pub fn validate_checklist(view: &ChecklistView) -> StructuralValidationResult {
         );
     }
 
-    // 3 — Projection consistency
-    if !view.projection_consistent {
+    // 3 — Projection consistency (derived from declared table; not a boolean flag)
+    if let Err(detail) =
+        crate::adversarial::projection::validate_projection_table(&view.projection_declarations)
+    {
         return StructuralValidationResult::invalid(
             StructuralInvalidReason::InvalidProjection,
-            "projection consistency failed",
+            detail,
         );
     }
 
@@ -251,8 +257,13 @@ pub fn validate_checklist(view: &ChecklistView) -> StructuralValidationResult {
 pub fn validate_scenario(
     scenario: &Scenario,
     provenance_complete: bool,
+    projection_declarations: &[crate::adversarial::projection::FieldProjection],
 ) -> StructuralValidationResult {
-    validate_checklist(&ChecklistView::from_scenario(scenario, provenance_complete))
+    validate_checklist(&ChecklistView::from_scenario(
+        scenario,
+        provenance_complete,
+        projection_declarations.to_vec(),
+    ))
 }
 
 fn invariant_plan_failure(plan: &InvariantEvaluationPlan) -> Option<String> {

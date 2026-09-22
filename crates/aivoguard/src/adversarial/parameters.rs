@@ -1,9 +1,10 @@
-//! Parameter candidate enumeration (§17A).
+//! Parameter candidate enumeration (§17A) with bounded Cartesian generation (F-03).
 
 use crate::adversarial::error::{AdversarialError, AdversarialErrorClass};
 use crate::adversarial::token::IdentifierToken;
 use crate::adversarial::types::{
-    CandidateOperator, ParameterDimension, ParameterDomain, ParameterType, ParameterValue,
+    CandidateOperator, LimitBreachEvidence, LimitCounterId, ParameterDimension, ParameterDomain,
+    ParameterType, ParameterValue,
 };
 
 /// One evaluated parameter tuple (ordered by dimension declaration order).
@@ -13,36 +14,228 @@ pub struct ParameterTuple {
     pub bindings: Vec<(IdentifierToken, ParameterValue)>,
 }
 
-/// Enumerate parameter candidate tuples in lexicographic dimension order.
+/// Lexicographic Cartesian iterator over per-dimension candidate lists.
 ///
-/// Returns an error when a numeric operator leaves the domain / overflows
-/// (classified as domain construction failure for that candidate — skipped as
-/// non-applicable candidate slots are not invented; invalid domain → error).
+/// Does **not** materialize the full product. Advances like an odometer
+/// (rightmost dimension fastest).
+#[derive(Debug, Clone)]
+pub struct ParameterCandidateIter {
+    dims: Vec<Vec<(IdentifierToken, ParameterValue)>>,
+    /// Current multi-index; empty dims → single empty tuple once.
+    indices: Vec<usize>,
+    finished: bool,
+    empty_domain: bool,
+}
+
+impl ParameterCandidateIter {
+    /// Build an iterator from a validated domain (per-dimension lists only).
+    pub fn try_from_domain(domain: &ParameterDomain) -> Result<Self, AdversarialError> {
+        if domain.dimensions.is_empty() {
+            return Ok(Self {
+                dims: Vec::new(),
+                indices: Vec::new(),
+                finished: false,
+                empty_domain: true,
+            });
+        }
+        let mut dims = Vec::with_capacity(domain.dimensions.len());
+        for dim in &domain.dimensions {
+            let values = dimension_values(dim)?;
+            if values.is_empty() {
+                return Err(AdversarialError::new(
+                    AdversarialErrorClass::InvalidAdversarialDefinition,
+                    format!(
+                        "parameter dimension {} produced zero candidates",
+                        dim.id.as_str()
+                    ),
+                ));
+            }
+            dims.push(
+                values
+                    .into_iter()
+                    .map(|v| (dim.id.clone(), v))
+                    .collect::<Vec<_>>(),
+            );
+        }
+        let indices = vec![0; dims.len()];
+        Ok(Self {
+            dims,
+            indices,
+            finished: false,
+            empty_domain: false,
+        })
+    }
+
+    fn current_tuple(&self) -> ParameterTuple {
+        let bindings = self
+            .indices
+            .iter()
+            .enumerate()
+            .map(|(di, &vi)| self.dims[di][vi].clone())
+            .collect();
+        ParameterTuple { bindings }
+    }
+
+    fn advance(&mut self) {
+        if self.dims.is_empty() {
+            self.finished = true;
+            return;
+        }
+        let mut carry = true;
+        for di in (0..self.dims.len()).rev() {
+            if !carry {
+                break;
+            }
+            self.indices[di] += 1;
+            if self.indices[di] < self.dims[di].len() {
+                carry = false;
+            } else {
+                self.indices[di] = 0;
+            }
+        }
+        if carry {
+            self.finished = true;
+        }
+    }
+}
+
+impl Iterator for ParameterCandidateIter {
+    type Item = ParameterTuple;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.finished {
+            return None;
+        }
+        if self.empty_domain {
+            self.finished = true;
+            return Some(ParameterTuple {
+                bindings: Vec::new(),
+            });
+        }
+        let item = self.current_tuple();
+        self.advance();
+        Some(item)
+    }
+}
+
+/// Collect at most `max_inclusive` candidates in lex order.
+///
+/// If a further candidate would exist beyond `max_inclusive`, returns
+/// `Err` with structured `LimitBreachEvidence` (`observed = max_inclusive + 1`).
+/// Never materializes the full Cartesian product solely to discover the breach.
+pub fn take_parameter_candidates(
+    domain: &ParameterDomain,
+    max_inclusive: u64,
+) -> Result<Vec<ParameterTuple>, AdversarialError> {
+    let iter = ParameterCandidateIter::try_from_domain(domain)?;
+    let mut out = Vec::new();
+    let mut produced: u64 = 0;
+    for tuple in iter {
+        produced = produced.saturating_add(1);
+        if produced > max_inclusive {
+            return Err(AdversarialError::limit_breach(LimitBreachEvidence {
+                counter: LimitCounterId::MaximumParameterCandidates,
+                observed: produced,
+                limit: max_inclusive,
+            }));
+        }
+        out.push(tuple);
+    }
+    Ok(out)
+}
+
+/// Enumerate all parameter candidate tuples in lexicographic dimension order.
+///
+/// Prefer [`take_parameter_candidates`] when a generation limit applies.
 pub fn enumerate_parameter_candidates(
     domain: &ParameterDomain,
 ) -> Result<Vec<ParameterTuple>, AdversarialError> {
-    if domain.dimensions.is_empty() {
-        return Ok(vec![ParameterTuple {
-            bindings: Vec::new(),
-        }]);
-    }
+    take_parameter_candidates(domain, u64::MAX)
+}
 
-    let mut per_dim: Vec<Vec<(IdentifierToken, ParameterValue)>> = Vec::new();
-    for dim in &domain.dimensions {
-        let values = dimension_values(dim)?;
-        if values.is_empty() {
-            return Err(AdversarialError::new(
-                AdversarialErrorClass::InvalidAdversarialDefinition,
-                format!(
-                    "parameter dimension {} produced zero candidates",
-                    dim.id.as_str()
-                ),
-            ));
+/// Multi-transform lexicographic product iterator (plan-major order).
+///
+/// Each position is a transform's parameter-candidate list. Yields one plan
+/// binding at a time without materializing the full cross-product.
+#[derive(Debug, Clone)]
+pub struct PlanParamProductIter {
+    per_transform: Vec<Vec<ParameterTuple>>,
+    indices: Vec<usize>,
+    finished: bool,
+    empty: bool,
+}
+
+impl PlanParamProductIter {
+    /// Build from per-transform candidate lists (already bounded/collected).
+    #[must_use]
+    pub fn new(per_transform: Vec<Vec<ParameterTuple>>) -> Self {
+        if per_transform.is_empty() {
+            return Self {
+                per_transform,
+                indices: Vec::new(),
+                finished: false,
+                empty: true,
+            };
         }
-        per_dim.push(values.into_iter().map(|v| (dim.id.clone(), v)).collect());
+        if per_transform.iter().any(Vec::is_empty) {
+            return Self {
+                per_transform,
+                indices: Vec::new(),
+                finished: true,
+                empty: false,
+            };
+        }
+        let indices = vec![0; per_transform.len()];
+        Self {
+            per_transform,
+            indices,
+            finished: false,
+            empty: false,
+        }
     }
 
-    Ok(cartesian_lex(&per_dim))
+    fn current(&self) -> Vec<ParameterTuple> {
+        self.indices
+            .iter()
+            .enumerate()
+            .map(|(ti, &vi)| self.per_transform[ti][vi].clone())
+            .collect()
+    }
+
+    fn advance(&mut self) {
+        let mut carry = true;
+        for ti in (0..self.per_transform.len()).rev() {
+            if !carry {
+                break;
+            }
+            self.indices[ti] += 1;
+            if self.indices[ti] < self.per_transform[ti].len() {
+                carry = false;
+            } else {
+                self.indices[ti] = 0;
+            }
+        }
+        if carry {
+            self.finished = true;
+        }
+    }
+}
+
+impl Iterator for PlanParamProductIter {
+    type Item = Vec<ParameterTuple>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.finished {
+            return None;
+        }
+        if self.empty {
+            self.finished = true;
+            return Some(Vec::new());
+        }
+        let item = self.current();
+        self.advance();
+        Some(item)
+    }
 }
 
 fn dimension_values(dim: &ParameterDimension) -> Result<Vec<ParameterValue>, AdversarialError> {
@@ -53,12 +246,8 @@ fn dimension_values(dim: &ParameterDimension) -> Result<Vec<ParameterValue>, Adv
             }
             let mut out = Vec::new();
             for op in &dim.operators {
-                match apply_numeric_op(dim, *op)? {
-                    Some(v) => out.push(v),
-                    None => {
-                        // Operator left domain / overflow → skip that candidate (NON_APPLICABLE
-                        // at evaluation time). Do not invent substitutes.
-                    }
+                if let Some(v) = apply_numeric_op(dim, *op)? {
+                    out.push(v);
                 }
             }
             Ok(sort_numeric_owned(out, dim.value_type))
@@ -188,22 +377,4 @@ fn sort_numeric_owned_inplace(values: &mut [ParameterValue], _ty: ParameterType)
         ParameterValue::Integer(n) | ParameterValue::EconomicAmount(n) => *n,
         _ => i128::MAX,
     });
-}
-
-fn cartesian_lex(per_dim: &[Vec<(IdentifierToken, ParameterValue)>]) -> Vec<ParameterTuple> {
-    let mut result = vec![ParameterTuple {
-        bindings: Vec::new(),
-    }];
-    for dim_vals in per_dim {
-        let mut next = Vec::new();
-        for prefix in &result {
-            for binding in dim_vals {
-                let mut bindings = prefix.bindings.clone();
-                bindings.push(binding.clone());
-                next.push(ParameterTuple { bindings });
-            }
-        }
-        result = next;
-    }
-    result
 }

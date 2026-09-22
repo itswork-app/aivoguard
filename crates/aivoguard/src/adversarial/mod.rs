@@ -31,6 +31,7 @@ mod engine;
 mod error;
 mod incompatibility;
 mod parameters;
+mod projection;
 mod provenance;
 mod resolve;
 mod result;
@@ -44,7 +45,14 @@ pub use engine::{
 };
 pub use error::{AdversarialError, AdversarialErrorClass};
 pub use incompatibility::{find_first_incompatibility, plan_occurrences};
-pub use parameters::{enumerate_parameter_candidates, ParameterTuple};
+pub use parameters::{
+    enumerate_parameter_candidates, take_parameter_candidates, ParameterCandidateIter,
+    ParameterTuple, PlanParamProductIter,
+};
+pub use projection::{
+    inherit_all_projections, validate_projection_table, FieldProjection, ProjectionMode,
+    ScenarioField,
+};
 pub use provenance::ScenarioProvenance;
 pub use resolve::{
     action_id_equals, resolve_action_id, resolve_action_index, ActionTarget, ResolutionClass,
@@ -55,15 +63,16 @@ pub use result::{
 };
 pub use token::IdentifierToken;
 pub use transform::{
-    apply_transformation, DuplicateIdMode, TransformApplication, TransformationDefinition,
-    TransformationKind,
+    apply_transformation, definition_with_kind_projections, projections_for_kind,
+    validate_definition_projections, DuplicateIdMode, TransformApplication,
+    TransformationDefinition, TransformationKind,
 };
 pub use types::{
     AddressingMode, ApplicabilityPolicy, ApplicationOutcomeKind, CandidateOperator,
     GenerationStatus, GeneratorConfig, GeneratorLimits, IncompatibilityEvidence,
-    IncompatibilityRule, ParameterDimension, ParameterDomain, ParameterType, ParameterValue,
-    PlanOccurrence, PositionConstraint, StructuralInvalidReason, TruncationPolicy,
-    ValidationClassification, ENGINE_VERSION as M04_ENGINE_VERSION,
+    IncompatibilityRule, LimitBreachEvidence, LimitCounterId, ParameterDimension, ParameterDomain,
+    ParameterType, ParameterValue, PlanOccurrence, PositionConstraint, StructuralInvalidReason,
+    TruncationPolicy, ValidationClassification, ENGINE_VERSION as M04_ENGINE_VERSION,
 };
 pub use validation::{
     validate_checklist, validate_scenario, ChecklistView, StructuralValidationResult,
