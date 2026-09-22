@@ -240,16 +240,20 @@ own economic truth (M01), invariant evaluation (M02), or simulation sequencing
 Economic fault-injection perturbations per future specs. Distinct from M04.
 Neither silently alters authoritative economic semantics. No detailed APIs here.
 
-### M06 — Regression (BOUNDARY ONLY)
+### M06 — Regression (**FROZEN** specification; not implemented)
 
-Compares declared expectations against authoritative outputs.
+Compares declared expectations against authoritative outputs per
+[`docs/design/economic-regression-engine-specification.md`](../design/economic-regression-engine-specification.md)
+(**FROZEN**, Gate 5 **CLOSED**, TASK-19; audit TASK-18). Implementation
+**BLOCKED**.
 
 ```text
 Economic Truth ≠ Invariant Evaluation ≠ Test Expectation
 ```
 
 A regression mismatch is not automatically an invariant violation.
-M06 is not an economic authority.
+M06 is not an economic authority. DC-13 remains formally OPEN in the Domain
+Contract; M06 freeze does not close DC-13.
 
 ### M07 / M08 — Payment / x402 adapters (BOUNDARY ONLY)
 
@@ -503,7 +507,9 @@ Architecture remains compatible with, and does **not** decide:
   (TASK-08 / TASK-08R; TASK-08F audit **PASS**; baseline `c4ce9bb`)
 * M04 specification: **FROZEN** (Gate 4 **CLOSED**); implemented (TASK-11;
   authorized TASK-10H)
-* M05–M09: product boundaries only; no code
+* M06 specification: **FROZEN** (Gate 5 **CLOSED**; TASK-19; audit TASK-18);
+  implementation **BLOCKED**
+* M05 / M07–M09: product boundaries only; no code
 * No network/DB/LLM in the authoritative core
 
 ### TARGET (conceptual)
@@ -530,7 +536,7 @@ Architecture remains compatible with, and does **not** decide:
 | M03 | Frozen | Defined | Implemented / **PASS** | Gate 3 **CLOSED** / TASK-08 / TASK-08R / TASK-08F / TASK-09 |
 | M04 | **FROZEN** | Defined | **IMPLEMENTED** (TASK-11) | Gate 4 **CLOSED** / TASK-10G / TASK-10H |
 | M05 | Future | Boundary only | Not implemented | Future |
-| M06 | Future | Boundary only | Not implemented | Future |
+| M06 | **FROZEN** | Defined | Not implemented (**BLOCKED**) | Gate 5 **CLOSED** / TASK-19 (audit TASK-18) |
 | M07 | Future | Boundary only | Not implemented | Future |
 | M08 | Future | Boundary only | Not implemented | Future |
 | M09 | Future | Boundary only | Not implemented | Future |
@@ -568,4 +574,4 @@ Architecture remains compatible with, and does **not** decide:
 | M03 implementation baseline | `c4ce9bb` |
 | Normative economic semantics | **None** (architecture only) |
 | ADR created by this task | **None** (no new implementation decision) |
-| Next | Gate 5+ / independent M04 implementation audit when authorized |
+| Next | M06 implementation authorization when separately authorized; M05/M07+ remain future |

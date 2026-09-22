@@ -46,14 +46,16 @@ Full hierarchy and process rules:
 | [`design/economic-invariant-engine-specification.md`](design/economic-invariant-engine-specification.md) | Invariant Engine (M02) — **FROZEN** (Gate 2 **CLOSED**) |
 | [`design/deterministic-simulator-specification.md`](design/deterministic-simulator-specification.md) | Deterministic Simulator (M03) — **FROZEN** (Gate 3 **CLOSED**) |
 | [`design/adversarial-scenario-engine-specification.md`](design/adversarial-scenario-engine-specification.md) | Adversarial Scenario Engine (M04) — **FROZEN** (Gate 4 **CLOSED**) |
-| [`architecture/architecture-baseline.md`](architecture/architecture-baseline.md) | Architecture baseline — M01/M02/M03/M04 **IMPLEMENTED**; M04 spec **FROZEN** |
+| [`design/economic-regression-engine-specification.md`](design/economic-regression-engine-specification.md) | Economic Regression Engine (M06) — **FROZEN** (Gate 5 **CLOSED**; implementation **BLOCKED**) |
+| [`architecture/architecture-baseline.md`](architecture/architecture-baseline.md) | Architecture baseline — M01/M02/M03/M04 **IMPLEMENTED**; M06 spec **FROZEN** (not implemented) |
 | M01 implementation | Present in `crates/aivoguard` (`kernel`); TASK-04 **PASS** |
 | M02 implementation | Present in `crates/aivoguard` (`invariant`); TASK-06 / TASK-06R **PASS** |
 | M03 implementation | Present in `crates/aivoguard` (`simulator`); TASK-08 / TASK-08R; TASK-08F audit **PASS**; baseline `c4ce9bb` |
 | M04 implementation | Present in `crates/aivoguard` (`adversarial`); TASK-11; authorized by TASK-10H |
 | Gate 0–4 | **CLOSED** |
 | Gate 4 (M04) | **CLOSED** — specification **FROZEN**; implemented (TASK-11) |
-| Gate 5+ modules (M05+) | Not implemented |
+| Gate 5 (M06) | **CLOSED** — specification **FROZEN** (TASK-19; audit TASK-18); implementation **BLOCKED** |
+| Gate 6+ / M05 / M07–M09 | Not implemented |
 
 `docs/reference/` remains an intentional placeholder for non-normative
 reference material.

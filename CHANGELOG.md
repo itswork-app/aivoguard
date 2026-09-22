@@ -25,9 +25,16 @@ once releases begin.
   **FROZEN** (Gate 4 **CLOSED**). TASK-10G (audit TASK-10F-R3; normative
   baseline `58f0e01`). Implementation authorized by TASK-10H; implemented
   under `crates/aivoguard` (`adversarial`) in TASK-11.
+* Economic regression engine specification
+  (`docs/design/economic-regression-engine-specification.md`) —
+  **FROZEN** (Gate 5 **CLOSED**). TASK-19 (audit TASK-18 READY_FOR_FREEZE).
+  Implementation remains **BLOCKED**.
 
 ### Changed
 
+* TASK-19: formal Gate-5 freeze of M06 economic regression engine
+  specification (implementation remains blocked; DC-13 / AD-03/12/14/15 /
+  M06-OD-01/02/03 remain OPEN).
 * TASK-11: M04 production implementation (`adversarial` module) against the
   frozen Gate-4 specification. Open decisions AD-03/AD-14/AD-15 preserved.
 * TASK-10G: formal Gate-4 freeze of M04 adversarial scenario engine
