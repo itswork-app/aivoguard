@@ -437,7 +437,11 @@ pub fn projections_for_kind(kind: &TransformationKind) -> Vec<FieldProjection> {
     };
     match kind {
         TransformationKind::MetadataSuffix { .. } => {
-            set(&mut table, ScenarioField::Id, ProjectionMode::DeriveExplicitly);
+            set(
+                &mut table,
+                ScenarioField::Id,
+                ProjectionMode::DeriveExplicitly,
+            );
             set(
                 &mut table,
                 ScenarioField::Version,
@@ -455,7 +459,11 @@ pub fn projections_for_kind(kind: &TransformationKind) -> Vec<FieldProjection> {
                 ScenarioField::Actions,
                 ProjectionMode::ReplaceExplicitly,
             );
-            set(&mut table, ScenarioField::Id, ProjectionMode::DeriveExplicitly);
+            set(
+                &mut table,
+                ScenarioField::Id,
+                ProjectionMode::DeriveExplicitly,
+            );
             set(
                 &mut table,
                 ScenarioField::Version,
@@ -468,7 +476,11 @@ pub fn projections_for_kind(kind: &TransformationKind) -> Vec<FieldProjection> {
                 ScenarioField::InitialState,
                 ProjectionMode::ReplaceExplicitly,
             );
-            set(&mut table, ScenarioField::Id, ProjectionMode::DeriveExplicitly);
+            set(
+                &mut table,
+                ScenarioField::Id,
+                ProjectionMode::DeriveExplicitly,
+            );
             set(
                 &mut table,
                 ScenarioField::Version,
@@ -481,7 +493,11 @@ pub fn projections_for_kind(kind: &TransformationKind) -> Vec<FieldProjection> {
                 ScenarioField::MaximumActionSteps,
                 ProjectionMode::ReplaceExplicitly,
             );
-            set(&mut table, ScenarioField::Id, ProjectionMode::DeriveExplicitly);
+            set(
+                &mut table,
+                ScenarioField::Id,
+                ProjectionMode::DeriveExplicitly,
+            );
             set(
                 &mut table,
                 ScenarioField::Version,

@@ -4,40 +4,73 @@
 | Field | Value |
 | --- | --- |
 | Document | `docs/design/m08-implementation-master-specification.md` |
-| Task | **TASK-59** |
+| Task | **TASK-59** (created) → **TASK-67** (freeze sync) |
 | Module | **M08 — x402 Adapter** |
-| Gate | **GATE 7** |
-| Status | **DRAFT — REMEDIATED; READY FOR INDEPENDENT RE-AUDIT** |
-| Normative source | [`x402-adapter-specification.md`](x402-adapter-specification.md) (**FROZEN BY TASK-54**) |
-| Implementation scope | **INBOUND-ONLY** |
-| Implementation authorization | **NOT AUTHORIZED** |
-| Wire | **NOT FROZEN** |
+| Gate | **GATE 7** — **CLOSED_FOR_CURRENT_BOUNDED_INBOUND_SCOPE** |
+| Status | **FROZEN_FOR_CURRENT_SCOPE** (TASK-66; synced TASK-67) |
+| Normative source | [`x402-adapter-specification.md`](x402-adapter-specification.md) (**SPECIFICATION FREEZE** by **TASK-54**) |
+| Implementation scope | **BOUNDED_INBOUND_ONLY** |
+| Implementation authorization | **AUTHORIZED_FOR_BOUNDED_INBOUND_SCOPE** (TASK-63) |
+| Implementation freeze | **TASK-66** — **FROZEN_FOR_CURRENT_SCOPE** |
+| Wire | **NOT FROZEN** (**M08-OD-05** OPEN) |
 | Open decisions | **PRESERVED** |
 
 ```text
-STATUS:                  DRAFT — REMEDIATED; READY FOR INDEPENDENT RE-AUDIT
-NORMATIVE SOURCE:        docs/design/x402-adapter-specification.md (FROZEN BY TASK-54)
-IMPLEMENTATION SCOPE:    INBOUND-ONLY
-IMPLEMENTATION:          NOT AUTHORIZED
-WIRE:                    NOT FROZEN
+SPECIFICATION FREEZE:    FROZEN BY TASK-54 (x402-adapter-specification.md)
+IMPLEMENTATION AUTHORITY: AUTHORIZED_FOR_BOUNDED_INBOUND_SCOPE (TASK-63)
+IMPLEMENTATION STATUS:   FROZEN_FOR_CURRENT_SCOPE (TASK-66)
+IMPLEMENTATION FREEZE:   TASK-66
+FREEZE SCOPE:            BOUNDED_INBOUND_ONLY
+GATE_7:                  CLOSED_FOR_CURRENT_BOUNDED_INBOUND_SCOPE (TASK-67)
+WIRE FREEZE:             NOT_FROZEN
 OPEN DECISIONS:          PRESERVED
+M01_INTEGRITY:           UNCHANGED
+M07_INTEGRITY:           UNCHANGED
+
+Distinguish:
+  SPECIFICATION FREEZE  ≠  IMPLEMENTATION AUTHORIZATION
+  ≠  IMPLEMENTATION FREEZE  ≠  WIRE FREEZE
 
 TASK-54: M08 semantic/protocol boundary FROZEN
 TASK-55: freeze integrity CONFIRMED
 TASK-56: architecture baseline SYNCHRONIZED
 TASK-57: post-synchronization audit PASS
 TASK-58: MASTER_SPEC_READY=YES; MINIMUM_DECISIONS_REQUIRED=NONE
-         for inbound-only; IMPLEMENTATION_AUTHORIZATION_READY=NO
 TASK-59: this implementation master specification (blueprint only)
 TASK-60: independent audit CONDITIONAL (MINOR-01, MINOR-02)
 TASK-61: remediation of MINOR-01 / MINOR-02 (+ observations)
+TASK-62: independent re-audit PASS
+TASK-63: EXPLICIT IMPLEMENTATION AUTHORIZATION
+TASK-64: BOUNDED INBOUND-ONLY IMPLEMENTATION
+TASK-65: independent implementation audit PASS
+TASK-66: post-implementation integrity / FROZEN_FOR_CURRENT_SCOPE
+TASK-67: documentation sync + Gate-7 bounded closure
 
 This document is subordinate. If it conflicts with the frozen M08
 specification, the frozen specification wins.
+(Normative file may still say IMPLEMENTATION: NOT AUTHORIZED — that is the
+historical TASK-54 freeze-time statement; coding authority is TASK-63+.)
 
-Writing this master specification does NOT authorize coding.
-A separate implementation-authorization task is required before any
-Rust module, test crate surface, or dependency change.
+AUTHORIZED (TASK-63) / IMPLEMENTED (TASK-64) / FROZEN_FOR_CURRENT_SCOPE (TASK-66):
+  M08 inbound-only semantic adapter
+  (fixture observation → validate → translate/classify → provenance
+   → non-authoritative X402SemanticRecord)
+  Module: `crates/aivoguard/src/x402_adapter/`
+  Tests: `crates/aivoguard/tests/m08_x402_adapter.rs`
+
+NOT AUTHORIZED / NOT IMPLEMENTED / NOT PART OF THIS FREEZE:
+  wire / HTTP / 402 / headers / JSON / Base64
+  cryptographic verification / facilitator verification
+  wallet / blockchain / live network / production payment
+  M07 SettlementObservation output
+  M01 mutation / economic verdicts
+  outbound x402 emission
+  closing M08-OD-01…06 or parent ODs / DC-11/13 / AD-14/15
+
+Known non-blocking observations (TASK-65/66; not blockers):
+  OBSERVATION: validate_structure currently no-op (amount malformations still rejected)
+  OBSERVATION: empty configuration_id / configuration_version lack dedicated tests
+  OBSERVATION: PATH-C/E error variants declared but unreachable on inbound path
 ```
 
 ---
@@ -53,15 +86,19 @@ M01 / M02 / M03 / M04 / M06 / M07 FROZEN (+ implemented where Closed)
         ↓
 M08 FROZEN SPECIFICATION (TASK-54)
         ↓
-This M08 Implementation Master Spec (TASK-59/61) — DRAFT REMEDIATED
+This M08 Implementation Master Spec (TASK-59…67)
+  — AUTHORIZED_FOR_BOUNDED_INBOUND_SCOPE
+  — FROZEN_FOR_CURRENT_SCOPE (bounded inbound-only)
         ↓
-Implementation (NOT AUTHORIZED)
+Implementation (TASK-64) — EXECUTED; freeze sealed by TASK-66
         ↓
-Tests (NOT AUTHORIZED)
+Tests — `tests/m08_x402_adapter.rs`
+        ↓
+GATE 7 — CLOSED_FOR_CURRENT_BOUNDED_INBOUND_SCOPE (TASK-67)
 ```
 
 Anti-drift: do not amend `x402-adapter-specification.md` to make
-implementation easier. Open decisions remain OPEN (§22).
+implementation easier. Open decisions remain OPEN (§19).
 
 ---
 
@@ -79,7 +116,7 @@ provenance
 non-authoritative X402SemanticRecord
 ```
 
-Properties of the authorized **blueprint** (not yet coding-authorized):
+Properties of the **coding-authorized** bounded path (TASK-63):
 
 ```text
 INBOUND ONLY
@@ -126,16 +163,16 @@ Cargo dependency additions
 Intended location (provisional; AD-15 OPEN):
 
 ```text
-crates/aivoguard/src/x402_adapter/   ← NOT CREATED by TASK-59
+crates/aivoguard/src/x402_adapter/   ← IMPLEMENTED by TASK-64
   mod.rs
-  types.rs      # provisional carriers
-  config.rs     # declared mapping configuration
-  validate.rs   # structural / amount / config checks
-  translate.rs  # deterministic translation
-  error.rs      # adapter-local errors
+  types.rs
+  config.rs
+  validate.rs
+  translate.rs
+  error.rs
   provenance.rs
 
-crates/aivoguard/tests/m08_x402_adapter.rs   ← NOT CREATED by TASK-59
+crates/aivoguard/tests/m08_x402_adapter.rs   ← IMPLEMENTED by TASK-64
 ```
 
 Responsibility:
@@ -678,22 +715,42 @@ Implementation (when authorized) passes only if it matches this master **and**:
 | --- | --- |
 | Created | **TASK-59** |
 | Remediated | **TASK-61** (MINOR-01, MINOR-02; OBSERVATION-01/02) |
-| Status | **DRAFT — REMEDIATED; READY FOR INDEPENDENT RE-AUDIT** |
-| Normative source | M08 FROZEN BY TASK-54 |
-| Implementation | **NOT AUTHORIZED** |
+| Re-audit | **TASK-62** — **PASS** |
+| Authorization | **TASK-63** — **AUTHORIZED_FOR_BOUNDED_INBOUND_SCOPE** |
+| Implementation | **TASK-64** — **IMPLEMENTED** (bounded inbound-only) |
+| Implementation audit | **TASK-65** — **PASS** |
+| Implementation freeze | **TASK-66** — **FROZEN_FOR_CURRENT_SCOPE** |
+| Gate sync | **TASK-67** — Gate-7 **CLOSED_FOR_CURRENT_BOUNDED_INBOUND_SCOPE** |
+| Status | **FROZEN_FOR_CURRENT_SCOPE** — inbound-only; wire/live/verify **NOT AUTHORIZED** |
+| Normative source | M08 **SPECIFICATION FREEZE** BY TASK-54 |
+| Implementation authority | **AUTHORIZED_FOR_BOUNDED_INBOUND_SCOPE** |
 | Wire | **NOT FROZEN** |
 | Open decisions | **PRESERVED** |
-| Traceability | TASK-54 → 55 → 56 → 57 → 58 → 59 → 60 → **61** |
-| TASK-58 result | `MINIMUM_DECISIONS_REQUIRED: NONE` for inbound-only; `MASTER_SPEC_READY: YES`; `IMPLEMENTATION_AUTHORIZATION_READY: NO` |
+| Traceability | TASK-54 → … → 63 → 64 → 65 → 66 → **67** |
+| TASK-58 result | `MINIMUM_DECISIONS_REQUIRED: NONE` for inbound-only; `MASTER_SPEC_READY: YES` |
 | TASK-60 result | `CONDITIONAL` (MINOR-01 dual rejection; MINOR-02 version policy) |
-| Next | **TASK-62 — M08 implementation master specification independent re-audit** |
+| TASK-62 result | `PASS` / `AUDIT_STATUS: PASS` |
+| TASK-65 result | `PASS` / `AUDIT_STATUS: PASS` |
+| TASK-66 result | `FROZEN_FOR_CURRENT_SCOPE` |
+| Next | Future M08 paths require separate Open-Decision closure + authorization; M05/M09 remain future |
 
 ```text
-MASTER_SPEC_STATUS: REMEDIATED_DRAFT_READY_FOR_INDEPENDENT_REAUDIT
-IMPLEMENTATION: NOT AUTHORIZED
-WIRE: NOT FROZEN
-OPEN_DECISIONS: PRESERVED
+SPECIFICATION FREEZE:     FROZEN BY TASK-54
+IMPLEMENTATION AUTHORITY: AUTHORIZED_FOR_BOUNDED_INBOUND_SCOPE
+IMPLEMENTATION STATUS:    FROZEN_FOR_CURRENT_SCOPE
+IMPLEMENTATION FREEZE:    TASK-66
+FREEZE SCOPE:             BOUNDED_INBOUND_ONLY
+GATE_7:                   CLOSED_FOR_CURRENT_BOUNDED_INBOUND_SCOPE
+WIRE:                     NOT_FROZEN
+OPEN_DECISIONS:           PRESERVED
+M01_INTEGRITY:            UNCHANGED
+M07_INTEGRITY:            UNCHANGED
 RESULT_CONTRACT: Ok(untrusted) | Err(adapter) — trust_class=rejected not emitted
 VERSION_POLICY: ClaimOnly | AllowList(non-empty) | RejectAll
 PROVENANCE: NEVER UPGRADES TRUST
+
+AUTHORIZED/IMPLEMENTED/FROZEN (inbound-only): M08 semantic adapter + required tests
+NOT AUTHORIZED: wire/HTTP/402/headers/JSON/Base64; crypto/facilitator verify;
+  wallet/blockchain/live network/production payment; M07 SettlementObservation;
+  M01 mutation/economic verdicts; outbound x402 emission
 ```

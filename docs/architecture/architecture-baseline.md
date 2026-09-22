@@ -121,8 +121,10 @@ INTERFACES          CLI / SDK / HTTP / language bindings (future; not frozen)
 ADAPTERS            M07 payment/settlement testing + semantic adapter boundary
                     (IMPLEMENTED / FROZEN_FOR_CURRENT_SCOPE; Gate 6);
                     M08 x402 integration/protocol boundary
-                    (SPEC FROZEN by TASK-54; Gate 7; IMPLEMENTATION NOT AUTHORIZED;
-                     wire NOT FROZEN)
+                    (SPEC FROZEN by TASK-54; Gate 7
+                     CLOSED_FOR_CURRENT_BOUNDED_INBOUND_SCOPE;
+                     IMPLEMENTATION FROZEN_FOR_CURRENT_SCOPE by TASK-66;
+                     wire NOT FROZEN / NOT AUTHORIZED)
 ORCHESTRATION       M03 simulator (IMPLEMENTED / PASS; Gate 3 CLOSED); M09 multi-agent (future)
 EVALUATION          M02 invariants (IMPLEMENTED / PASS; Gate 2 CLOSED);
                     M06 regression (IMPLEMENTED; Gate 5 CLOSED)
@@ -149,8 +151,11 @@ crates/aivoguard/
     regression/          ← M06 expectation comparison (IMPLEMENTED)
     payment_settlement/  ← M07 payment/settlement testing + semantic adapter
                            (IMPLEMENTED / FROZEN_FOR_CURRENT_SCOPE)
+    x402_adapter/        ← M08 inbound-only semantic adapter
+                           (IMPLEMENTED / FROZEN_FOR_CURRENT_SCOPE; TASK-64/66;
+                           wire NOT FROZEN / NOT AUTHORIZED)
     # future seams (NOT created as product modules):
-    # chaos/ x402 (M08) / multi-agent …
+    # chaos/ multi-agent …
 ```
 
 Additional crates are authorized only when a frozen specification and explicit
@@ -299,12 +304,28 @@ Provider-specific integrations remain **NOT AUTHORIZED**. Open decisions
 AD-03 / AD-12 / AD-14 / AD-15, DC-06 / DC-09 / DC-13, OD-07, M06-OD-*, and
 M07-OD-* remain **OPEN**.
 
-### M08 — x402 Adapter (Gate 7 **SPEC FROZEN**; **NOT IMPLEMENTED**)
+### M08 — x402 Adapter (Gate 7 **SPEC FROZEN**; **IMPLEMENTED** / **FROZEN_FOR_CURRENT_SCOPE**; Gate **CLOSED_FOR_CURRENT_BOUNDED_INBOUND_SCOPE**)
 
 Specification:
 [`docs/design/x402-adapter-specification.md`](../design/x402-adapter-specification.md)
-(**FROZEN** by **TASK-54**; Gate 7). Implementation **NOT AUTHORIZED**.
-Wire / HTTP / codecs: **NOT FROZEN**.
+(**FROZEN** by **TASK-54**; Gate 7).
+Implementation master:
+[`docs/design/m08-implementation-master-specification.md`](../design/m08-implementation-master-specification.md)
+(**TASK-62 PASS**; **TASK-63** **AUTHORIZED_FOR_BOUNDED_INBOUND_SCOPE**;
+**TASK-64** **IMPLEMENTED**; **TASK-65** audit **PASS**;
+**TASK-66** **FROZEN_FOR_CURRENT_SCOPE**; **TASK-67** Gate-7 sync).
+Module: `crates/aivoguard/src/x402_adapter/`.
+Tests: `crates/aivoguard/tests/m08_x402_adapter.rs`.
+
+```text
+SCOPE:          BOUNDED_INBOUND_ONLY semantic adapter
+IMPLEMENTATION: FROZEN_FOR_CURRENT_SCOPE
+GATE_7:         CLOSED_FOR_CURRENT_BOUNDED_INBOUND_SCOPE
+WIRE:           NOT_FROZEN / NOT_IMPLEMENTED
+VERIFICATION:   NOT_AUTHORIZED (M08-OD-03 OPEN)
+LIVE PROVIDER:  NOT_AUTHORIZED
+OUTBOUND:       NOT_AUTHORIZED (M08-OD-06 OPEN)
+```
 
 ```text
 External x402 protocol (fixtures / explicit observations)
@@ -321,14 +342,18 @@ M08 is an **integration / protocol boundary** for x402-style payment flows
 HTTP/wire codecs, or reopen M07 settlement-testing semantics.
 M08 outputs remain **non-authoritative**.
 
+Gate-7 closure is **scope closure** for the bounded inbound adapter only — it is
+**not** x402-complete, wire-complete, verification-complete, or production-ready.
+
 * OD-08 / DC-11 remain **OPEN** product/domain-wide; M08 freeze constrains only
   the M08 subset.
 * Wire / HTTP / facilitator live integration: **NOT FROZEN** / **NOT AUTHORIZED**.
+* Verification / crypto / facilitator verify: **NOT AUTHORIZED** (`M08-OD-03` **OPEN**).
+* Outbound emission: **NOT AUTHORIZED** (`M08-OD-06` **OPEN**).
 * M08 → M07 composition (e.g. emitting M07 observations): requires separate
   authorization (`M08-OD-02` **OPEN**).
-* M08-OD-01…06 remain **OPEN** (implementation/path decisions; not closed by freeze).
-
-No M08 crate module or dependencies in this baseline.
+* M08-OD-01…06 remain **OPEN** (not closed by freeze, authorization, implementation,
+  or Gate-7 bounded closure).
 
 ### M09 — Multi-Agent World (BOUNDARY ONLY)
 
@@ -590,8 +615,11 @@ Architecture remains compatible with, and does **not** decide:
 * M07 provider integrations and external wire formats: **NOT AUTHORIZED**
   (**AD-14 OPEN**)
 * M08 specification: **FROZEN** (Gate 7; **TASK-54**;
-  `docs/design/x402-adapter-specification.md`); **NOT IMPLEMENTED** /
-  **NOT AUTHORIZED**; wire **NOT FROZEN**
+  `docs/design/x402-adapter-specification.md`); master **PASS** (TASK-62);
+  **AUTHORIZED_FOR_BOUNDED_INBOUND_SCOPE** (TASK-63);
+  **IMPLEMENTED** (TASK-64); audit **PASS** (TASK-65);
+  **FROZEN_FOR_CURRENT_SCOPE** (TASK-66); Gate-7
+  **CLOSED_FOR_CURRENT_BOUNDED_INBOUND_SCOPE** (TASK-67); wire **NOT FROZEN**
 * M05 / M09: product boundaries only; no code
 * No network/DB/LLM in the authoritative core
 
@@ -609,7 +637,10 @@ Architecture remains compatible with, and does **not** decide:
 * M07 as specified by frozen Gate-6 contract (**FROZEN**; implemented for
   current authorized scope; provider/wire require separate authorization)
 * M08 as specified by frozen Gate-7 contract (**FROZEN** by TASK-54;
-  implementation **NOT AUTHORIZED**; wire **NOT FROZEN**)
+  **AUTHORIZED_FOR_BOUNDED_INBOUND_SCOPE** by TASK-63;
+  **IMPLEMENTED** / **FROZEN_FOR_CURRENT_SCOPE** by TASK-64/66;
+  Gate **CLOSED_FOR_CURRENT_BOUNDED_INBOUND_SCOPE** by TASK-67;
+  wire **NOT FROZEN**)
 * M05 / M09 as specified by future frozen gates
 * Interfaces and provider adapters outside the economic core
 
@@ -626,7 +657,7 @@ Architecture remains compatible with, and does **not** decide:
 | M05 | Future | Boundary only | Not implemented | Future |
 | M06 | **FROZEN** | Defined | **IMPLEMENTED** | Gate 5 **CLOSED** / TASK-19 (audit TASK-18) |
 | M07 | **FROZEN** | Defined | **IMPLEMENTED** / **FROZEN_FOR_CURRENT_SCOPE** (semantic adapter; no provider/wire) | Gate 6 / TASK-45 (audits TASK-42 / TASK-44) |
-| M08 | **FROZEN** | Defined (Gate 7) | Not implemented (**NOT AUTHORIZED**; wire **NOT FROZEN**) | Gate 7 / TASK-54 |
+| M08 | **FROZEN** | Defined (Gate 7) | **IMPLEMENTED** / **FROZEN_FOR_CURRENT_SCOPE** (inbound-only; wire **NOT FROZEN**) | Gate 7 **CLOSED_FOR_CURRENT_BOUNDED_INBOUND_SCOPE** / TASK-66 / TASK-67 |
 | M09 | Future | Boundary only | Not implemented | Future |
 
 ---
@@ -635,7 +666,7 @@ Architecture remains compatible with, and does **not** decide:
 
 | # | Criterion | Status |
 | --- | --- | --- |
-| 1 | Every current implemented responsibility has an owner | PASS (M01/kernel; M02/invariant; M03/simulator; M04/adversarial; M06/regression; M07/payment_settlement) |
+| 1 | Every current implemented responsibility has an owner | PASS (M01/kernel; M02/invariant; M03/simulator; M04/adversarial; M06/regression; M07/payment_settlement; M08/x402_adapter inbound-only) |
 | 2 | Every frozen domain responsibility has an architectural home | PASS |
 | 3 | M01 authority unambiguous | PASS |
 | 4 | M02 authority unambiguous | PASS |
@@ -664,6 +695,12 @@ Architecture remains compatible with, and does **not** decide:
 | ADR created by this task | **None** (no new implementation decision) |
 | M07 architecture sync | TASK-46 — baseline status synchronized to IMPLEMENTED / FROZEN_FOR_CURRENT_SCOPE |
 | M08 Gate-7 draft | TASK-50 — `x402-adapter-specification.md` DRAFT boundary recorded |
-| M08 Gate-7 freeze | **TASK-54** — M08 specification **FROZEN**; implementation **NOT AUTHORIZED**; wire **NOT FROZEN** |
-| M08 architecture sync | TASK-56 — baseline synchronized to FROZEN / NOT AUTHORIZED |
-| Next | TASK-57 independent post-synchronization audit; M08 implementation remains NOT AUTHORIZED; M05/M09 remain future |
+| M08 Gate-7 freeze | **TASK-54** — M08 specification **FROZEN**; wire **NOT FROZEN** |
+| M08 architecture sync | TASK-56 — baseline synchronized to FROZEN |
+| M08 master + audit | TASK-59…62 — inbound master remediated; TASK-62 **PASS** |
+| M08 implementation authorization | **TASK-63** — **AUTHORIZED_FOR_BOUNDED_INBOUND_SCOPE** |
+| M08 inbound implementation | **TASK-64** — bounded inbound-only **IMPLEMENTED** |
+| M08 implementation audit | **TASK-65** — **PASS** |
+| M08 implementation freeze | **TASK-66** — **FROZEN_FOR_CURRENT_SCOPE** |
+| M08 Gate-7 bounded closure | **TASK-67** — **CLOSED_FOR_CURRENT_BOUNDED_INBOUND_SCOPE** |
+| Next | Future M08 paths (wire/verify/live/outbound/M07-out) require separate OD closure + authorization; M05/M09 remain future |

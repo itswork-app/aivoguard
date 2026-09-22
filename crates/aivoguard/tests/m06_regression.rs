@@ -11,7 +11,8 @@ use aivoguard::{
     InvariantOutcome, InvariantResultKind, KernelOutcome, MismatchClass, RegressionCase,
     RegressionErrorId, RegressionObservation, RegressionVerdict, ScenarioBinding, ScenarioId,
     SimulationResult, StepResult, StructuredValue, ToleranceCompare, Transaction,
-    ENGINE_VERSION as M01_ENGINE_VERSION, M02_ENGINE_VERSION, M03_ENGINE_VERSION, M06_ENGINE_VERSION,
+    ENGINE_VERSION as M01_ENGINE_VERSION, M02_ENGINE_VERSION, M03_ENGINE_VERSION,
+    M06_ENGINE_VERSION,
 };
 
 fn facet() -> FacetId {
@@ -20,12 +21,7 @@ fn facet() -> FacetId {
 
 fn state_with(alice: i128, bob: Option<i128>) -> EconomicState {
     let mut s = EconomicState::new();
-    s.set_balance(
-        AccountId::new("alice"),
-        AssetId::new("USD"),
-        facet(),
-        alice,
-    );
+    s.set_balance(AccountId::new("alice"), AssetId::new("USD"), facet(), alice);
     if let Some(b) = bob {
         s.set_balance(AccountId::new("bob"), AssetId::new("USD"), facet(), b);
     }
@@ -186,7 +182,10 @@ fn exact_balance_mismatch() {
     assert_eq!(r.verdict, RegressionVerdict::Mismatch);
     assert_eq!(r.mismatches.len(), 1);
     assert_eq!(r.mismatches[0].expectation_id, "e1");
-    assert_eq!(r.mismatches[0].mismatch_class, MismatchClass::ValueInequality);
+    assert_eq!(
+        r.mismatches[0].mismatch_class,
+        MismatchClass::ValueInequality
+    );
     assert_eq!(r.mismatches[0].operator, ComparisonOperator::Exact);
     assert_eq!(r.mismatches[0].ordinal, 0);
 }
@@ -295,10 +294,7 @@ fn empty_expectations_match() {
 fn all_non_applicable_expectations_match() {
     let sim = base_sim(state_with(1, None));
     let r = evaluate_regression(&case_with(
-        vec![
-            bal_exact("a", 999, false),
-            bal_exact("b", 0, false),
-        ],
+        vec![bal_exact("a", 999, false), bal_exact("b", 0, false)],
         sim,
         None,
     ));
@@ -370,7 +366,10 @@ fn execution_status_exact() {
         None,
     ));
     assert_eq!(r.verdict, RegressionVerdict::Mismatch);
-    assert_eq!(r.mismatches[0].mismatch_class, MismatchClass::StatusInequality);
+    assert_eq!(
+        r.mismatches[0].mismatch_class,
+        MismatchClass::StatusInequality
+    );
 }
 
 #[test]
@@ -398,7 +397,10 @@ fn executed_action_count_exact() {
         None,
     ));
     assert_eq!(r.verdict, RegressionVerdict::Mismatch);
-    assert_eq!(r.mismatches[0].mismatch_class, MismatchClass::CountInequality);
+    assert_eq!(
+        r.mismatches[0].mismatch_class,
+        MismatchClass::CountInequality
+    );
 }
 
 #[test]
@@ -595,7 +597,10 @@ fn invariant_cardinality_one_match() {
         None,
     ));
     assert_eq!(r.verdict, RegressionVerdict::Mismatch);
-    assert_eq!(r.mismatches[0].mismatch_class, MismatchClass::KindInequality);
+    assert_eq!(
+        r.mismatches[0].mismatch_class,
+        MismatchClass::KindInequality
+    );
 }
 
 #[test]
@@ -686,11 +691,12 @@ fn completion_invariant_cardinality() {
     );
 
     // cardinality >1
-    sim.completion_evaluation_records.push(InvariantEvaluationRecord::Executed {
-        point: EvaluationPoint::OnSimulationCompletion,
-        invariant_id: "c-inv".into(),
-        outcome: fail_outcome("c-inv"),
-    });
+    sim.completion_evaluation_records
+        .push(InvariantEvaluationRecord::Executed {
+            point: EvaluationPoint::OnSimulationCompletion,
+            invariant_id: "c-inv".into(),
+            outcome: fail_outcome("c-inv"),
+        });
     let r = evaluate_regression(&case_with(
         vec![Expectation {
             expectation_id: "c".into(),
@@ -868,11 +874,7 @@ fn authority_boundary_no_mutation_no_execution() {
         case.observation
             .simulation_result
             .final_state
-            .balance_if_present(
-                &AccountId::new("alice"),
-                &AssetId::new("USD"),
-                &facet()
-            ),
+            .balance_if_present(&AccountId::new("alice"), &AssetId::new("USD"), &facet()),
         Some(10)
     );
     // Structural: evaluate_regression takes &RegressionCase — no run_simulation /

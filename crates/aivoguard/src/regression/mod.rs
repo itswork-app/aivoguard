@@ -26,9 +26,9 @@ pub use engine::evaluate_regression;
 pub use error::{RegressionError, RegressionErrorId};
 pub use numeric::{compare_absolute_tolerance, ToleranceCompare};
 pub use types::{
-    ComparisonOperator, ENGINE_VERSION as M06_ENGINE_VERSION, EnginePins, Expectation,
-    ExpectationClass, ExpectationPhase, ExpectedDisposition, ExpectedExecutionStatus,
-    ExpectedFatalCauseClass, MismatchClass, MismatchEvidence, RegressionCase,
-    RegressionObservation, RegressionProvenance, RegressionResult, RegressionVerdict,
-    ScenarioBinding, StructuredValue,
+    ComparisonOperator, EnginePins, Expectation, ExpectationClass, ExpectationPhase,
+    ExpectedDisposition, ExpectedExecutionStatus, ExpectedFatalCauseClass, MismatchClass,
+    MismatchEvidence, RegressionCase, RegressionObservation, RegressionProvenance,
+    RegressionResult, RegressionVerdict, ScenarioBinding, StructuredValue,
+    ENGINE_VERSION as M06_ENGINE_VERSION,
 };

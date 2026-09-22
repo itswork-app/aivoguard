@@ -174,8 +174,10 @@ impl ExpectedExecutionStatus {
                 ExecutionStatus::FatalTermination { cause },
             ) => matches!(
                 (cause_class, cause),
-                (ExpectedFatalCauseClass::Simulation, FatalCause::Simulation(_))
-                    | (ExpectedFatalCauseClass::M01, FatalCause::M01(_))
+                (
+                    ExpectedFatalCauseClass::Simulation,
+                    FatalCause::Simulation(_)
+                ) | (ExpectedFatalCauseClass::M01, FatalCause::M01(_))
             ),
             _ => false,
         }

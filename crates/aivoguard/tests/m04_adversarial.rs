@@ -802,10 +802,7 @@ fn parameter_ordering_first_candidate_stable() {
                 lo: None,
                 hi: None,
                 operators: vec![],
-                explicit_values: vec![
-                    ParameterValue::Integer(1),
-                    ParameterValue::Integer(2),
-                ],
+                explicit_values: vec![ParameterValue::Integer(1), ParameterValue::Integer(2)],
             },
             ParameterDimension {
                 id: tok("b"),
@@ -813,10 +810,7 @@ fn parameter_ordering_first_candidate_stable() {
                 lo: None,
                 hi: None,
                 operators: vec![],
-                explicit_values: vec![
-                    ParameterValue::Integer(10),
-                    ParameterValue::Integer(20),
-                ],
+                explicit_values: vec![ParameterValue::Integer(10), ParameterValue::Integer(20)],
             },
         ],
     };

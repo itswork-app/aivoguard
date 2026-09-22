@@ -5,9 +5,9 @@ use crate::kernel::{AccountId, AssetId, FacetId, KernelOutcome};
 use crate::regression::error::{RegressionError, RegressionErrorId};
 use crate::regression::numeric::{compare_absolute_tolerance, ToleranceCompare};
 use crate::regression::types::{
-    ComparisonOperator, ENGINE_VERSION, EnginePins, Expectation, ExpectationClass,
-    ExpectationPhase, MismatchClass, MismatchEvidence, RegressionCase, RegressionProvenance,
-    RegressionResult, RegressionVerdict, StructuredValue,
+    ComparisonOperator, EnginePins, Expectation, ExpectationClass, ExpectationPhase, MismatchClass,
+    MismatchEvidence, RegressionCase, RegressionProvenance, RegressionResult, RegressionVerdict,
+    StructuredValue, ENGINE_VERSION,
 };
 use crate::simulator::{EvaluationPoint, InvariantEvaluationRecord, SimulationResult};
 
@@ -77,7 +77,13 @@ pub fn evaluate_regression(case: &RegressionCase) -> RegressionResult {
     }
 
     if mismatches.is_empty() {
-        base(RegressionVerdict::Match, mismatches, None, evaluated, skipped)
+        base(
+            RegressionVerdict::Match,
+            mismatches,
+            None,
+            evaluated,
+            skipped,
+        )
     } else {
         base(
             RegressionVerdict::Mismatch,
@@ -190,17 +196,29 @@ fn validate_engine_pins(case: &RegressionCase) -> Result<(), RegressionError> {
     let sim = &case.observation.simulation_result;
     if let Some(v) = &pins.m01_engine_version {
         if v != &sim.m01_engine_version {
-            return Err(pin_mismatch("m01_engine_version", v, &sim.m01_engine_version));
+            return Err(pin_mismatch(
+                "m01_engine_version",
+                v,
+                &sim.m01_engine_version,
+            ));
         }
     }
     if let Some(v) = &pins.m02_engine_version {
         if v != &sim.m02_engine_version {
-            return Err(pin_mismatch("m02_engine_version", v, &sim.m02_engine_version));
+            return Err(pin_mismatch(
+                "m02_engine_version",
+                v,
+                &sim.m02_engine_version,
+            ));
         }
     }
     if let Some(v) = &pins.m03_engine_version {
         if v != &sim.m03_engine_version {
-            return Err(pin_mismatch("m03_engine_version", v, &sim.m03_engine_version));
+            return Err(pin_mismatch(
+                "m03_engine_version",
+                v,
+                &sim.m03_engine_version,
+            ));
         }
     }
     Ok(())
@@ -212,14 +230,8 @@ fn pin_mismatch(name: &str, expected: &str, observed: &str) -> RegressionError {
         format!("{name} pin mismatch"),
     )
     .with_field("pin", StructuredValue::String(name.to_owned()))
-    .with_field(
-        "expected",
-        StructuredValue::String(expected.to_owned()),
-    )
-    .with_field(
-        "observed",
-        StructuredValue::String(observed.to_owned()),
-    )
+    .with_field("expected", StructuredValue::String(expected.to_owned()))
+    .with_field("observed", StructuredValue::String(observed.to_owned()))
 }
 
 fn evaluate_one(expectation: &Expectation, sim: &SimulationResult) -> EvalOne {
@@ -377,10 +389,7 @@ fn lookup_balance(
                 RegressionErrorId::MissingObservationField,
                 "declared balance cell is absent",
             )
-            .with_field(
-                "account",
-                StructuredValue::String(account_id.to_owned()),
-            )
+            .with_field("account", StructuredValue::String(account_id.to_owned()))
             .with_field("asset", StructuredValue::String(asset_id.to_owned()))
             .with_field("facet", StructuredValue::String(facet_id.to_owned()))
         })
@@ -398,11 +407,13 @@ fn eval_step_disposition(
 ) -> EvalOne {
     let idx = step_index as usize;
     if idx >= sim.step_records.len() {
-        return EvalOne::Error(RegressionError::new(
-            RegressionErrorId::MissingObservationField,
-            "step_index out of range for step_records",
-        )
-        .with_field("step_index", StructuredValue::U64(step_index)));
+        return EvalOne::Error(
+            RegressionError::new(
+                RegressionErrorId::MissingObservationField,
+                "step_index out of range for step_records",
+            )
+            .with_field("step_index", StructuredValue::U64(step_index)),
+        );
     }
     let step = &sim.step_records[idx];
     let observed_disp = match &step.kernel_outcome {
@@ -447,11 +458,13 @@ fn eval_invariant_kind(
 ) -> EvalOne {
     let idx = step_index as usize;
     if idx >= sim.step_records.len() {
-        return EvalOne::Error(RegressionError::new(
-            RegressionErrorId::MissingObservationField,
-            "step_index out of range for invariant lookup",
-        )
-        .with_field("step_index", StructuredValue::U64(step_index)));
+        return EvalOne::Error(
+            RegressionError::new(
+                RegressionErrorId::MissingObservationField,
+                "step_index out of range for invariant lookup",
+            )
+            .with_field("step_index", StructuredValue::U64(step_index)),
+        );
     }
     let step = &sim.step_records[idx];
     let records: &[InvariantEvaluationRecord] = match phase {
@@ -500,14 +513,16 @@ fn resolve_invariant_matches(
             format!("no matching {class_name} observation records"),
         )),
         1 => match matches[0] {
-            InvariantEvaluationRecord::NotExecuted { .. } => EvalOne::Error(RegressionError::new(
-                RegressionErrorId::NotExecutedObservation,
-                "sole matching record is NotExecuted",
-            )
-            .with_field(
-                "expectation_id",
-                StructuredValue::String(expectation.expectation_id.clone()),
-            )),
+            InvariantEvaluationRecord::NotExecuted { .. } => EvalOne::Error(
+                RegressionError::new(
+                    RegressionErrorId::NotExecutedObservation,
+                    "sole matching record is NotExecuted",
+                )
+                .with_field(
+                    "expectation_id",
+                    StructuredValue::String(expectation.expectation_id.clone()),
+                ),
+            ),
             InvariantEvaluationRecord::Executed { outcome, .. } => {
                 if outcome.kind == expected_kind {
                     EvalOne::Satisfied

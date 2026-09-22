@@ -6,6 +6,7 @@
 //! * Gate-4 **M04 Adversarial Scenario Engine** — [`adversarial`] (scenario generation)
 //! * Gate-5 **M06 Economic Regression Engine** — [`regression`] (expectation comparison)
 //! * Gate-6 **M07 Payment & Settlement Testing** — [`payment_settlement`] (types foundation)
+//! * Gate-7 **M08 x402 Adapter** — [`x402_adapter`] (inbound-only semantic translation)
 
 #![forbid(unsafe_code)]
 #![warn(missing_docs)]
@@ -16,6 +17,7 @@ pub mod kernel;
 pub mod payment_settlement;
 pub mod regression;
 pub mod simulator;
+pub mod x402_adapter;
 
 pub use adversarial::{
     action_id_equals, apply_mutation, apply_transformation, check_plan_incompatibility,
@@ -77,4 +79,11 @@ pub use simulator::{
     FatalCause, InvariantEvaluationPlan, InvariantEvaluationRecord, Scenario, ScenarioId,
     SimulationError, SimulationErrorClass, SimulationResult, StepResult, StopCondition, StopPolicy,
     M03_ENGINE_VERSION,
+};
+pub use x402_adapter::{
+    adapt_x402_observation, parse_exact_integer_digits, resolve_amount_carrier,
+    AdapterProvenanceSeed, AdapterStatus, AmountCarrier, M08AdapterError, M08AdapterErrorId,
+    M08MappingConfiguration, ObservationBinding, TranslatedAmount, TrustClass, VersionPolicy,
+    X402ExternalObservation, X402Provenance, X402SemanticRecord, M08_ADAPTER_MODULE_LABEL,
+    TRUST_CLASS_REJECTED_RESERVED, TRUST_CLASS_VERIFIED_UNDER_POLICY_RESERVED,
 };

@@ -193,13 +193,13 @@ fn try_increment(
     let next = counter.saturating_add(1);
     if next > limit {
         return match policy {
-            TruncationPolicy::FailOnExceed => LimitDecision::Fail(AdversarialError::limit_breach(
-                LimitBreachEvidence {
+            TruncationPolicy::FailOnExceed => {
+                LimitDecision::Fail(AdversarialError::limit_breach(LimitBreachEvidence {
                     counter: id,
                     observed: next,
                     limit,
-                },
-            )),
+                }))
+            }
             TruncationPolicy::TruncateAtN => LimitDecision::Truncate,
         };
     }
