@@ -120,7 +120,9 @@ Conceptual layers (dependency flows **downward**):
 INTERFACES          CLI / SDK / HTTP / language bindings (future; not frozen)
 ADAPTERS            M07 payment/settlement testing + semantic adapter boundary
                     (IMPLEMENTED / FROZEN_FOR_CURRENT_SCOPE; Gate 6);
-                    M08 x402 external translation (future)
+                    M08 x402 integration/protocol boundary
+                    (SPEC FROZEN by TASK-54; Gate 7; IMPLEMENTATION NOT AUTHORIZED;
+                     wire NOT FROZEN)
 ORCHESTRATION       M03 simulator (IMPLEMENTED / PASS; Gate 3 CLOSED); M09 multi-agent (future)
 EVALUATION          M02 invariants (IMPLEMENTED / PASS; Gate 2 CLOSED);
                     M06 regression (IMPLEMENTED; Gate 5 CLOSED)
@@ -148,7 +150,7 @@ crates/aivoguard/
     payment_settlement/  ← M07 payment/settlement testing + semantic adapter
                            (IMPLEMENTED / FROZEN_FOR_CURRENT_SCOPE)
     # future seams (NOT created as product modules):
-    # chaos/ x402 provider adapters / multi-agent …
+    # chaos/ x402 (M08) / multi-agent …
 ```
 
 Additional crates are authorized only when a frozen specification and explicit
@@ -297,14 +299,36 @@ Provider-specific integrations remain **NOT AUTHORIZED**. Open decisions
 AD-03 / AD-12 / AD-14 / AD-15, DC-06 / DC-09 / DC-13, OD-07, M06-OD-*, and
 M07-OD-* remain **OPEN**.
 
-### M08 — x402 adapters (BOUNDARY ONLY)
+### M08 — x402 Adapter (Gate 7 **SPEC FROZEN**; **NOT IMPLEMENTED**)
+
+Specification:
+[`docs/design/x402-adapter-specification.md`](../design/x402-adapter-specification.md)
+(**FROZEN** by **TASK-54**; Gate 7). Implementation **NOT AUTHORIZED**.
+Wire / HTTP / codecs: **NOT FROZEN**.
 
 ```text
-External System → Adapter / Translator → AivoGuard authoritative model
+External x402 protocol (fixtures / explicit observations)
+        ↓
+M08 adapter / translator (semantic boundary)
+        ↓
+Non-authoritative internal semantic carriers / records
+        ↓
+M01 economic authority (unchanged; M08 must not mutate)
 ```
 
-Adapters translate; they must not inject external behavior into the
-deterministic kernel. No M08 implementation in this baseline.
+M08 is an **integration / protocol boundary** for x402-style payment flows
+(Product Scope). It translates; it does **not** redefine economic truth, freeze
+HTTP/wire codecs, or reopen M07 settlement-testing semantics.
+M08 outputs remain **non-authoritative**.
+
+* OD-08 / DC-11 remain **OPEN** product/domain-wide; M08 freeze constrains only
+  the M08 subset.
+* Wire / HTTP / facilitator live integration: **NOT FROZEN** / **NOT AUTHORIZED**.
+* M08 → M07 composition (e.g. emitting M07 observations): requires separate
+  authorization (`M08-OD-02` **OPEN**).
+* M08-OD-01…06 remain **OPEN** (implementation/path decisions; not closed by freeze).
+
+No M08 crate module or dependencies in this baseline.
 
 ### M09 — Multi-Agent World (BOUNDARY ONLY)
 
@@ -345,7 +369,7 @@ M05 → simulation / test interfaces
 M06 → M01 outputs; optionally M02 / M03 outputs
 M07 → payment/settlement testing; consumes M06; semantic adapter boundary
       (not provider truth; not wire protocol)
-M08 → x402 integration boundary (future)
+M08 → x402 integration/protocol boundary (SPEC FROZEN; not implemented)
 M09 → M01 + agent / world composition
 ```
 
@@ -565,7 +589,10 @@ Architecture remains compatible with, and does **not** decide:
   audits TASK-42 / TASK-44 **PASS**; freeze evidence TASK-45)
 * M07 provider integrations and external wire formats: **NOT AUTHORIZED**
   (**AD-14 OPEN**)
-* M05 / M08 / M09: product boundaries only; no code
+* M08 specification: **FROZEN** (Gate 7; **TASK-54**;
+  `docs/design/x402-adapter-specification.md`); **NOT IMPLEMENTED** /
+  **NOT AUTHORIZED**; wire **NOT FROZEN**
+* M05 / M09: product boundaries only; no code
 * No network/DB/LLM in the authoritative core
 
 ### TARGET (conceptual)
@@ -581,7 +608,9 @@ Architecture remains compatible with, and does **not** decide:
 * M06 as specified by frozen Gate-5 contract (**FROZEN**; implemented)
 * M07 as specified by frozen Gate-6 contract (**FROZEN**; implemented for
   current authorized scope; provider/wire require separate authorization)
-* M05 / M08 / M09 as specified by future frozen gates
+* M08 as specified by frozen Gate-7 contract (**FROZEN** by TASK-54;
+  implementation **NOT AUTHORIZED**; wire **NOT FROZEN**)
+* M05 / M09 as specified by future frozen gates
 * Interfaces and provider adapters outside the economic core
 
 ---
@@ -597,7 +626,7 @@ Architecture remains compatible with, and does **not** decide:
 | M05 | Future | Boundary only | Not implemented | Future |
 | M06 | **FROZEN** | Defined | **IMPLEMENTED** | Gate 5 **CLOSED** / TASK-19 (audit TASK-18) |
 | M07 | **FROZEN** | Defined | **IMPLEMENTED** / **FROZEN_FOR_CURRENT_SCOPE** (semantic adapter; no provider/wire) | Gate 6 / TASK-45 (audits TASK-42 / TASK-44) |
-| M08 | Future | Boundary only | Not implemented | Future |
+| M08 | **FROZEN** | Defined (Gate 7) | Not implemented (**NOT AUTHORIZED**; wire **NOT FROZEN**) | Gate 7 / TASK-54 |
 | M09 | Future | Boundary only | Not implemented | Future |
 
 ---
@@ -634,4 +663,7 @@ Architecture remains compatible with, and does **not** decide:
 | Normative economic semantics | **None** (architecture only) |
 | ADR created by this task | **None** (no new implementation decision) |
 | M07 architecture sync | TASK-46 — baseline status synchronized to IMPLEMENTED / FROZEN_FOR_CURRENT_SCOPE |
-| Next | Provider/wire/open-decision work requires separate authorization; M05/M08/M09 remain future |
+| M08 Gate-7 draft | TASK-50 — `x402-adapter-specification.md` DRAFT boundary recorded |
+| M08 Gate-7 freeze | **TASK-54** — M08 specification **FROZEN**; implementation **NOT AUTHORIZED**; wire **NOT FROZEN** |
+| M08 architecture sync | TASK-56 — baseline synchronized to FROZEN / NOT AUTHORIZED |
+| Next | TASK-57 independent post-synchronization audit; M08 implementation remains NOT AUTHORIZED; M05/M09 remain future |
