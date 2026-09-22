@@ -15,6 +15,11 @@ once releases begin.
 * Product scope specification (`docs/design/product-scope.md`) — **FROZEN**.
 * Domain contract (`docs/design/domain-contract.md`) — **FROZEN** (Gate 0 **CLOSED**).
 * Economic kernel specification — **FROZEN**; M01 implemented in `crates/aivoguard`.
+* Economic invariant engine specification — **FROZEN** (Gate 2 **CLOSED**);
+  M02 implemented in `crates/aivoguard`.
+* Deterministic simulator specification
+  (`docs/design/deterministic-simulator-specification.md`) — **FROZEN**
+  (Gate 3 **CLOSED**; M03 implementation still **BLOCKED** pending TASK-08).
 
 ### Changed
 
@@ -23,6 +28,8 @@ once releases begin.
 * Domain contract progressed through TASK-02 / TASK-02R remediation and
   TASK-02F freeze.
 * Economic kernel specification frozen (TASK-03F); M01 implementation (TASK-04).
+* M03 specification frozen after TASK-07 / TASK-07R remediation and TASK-07F
+  independent Gate-3 freeze audit.
 
 ### Deprecated
 

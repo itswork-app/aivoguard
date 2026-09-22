@@ -19,6 +19,7 @@ Related:
 * [`../design/domain-contract.md`](../design/domain-contract.md) (**FROZEN**)
 * [`../design/economic-kernel-specification.md`](../design/economic-kernel-specification.md) (**FROZEN**)
 * [`../design/economic-invariant-engine-specification.md`](../design/economic-invariant-engine-specification.md) (**FROZEN**; Gate 2 **CLOSED**)
+* [`../design/deterministic-simulator-specification.md`](../design/deterministic-simulator-specification.md) (**FROZEN**; Gate 3 **CLOSED**; implementation **BLOCKED**)
 * [`../design/SPECIFICATION-POLICY.md`](../design/SPECIFICATION-POLICY.md)
 * [`../adr/`](../adr/)
 
@@ -118,7 +119,7 @@ Conceptual layers (dependency flows **downward**):
 ```text
 INTERFACES          CLI / SDK / HTTP / language bindings (future; not frozen)
 ADAPTERS            M07 / M08 external translation (future)
-ORCHESTRATION       M03 simulator, M09 multi-agent composition (future)
+ORCHESTRATION       M03 simulator (FROZEN; not implemented); M09 multi-agent (future)
 EVALUATION          M02 invariants (IMPLEMENTED); M06 regression comparison (future)
 ECONOMIC AUTHORITY  M01 kernel (IMPLEMENTED)
 DOMAIN              World / State / Action / Asset / Money primitives (in M01)
@@ -203,7 +204,7 @@ M02 must not become a second economic engine.
 Specification: **FROZEN**. Implementation: present under `crates/aivoguard/src/invariant/`
 (TASK-06 / TASK-06R).
 
-### M03 — Deterministic Simulator (BOUNDARY ONLY)
+### M03 — Deterministic Simulator (SPECIFICATION FROZEN; Gate 3 CLOSED; NOT IMPLEMENTED)
 
 May construct scenarios, provide initial state, invoke M01, capture transitions,
 optionally invoke M02, advance logical simulation, produce results.
@@ -213,6 +214,10 @@ transitions without running invariants. When invariants are requested, M03
 invokes M02 as a read-only consumer of authoritative outputs.
 
 Must **not** redefine M01 economic semantics. Orchestrates only.
+
+Specification: **FROZEN** (`docs/design/deterministic-simulator-specification.md`;
+TASK-07 / TASK-07R / TASK-07F). Implementation: **BLOCKED** until explicit
+TASK-08 authorization. No `simulation/` module in the crate yet.
 
 ### M04 / M05 — Adversarial / Chaos (BOUNDARY ONLY)
 
@@ -465,7 +470,7 @@ Architecture remains compatible with, and does **not** decide:
 | Plugin / adapter architecture (product OD-08) | OPEN |
 | Language bindings | OPEN |
 | Multi-crate split beyond `aivoguard` | OPEN until a frozen spec requires it |
-| M03–M09 detailed semantics | Deferred to future gates |
+| M03–M09 detailed APIs / serialization | Deferred; M03 **execution semantics** are FROZEN (Gate 3 CLOSED); implementation still blocked |
 
 ---
 
@@ -476,7 +481,8 @@ Architecture remains compatible with, and does **not** decide:
 * Single crate `aivoguard` with `kernel` (M01) and `invariant` (M02)
 * Frozen Product Scope, Domain Contract, Economic Kernel Specification
 * M02 specification: **FROZEN** (Gate 2 **CLOSED**); implemented (TASK-06)
-* M03–M09: product boundaries only; no code
+* M03 specification: **FROZEN** (Gate 3 **CLOSED**); implementation **BLOCKED** (TASK-07F)
+* M04–M09: product boundaries only; no code
 * No network/DB/LLM in the authoritative core
 
 ### TARGET (conceptual)
@@ -486,7 +492,9 @@ Architecture remains compatible with, and does **not** decide:
   interfaces compose around them
 * M02 as a read-only downstream module under `crates/aivoguard/src/invariant/`
   (implemented; further packaging remains an implementation decision)
-* M03–M09 as specified by future frozen gates
+* M03 as a future orchestration module under `crates/aivoguard/src/simulation/`
+  (path provisional; not present until TASK-08)
+* M04–M09 as specified by future frozen gates
 * Interfaces and adapters outside the economic core
 
 ---
@@ -497,7 +505,7 @@ Architecture remains compatible with, and does **not** decide:
 | --- | --- | --- | --- | --- |
 | M01 | Frozen | Current | Implemented | PASS |
 | M02 | Frozen | Defined | Implemented | Gate 2 **CLOSED** / TASK-06 / TASK-06R |
-| M03 | Future | Boundary only | Not implemented | Future |
+| M03 | Frozen | Defined | Not implemented (BLOCKED) | Gate 3 **CLOSED** / TASK-07F |
 | M04 | Future | Boundary only | Not implemented | Future |
 | M05 | Future | Boundary only | Not implemented | Future |
 | M06 | Future | Boundary only | Not implemented | Future |
@@ -531,6 +539,7 @@ Architecture remains compatible with, and does **not** decide:
 | Created by | TASK-00B |
 | Consistency audit | TASK-00C — M03/M02 optional dependency clarified |
 | Remediation | TASK-06R — transaction actor + COUNT dimensionality |
+| Freeze | TASK-07F — Gate 3 M03 specification frozen (implementation still blocked) |
 | Normative economic semantics | **None** (architecture only) |
 | ADR created by this task | **None** (no new implementation decision) |
 | Next | Future gates only when explicitly authorized |

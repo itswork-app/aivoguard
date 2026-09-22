@@ -5,23 +5,25 @@
 | Document | `docs/design/deterministic-simulator-specification.md` |
 | Task | **TASK-07** / **TASK-07R** |
 | Module | **M03 — Deterministic Economic Simulator** |
-| Gate | **GATE 3 — OPEN** |
-| **STATUS** | **READY_FOR_REVIEW** |
-| Normative freeze | **NOT FROZEN** |
-| Implementation | **BLOCKED** — this document does **not** authorize implementation |
+| Gate | **GATE 3 — CLOSED** |
+| **STATUS** | **FROZEN** |
+| Normative freeze | **FROZEN** |
+| Implementation | **BLOCKED** — freeze does **not** authorize implementation |
 | Depends on | Product Scope (**FROZEN**); Domain Contract (**FROZEN**, Gate 0 **CLOSED**); Economic Kernel Specification (**FROZEN**, Gate 1 **CLOSED**); Economic Invariant Engine Specification (**FROZEN**, Gate 2 **CLOSED**); M01 implementation (TASK-04 **PASS**); M02 implementation (TASK-06 / TASK-06R **PASS**) |
 | Remediation | TASK-07R — AFTER_ACTION order, History mapping, M01 Error order, completion after Fatal, execution-limit boundary |
+| Freeze authority | **TASK-07F** independent Gate-3 freeze audit |
 
 ```text
-STATUS: READY_FOR_REVIEW
-NORMATIVE FREEZE: NOT FROZEN
+STATUS: FROZEN
+NORMATIVE FREEZE: FROZEN
 IMPLEMENTATION: BLOCKED
-GATE: GATE 3 — OPEN
+GATE: GATE 3 — CLOSED
 ```
 
-This document is the **reviewable normative candidate** for Gate-3 M03. It is
-**not frozen**. Material freeze requires an explicit freeze/remediation task.
-Implementation requires a later explicit authorization task after freeze.
+This document is the **frozen** normative specification for Gate-3 M03. Material
+semantic changes require an explicit specification amendment. Freeze does **not**
+authorize M03 implementation, API/CLI/DSL design, or crate creation. A separate
+implementation task (**TASK-08**) is required.
 
 Related:
 
@@ -47,11 +49,11 @@ Economic Kernel Specification FROZEN (M01)
         ↓
 Economic Invariant Engine Specification FROZEN (M02)
         ↓
-M03 Deterministic Simulator Specification (this document; READY_FOR_REVIEW)
+M03 Deterministic Simulator Specification (this document; **FROZEN**, Gate 3 **CLOSED**)
         ↓
 Accepted ADRs
         ↓
-Implementation (blocked)
+Implementation (blocked until explicit TASK-08)
 ```
 
 M03 **MUST NOT** silently modify any frozen specification above.
@@ -1796,7 +1798,7 @@ World not mutated by M03 independently of M01
 | M03-OD-09 | Future parallel execution | OPEN |
 | M03-OD-10 | Scenario composition | OPEN |
 | DC-13 (upstream) | Exact SimulationResult PASS/FAIL/ERROR composition across layers | OPEN (Domain Contract) |
-| OD-05 (upstream) | Domain Contract “simulation execution model” — this document is the Gate-3 candidate closure | READY_FOR_REVIEW via this spec |
+| OD-05 (upstream) | Domain Contract “simulation execution model” — this document is the Gate-3 **frozen** closure of execution semantics | **CLOSED** at Gate-3 semantic level (serialization/API remain open via M03-OD-*) |
 
 Do not resolve these merely for convenience.
 
@@ -1810,10 +1812,8 @@ Do not resolve these merely for convenience.
 > authority, termination semantics, error boundaries, deterministic replay, or
 > M02 integration.
 
-If important semantics remain ambiguous after review/remediation, the document
-is **NOT** ready to freeze.
-
-This TASK-07 document is **READY_FOR_REVIEW**, not frozen.
+**TASK-07F independent freeze audit:** criterion met. Gate 3 is **CLOSED**.
+M03 implementation remains **BLOCKED** pending explicit TASK-08 authorization.
 
 ---
 
@@ -1822,17 +1822,25 @@ This TASK-07 document is **READY_FOR_REVIEW**, not frozen.
 | Item | Value |
 | --- | --- |
 | Created by | TASK-07 |
-| Remediation | **TASK-07R** (AFTER_ACTION order; History mapping; M01 Error order; completion after Fatal; execution-limit boundary) |
-| Status | **READY_FOR_REVIEW** |
-| Normative freeze | **NOT FROZEN** |
-| Implementation authorization | **NONE** (blocked) |
-| Gate | **GATE 3 — OPEN** |
-| Code / crates modified by this task | **None** |
-| Frozen specifications modified | **None** |
-| Next | Independent freeze audit → TASK-07F (or further remediation if needed) |
+| Remediation | TASK-07R — AFTER_ACTION order; History mapping; M01 Error order; completion after Fatal; execution-limit boundary |
+| Freeze | **TASK-07F** — Gate-3 independent freeze audit |
+| Status | **FROZEN** |
+| Normative freeze | **FROZEN** |
+| Implementation authorization | **NONE** (blocked; requires TASK-08) |
+| Gate | **GATE 3 — CLOSED** |
+| Code / crates modified by freeze | **None** |
+| Frozen M01/M02 specifications modified | **None** |
+| Next | **TASK-08** — M03 Deterministic Simulator Implementation (explicit authorization required) |
+
+### Freeze statement
+
+```text
+TASK-07F independent Gate-3 freeze audit PASSED.
+M03 Deterministic Simulator Specification is now the normative Gate-3 contract.
+M03 implementation remains BLOCKED until explicit TASK-08 authorization.
+```
 
 ### Amendment rule
 
-Material semantic change after freeze requires explicit specification
-amendment. Until freeze, review comments may produce TASK-07R remediation
-without treating this draft as implementation authority.
+Material semantic change after freeze requires an explicit specification
+amendment. Implementation must not silently redefine this contract.

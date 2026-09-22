@@ -44,11 +44,11 @@ Full hierarchy and process rules:
 | [`design/domain-contract.md`](design/domain-contract.md) | Domain Contract / Gate 0 — **FROZEN** (Gate 0 **CLOSED**) |
 | [`design/economic-kernel-specification.md`](design/economic-kernel-specification.md) | Economic Kernel (M01) — **FROZEN** (Gate 1 **CLOSED**) |
 | [`design/economic-invariant-engine-specification.md`](design/economic-invariant-engine-specification.md) | Invariant Engine (M02) — **FROZEN** (Gate 2 **CLOSED**) |
-| [`design/deterministic-simulator-specification.md`](design/deterministic-simulator-specification.md) | Deterministic Simulator (M03) — **READY_FOR_REVIEW** (Gate 3 **OPEN**) |
+| [`design/deterministic-simulator-specification.md`](design/deterministic-simulator-specification.md) | Deterministic Simulator (M03) — **FROZEN** (Gate 3 **CLOSED**) |
 | [`architecture/architecture-baseline.md`](architecture/architecture-baseline.md) | Architecture baseline (TASK-00B) — structural only |
 | M01 implementation | Present in `crates/aivoguard` (`kernel`); TASK-04 **PASS** |
 | M02 implementation | Present in `crates/aivoguard` (`invariant`); TASK-06 / TASK-06R |
-| M03 implementation | **BLOCKED** (specification not frozen) |
+| M03 implementation | **BLOCKED** (specification frozen; requires TASK-08) |
 | Gate 4+ modules (M04+) | Not implemented |
 
 `docs/reference/` remains an intentional placeholder for non-normative
