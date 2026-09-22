@@ -23,13 +23,17 @@ once releases begin.
 * Adversarial scenario engine specification
   (`docs/design/adversarial-scenario-engine-specification.md`) —
   **READY_FOR_REVIEW** (Gate 4 **OPEN**; not frozen; implementation
-  **BLOCKED**). TASK-10; TASK-10R semantic remediation (R-01…R-08).
+  **BLOCKED**). TASK-10; TASK-10R; TASK-10RR final semantic remediation
+  (R-09…R-13).
 
 ### Changed
 
 * TASK-10R: M04 Gate-4 specification semantic remediation (transformation
   projection, initial-state contract, parameter candidates, error phases,
   NonApplicable policy, composition targeting, ordering, limit boundaries).
+* TASK-10RR: M04 final Gate-4 semantic remediation (ParameterValue types,
+  composition emission counting, GenerationStatus/limit breach, M04↔M03
+  structural validation boundary, identity stability vs algorithm).
 * Product scope status updated from `READY_FOR_REVIEW` to `FROZEN` after
   explicit approval.
 * Domain contract progressed through TASK-02 / TASK-02R remediation and

@@ -3,7 +3,7 @@
 | Field | Value |
 | --- | --- |
 | Document | `docs/design/adversarial-scenario-engine-specification.md` |
-| Task | **TASK-10** / **TASK-10R** (remediation) |
+| Task | **TASK-10** / **TASK-10R** / **TASK-10RR** (final semantic remediation) |
 | Module | **M04 — Adversarial Scenario Engine** |
 | Gate | **GATE 4 — OPEN** |
 | **STATUS** | **READY_FOR_REVIEW** |
@@ -19,9 +19,9 @@ GATE: GATE 4 — OPEN
 ```
 
 This document is the **reviewable normative candidate** for Gate-4 M04 after
-TASK-10R semantic remediation. It is **not frozen**. Material freeze requires
-an explicit freeze audit task. Implementation requires a later explicit
-authorization task after freeze.
+TASK-10R and TASK-10RR semantic remediation. It is **not frozen**. Material
+freeze requires an explicit freeze audit task. Implementation requires a later
+explicit authorization task after freeze.
 
 Related:
 
@@ -230,12 +230,14 @@ transformation whose preconditions fail. This is an **M04 error**:
 
 ### Valid Adversarial Scenario
 
-A DERIVED candidate accepted by Domain/M03 contracts and executable via M03.
+A DERIVED candidate that passed M04 structural validation (`DERIVED + VALID`).
+Does not guarantee M03 execution success or M01 economic success (§8.5 / §14).
 
 ### Invalid Adversarial Scenario
 
-A DERIVED candidate that violates declared scenario/domain requirements; not
-silently “fixed” into validity. Remains `DERIVED + INVALID` (§8.5).
+A DERIVED candidate that failed M04 structural validation
+(`DERIVED + INVALID`); not silently “fixed” into validity. Explicit invalid
+reason required (§8.5).
 
 ### M04 Engine Failure
 
@@ -250,6 +252,28 @@ scenario (§20).
 
 The explicit intermediate Scenario artifact on which a transformation is
 applied (the base, or the result of prior composition steps).
+
+### TransformationApplication
+
+One evaluation of a declared transformation against a ScenarioSnapshot with
+concrete parameters. Counted by transformation-evaluation counters (§18).
+Produces `DERIVED`, `NON_APPLICABLE`, or `ERROR`.
+
+### CompositionIntermediate
+
+A ScenarioSnapshot produced solely as an internal step of one declared
+composition chain. **Not** automatically an externally emitted adversarial
+scenario (§18).
+
+### GeneratedAdversarialScenario
+
+A candidate artifact that is **emitted** as a generated adversarial scenario
+result (subject to M04 structural validation classification). Counted by
+`maximum_generated_scenarios` (§18).
+
+### ParameterValue / ParameterDomain / ParameterDimension
+
+Conceptual parameter typing for transformations (§17A). Not a Rust freeze.
 
 ---
 
@@ -342,18 +366,56 @@ independently executable (when Valid)
 
 No hidden mutation. No undeclared fields that affect economic semantics.
 
-### 6.3 Identity (normative requirements; concrete algorithm OPEN)
+### 6.3 Identity stability vs identity algorithm (R-13)
+
+Two distinct concepts:
+
+```text
+Identity stability     = NORMATIVE Gate-4 semantic property
+Identity derivation algorithm = AD-03 (OPEN)
+```
+
+#### Identity stability (normative)
 
 Identity **MUST NOT** rely solely on memory address or ephemeral runtime IDs.
 
-Gate-4 requires that identity be:
+For identical declared:
 
-* stable under identical declared inputs
-* sufficient for provenance linking
-* independent of host process state
+```text
+Base Scenario
+Transformation definition / version
+Transformation parameters
+Generator configuration
+ApplicabilityPolicy
+M04 engine version
+declared seed, if any
+```
 
-Whether identity is **declared**, **content-derived**, or hybrid is **AD-03**
-(Open Decision). Cryptographic hash algorithms are **not** frozen here.
+the derived scenario identity **MUST** be semantically stable under the same
+identity/versioning contract used by that implementation/engine version.
+
+Identity **MUST** be:
+
+* deterministic
+* provenance-linkable
+* independent of memory address
+* independent of host/process state
+* independent of wall clock
+* independent of random global state
+
+Changing any declared input that is identity-relevant **MUST NOT** silently
+retain the prior identity (see also metadata projection §8.4.1).
+
+#### Identity algorithm (OPEN — AD-03)
+
+Whether identity is **declared**, **content-derived**, or hybrid — and which
+hash/string format is used — remains **AD-03**. Cryptographic hash algorithms,
+UUID schemes, and exact string formats are **not** frozen.
+
+Two conforming implementations **MAY** produce different identity *strings*
+if they use different AD-03 algorithms. §21 requires **semantic** ordered
+equivalence of scenario payloads, classifications, and provenance fields —
+**not** byte-identical identity strings across distinct identity algorithms.
 
 ---
 
@@ -523,13 +585,13 @@ unless that snapshot is still identical.
 | Execution ordering | Resulting sequence order is the declared post-transformation order; M03 executes that order |
 | Unrelated Actions | Remain byte-for-byte / field-for-field unchanged |
 | Replacement parameters | Represented as explicit TransformationParameters naming the Action field(s) replaced |
-| Invalid resulting Action | If the transformation successfully emits a candidate whose Action violates Domain structural rules → `DERIVED + INVALID`. If parameters are outside the transformation’s declared ParameterDomain → `ERROR` / `INVALID_TRANSFORMATION_PARAMETER` |
+| Invalid resulting Action | If the transformation successfully emits a candidate whose Action fails M04 structural representability → `DERIVED + INVALID`. If parameters are outside the transformation’s declared ParameterDomain / type → `ERROR` / `INVALID_TRANSFORMATION_PARAMETER` |
 
 A transformation **MUST NOT** silently alter unrelated Scenario fields
 (including World, initial state, plans, stop policy, or execution config)
 unless those fields have a declared non-`INHERIT_UNCHANGED` projection.
 
-### 8.5 Transformation result lifecycle
+### 8.5 Transformation result lifecycle and validation pipeline (R-12)
 
 ```text
 TransformationApplicationResult
@@ -542,13 +604,84 @@ TransformationApplicationResult
 ValidationClassification = VALID | INVALID
 ```
 
-Rules:
+Conceptual pipeline (does **not** redefine M03):
 
-* `DERIVED + INVALID` means the transformation **succeeded** at producing a
-  candidate that fails Domain/M03 structural requirements.
-* Do **not** automatically promote `DERIVED + INVALID` to a transformation
-  `ERROR`.
-* `generation success ≠ scenario validity ≠ economic failure`.
+```text
+Base Scenario
+    ↓
+TransformationApplication
+    ↓
+Candidate Artifact
+    ↓
+M04 Structural Validation
+    ├── INVALID  → DERIVED + INVALID (explicit reason; not silently repaired)
+    └── VALID    → DERIVED + VALID
+          ↓
+        M03 Scenario acceptance / execution
+          ↓
+        M01 economic evaluation
+          ↓
+        M02 invariant evaluation (if planned)
+```
+
+Three-layer distinction:
+
+```text
+M04 structural validation
+        ≠
+M03 scenario acceptance / execution
+        ≠
+M01 economic evaluation
+```
+
+#### What `DERIVED + VALID` means
+
+M04 structural validation passed. The candidate is structurally representable
+as an M03 Scenario input under M04’s pre-execution checks.
+
+It does **NOT** mean M03 execution is guaranteed to succeed, nor that any
+economic Action will succeed.
+
+#### What `DERIVED + INVALID` means
+
+M04 successfully produced a candidate artifact, but deterministic
+pre-execution structural validation found that the candidate does not satisfy
+the M04/M03 representability requirements necessary for execution. It **MUST**
+include an explicit invalid reason. It **MUST NOT** be silently repaired.
+
+Do **not** automatically promote `DERIVED + INVALID` to a transformation
+`ERROR`.
+
+```text
+generation success ≠ M04 structural validity ≠ M03 acceptance ≠ economic failure
+```
+
+#### M04 may structurally validate
+
+```text
+required Scenario fields are present
+required transformation projection is complete
+Action references resolve where required
+parameter types are structurally valid
+declared sequence structure is well-formed
+required metadata is present
+configuration fields have structurally legal representations
+invariant-plan / stop-policy fields are structurally representable
+```
+
+The exact M03 acceptance/execution contract remains owned by M03.
+
+#### M04 MUST NOT claim via validation
+
+```text
+economic correctness
+authorization truth
+fee / price / conversion correctness
+balance sufficiency
+transaction success
+settlement correctness
+invariant PASS / FAIL / ERROR
+```
 
 ### 8.6 ApplicabilityPolicy (R-05; closes AD-16)
 
@@ -618,7 +751,8 @@ M04 may construct candidate `EconomicState` content consisting solely of
 
 | Check | Owner |
 | --- | --- |
-| Structural Domain/M03 Scenario acceptance | M04 candidate validation → then M03 |
+| Structural Domain/M03 representability | M04 structural validation (§8.5) |
+| M03 Scenario acceptance / execution | M03 |
 | Authoritative economic consequences of Actions | M01 after M03 execution |
 | Intentionally invalid candidate | `DERIVED + INVALID` with explicit reason |
 
@@ -859,13 +993,14 @@ Action insert/delete/replace/duplicate and parameter edits follow §8.4.2 and
 | Mutating M02 PASS/FAIL/ERROR results | Yes |
 | Hidden host/environment inputs | Yes |
 
-Validation of structural legality is owned jointly by:
+Validation of structural legality uses the three-layer boundary (§8.5):
 
-* M04 candidate validation (pre-execution)
-* M03 Scenario validation / execution
-* M01 evaluation (economic/config outcomes)
+* M04 structural validation (pre-execution representability)
+* M03 Scenario acceptance / execution
+* M01 economic evaluation (and M02 if planned)
 
-M04 **MUST NOT** claim economic validity solely because generation succeeded.
+M04 **MUST NOT** claim economic validity solely because generation or M04
+structural validation succeeded.
 
 ---
 
@@ -873,13 +1008,17 @@ M04 **MUST NOT** claim economic validity solely because generation succeeded.
 
 | Class | Meaning |
 | --- | --- |
-| `DERIVED + VALID` | Candidate accepted by Domain/M03 contract; executable via M03 |
-| `DERIVED + INVALID` | Candidate produced but violates declared requirements; not silently repaired |
+| `DERIVED + VALID` | M04 structural validation passed; candidate is structurally representable as M03 Scenario input. Does **not** guarantee M03 success or economic success |
+| `DERIVED + INVALID` | Candidate produced, but M04 structural validation failed representability requirements; explicit reason required; not silently repaired |
 | `NON_APPLICABLE` | Preconditions unmet (normal outcome under `ALLOW_NON_APPLICABLE`) |
 | M04 `ERROR` | M04 cannot correctly complete the application / generation unit |
 
 These **MUST NOT** be conflated. `DERIVED + INVALID` is not automatically an
 `ERROR` (§8.5).
+
+Even after `DERIVED + VALID`, M03 may still reject or fatally fail the Scenario
+per its frozen contract. M03 acceptance still does not imply economic success
+(M01 remains authoritative).
 
 ---
 
@@ -998,15 +1137,17 @@ optional declared seed field (if future randomness authorized)
 M04 **MUST** produce semantically equivalent adversarial output, including:
 
 ```text
-candidate sequence / order
+emitted candidate sequence / order
 transformation application order
 parameter candidate order
 classification of NON_APPLICABLE
+GenerationStatus / TruncationPolicy behavior
 error precedence (phase + within-phase order)
-limit boundary behavior
+limit boundary behavior (emitted vs intermediate)
 composition target resolution
 derived Scenario semantic fields
 provenance semantic fields
+identity stability under §6.3 (not cross-algorithm string identity)
 ```
 
 Two conforming implementations **MUST NOT** merely generate the same unordered
@@ -1051,30 +1192,56 @@ Do **not** introduce RNG crates or implementations in this task.
 
 ---
 
-## 17A. Parameter Candidate Generation Semantics (R-03; closes AD-08)
+## 17A. Parameter Candidate Generation Semantics (R-03 / R-09)
 
 ### 17A.1 Model
 
 ```text
+ParameterValue
 ParameterDomain
+ParameterDimension
 CandidateOperator
 CandidateOrdering
 CandidateLimit
 ```
 
-A `ParameterDomain` declares one or more **dimensions**. Each dimension has:
+A `ParameterDomain` declares one or more `ParameterDimension`s. Each dimension
+has:
 
 ```text
 dimension identity (declared order in the domain)
-value type (Gate-4 amounts: signed integer minor units / i128 semantics)
-optional inclusive bounds [lo, hi]
-declared CandidateOperator set
+ParameterValue type (§17A.1.1)
+optional inclusive bounds [lo, hi]   (where the type supports bounds)
+declared CandidateOperator set       (where operators apply)
 ```
 
-### 17A.2 Boundary operators (integer minor units)
+Concrete Rust enums, parsers, and serialization are **not** frozen.
+
+#### 17A.1.1 ParameterValue type semantics (R-09)
+
+Gate-4 minimum type distinction:
+
+| Type | Meaning |
+| --- | --- |
+| `IDENTIFIER` | Exact deterministic identity token (e.g. ActionId, AccountId, ActorId, AssetId, FacetId, PriceId, ScenarioId). Equality is exact and deterministic |
+| `INTEGER` | Dimensionless signed integer. **MUST NOT** silently become Money / economic amount |
+| `ECONOMIC_AMOUNT` | Authoritative economic minor-unit quantity. Follows M01 exact numeric semantics: signed integer minor units; no `f32`/`f64`; checked arithmetic; explicit asset/unit context required |
+| `BOOLEAN` | Exact true/false |
+| `ENUM` | Value from a declared finite named set (exact match) |
+| `INDEX` | Non-negative positional reference into the **current** intermediate sequence (actions or other ordered collections as declared). Out-of-range after composition → applicability / parameter rules in §10.3 |
+| `ORDERING_SELECTION` | Declared selection among deterministic permutations / reorderings of a declared ordered collection |
+
+Additional types may remain open implementation detail if not required for
+Gate-4 taxonomy coverage. Do **not** collapse all parameters into
+`ECONOMIC_AMOUNT`.
+
+### 17A.2 Boundary operators (discrete numeric dimensions)
+
+Boundary operators apply only to dimensions whose type is `ECONOMIC_AMOUNT` or
+`INTEGER` (and only when the dimension declares them).
 
 Because M01 authoritative amounts use integer minor-unit semantics (ADR 0001 /
-EK-NUM), boundary operators **MUST** operate on the declared exact
+EK-NUM), `ECONOMIC_AMOUNT` operators **MUST** operate on the declared exact
 representation. **No floating-point approximation.**
 
 For a discrete integer domain and threshold `x`:
@@ -1083,18 +1250,23 @@ For a discrete integer domain and threshold `x`:
 MIN          = declared domain lower bound (must be explicit)
 MAX          = declared domain upper bound (must be explicit)
 EXACT(x)     = x
-JUST_BELOW(x) = x - 1   (one minor unit)
-JUST_ABOVE(x) = x + 1   (one minor unit)
+JUST_BELOW(x) = x - 1   (one integer step / one minor unit for ECONOMIC_AMOUNT)
+JUST_ABOVE(x) = x + 1   (one integer step / one minor unit for ECONOMIC_AMOUNT)
 ```
 
 Checked bounds:
 
-* If `JUST_BELOW(x)` overflows `i128` min, or leaves the declared domain
-  `[lo, hi]`, the operator yields an explicit deterministic
+* If `JUST_BELOW(x)` overflows the representable integer minimum, or leaves the
+  declared domain `[lo, hi]`, the operator yields an explicit deterministic
   `NON_APPLICABLE` for that candidate (or `INVALID_TRANSFORMATION_PARAMETER`
   if `x` itself was outside the parameter domain).
 * Same for `JUST_ABOVE(x)` at the upper extreme.
 * Do **not** saturate, wrap, or invent a nearest in-domain substitute.
+
+Operators such as `JUST_BELOW` / `JUST_ABOVE` are **not** defined for
+`IDENTIFIER`, `BOOLEAN`, `ENUM`, `INDEX`, or `ORDERING_SELECTION` unless a
+transformation explicitly declares a separate, inspectable candidate set for
+those types.
 
 ### 17A.3 Multi-dimension candidates
 
@@ -1107,14 +1279,15 @@ Checked bounds:
 
 ### 17A.4 Candidate value ordering
 
-For integer candidates:
+| Type | Default ordering |
+| --- | --- |
+| `INTEGER` / `ECONOMIC_AMOUNT` | Ascending numeric order |
+| `INDEX` | Ascending non-negative order |
+| `IDENTIFIER` / `ENUM` | Declared source-collection order, or lexicographic exact-string order if the domain declares a string set |
+| `BOOLEAN` | `false` then `true` unless declared otherwise |
+| `ORDERING_SELECTION` | Declared permutation enumeration order |
 
-```text
-ascending numeric order
-```
-
-unless the transformation explicitly declares another valid deterministic
-ordering in its definition.
+A transformation may explicitly declare another valid deterministic ordering.
 
 For multiple dimensions:
 
@@ -1129,12 +1302,11 @@ explicit sorted id list). No HashMap/HashSet/filesystem order.
 ### 17A.5 CandidateLimit
 
 `maximum_parameter_candidates` (§18) bounds the number of **parameter tuples
-evaluated**. Behavior on breach follows §18 (default: `GENERATION_ERROR`, no
-silent truncation unless the plan declares truncation).
+evaluated**. Behavior on breach follows §18.
 
 ---
 
-## 18. Enumeration and Explosion Control (R-08; closes AD-09 boundary)
+## 18. Enumeration and Explosion Control (R-08 / R-10 / R-11)
 
 Required explicit configuration concepts:
 
@@ -1150,42 +1322,170 @@ Default **numeric values** for these maxima are not frozen here (plan/config
 must supply them). Missing or illegal maxima →
 `INVALID_ADVERSARIAL_CONFIGURATION`.
 
+### 18.0 Counting concepts (R-10)
+
+```text
+TransformationApplication
+    = one evaluation of a transformation against a snapshot
+
+CompositionIntermediate
+    = internal ScenarioSnapshot in a composition chain (not auto-emitted)
+
+GeneratedAdversarialScenario
+    = candidate actually emitted as a generation artifact
+```
+
+Invariant:
+
+```text
+application count ≠ intermediate count ≠ emitted scenario count
+```
+
+No implementation may infer one counter from another.
+
+Example:
+
+```text
+Base
+  ↓ T0   → CompositionIntermediate
+  ↓ T1   → CompositionIntermediate
+  ↓ T2   → GeneratedAdversarialScenario (emitted)
+```
+
+```text
+transformation applications = 3
+generated scenarios         = 1
+```
+
+unless the generation plan **explicitly** declares intermediate artifacts as
+emitted candidates.
+
+Independent branches that each emit:
+
+```text
+T0 candidate A → emitted
+T0 candidate B → emitted
+```
+
+```text
+generated scenarios = 2
+```
+
+Composition branches are counted by **final emitted** candidates, not by
+intermediate snapshots.
+
 ### 18.1 What is counted
 
 | Limit | Counter | Increments when |
 | --- | --- | --- |
-| `maximum_generated_scenarios` | generated scenario count | A transformation application yields `DERIVED` (VALID or INVALID). `NON_APPLICABLE` and `ERROR` do **not** increment this counter |
+| `maximum_generated_scenarios` | emitted generated scenario count | A `GeneratedAdversarialScenario` is **emitted** (`DERIVED` VALID or INVALID). Composition intermediates do **not** increment. `NON_APPLICABLE` and `ERROR` do **not** increment |
 | `maximum_transformations_per_plan` | plan transformation entries | Count of transformation entries declared in the plan (static). Exceeding at plan validation → Phase 2 `INVALID_ADVERSARIAL_CONFIGURATION` |
-| `maximum_composition_depth` | composition depth | Number of transformations applied in one composition chain (`k` in `T_0…T_(k-1)`). Checked before application; depth `k > N` → `GENERATION_ERROR` or config error if declared illegally |
-| `maximum_action_mutations` | action mutation count | Each successful action insert/delete/replace/duplicate/reorder operation that modifies the action sequence in a `DERIVED` result. `NON_APPLICABLE` does not increment |
+| `maximum_composition_depth` | composition depth | Number of transformations applied in one composition chain (`k` in `T_0…T_(k-1)`). Checked before application; depth `k > N` → limit breach per §18.2 |
+| `maximum_action_mutations` | action mutation count | Each successful action insert/delete/replace/duplicate/reorder that modifies the action sequence in a `DERIVED` TransformationApplication (including on intermediates). `NON_APPLICABLE` does not increment |
 | `maximum_parameter_candidates` | parameter candidate count | Each parameter tuple **evaluated** (including those that yield `NON_APPLICABLE` or `DERIVED`). Evaluation attempt increments before classification |
 
-### 18.2 Inclusivity and breach
+**Transformation evaluation count** (informational / for provenance): number of
+`TransformationApplication`s attempted. Distinct from emitted scenario count.
+
+### 18.2 GenerationStatus and limit breach (R-11)
+
+```text
+GenerationStatus =
+    COMPLETE
+    TRUNCATED
+    FAILED
+```
 
 ```text
 A maximum N means at most N counted units (inclusive).
-Attempting to produce / evaluate unit N+1 is a GENERATION_ERROR
-(Phase 7), unless the plan explicitly declares TruncationPolicy.
 ```
 
-**Normative default TruncationPolicy:** `FAIL_ON_EXCEED` (no silent
-truncation).
+**Normative default TruncationPolicy:** `FAIL_ON_EXCEED`.
 
-If a plan explicitly declares `TRUNCATE_AT_N`, generation stops after N
-counted units for that counter, records truncation in provenance, and does
-**not** raise `GENERATION_ERROR` for the omitted remainder.
+#### FAIL_ON_EXCEED
+
+When the next counted unit would be `N+1`:
+
+1. candidates successfully **emitted** before the breach remain observable
+2. the `N+1` candidate is **NOT** emitted as a generated scenario
+3. the generation operation becomes `FAILED`
+4. the limit breach is recorded as `GENERATION_ERROR` (Phase 7)
+5. no partially constructed `N+1` scenario is emitted
+6. provenance/evidence records the exact breached counter and limit
+7. already completed/emitted candidates are **not** retroactively invalidated
+
+Example (`maximum_generated_scenarios = 3`):
+
+```text
+candidate 1 → emitted
+candidate 2 → emitted
+candidate 3 → emitted
+candidate 4 → attempted → GENERATION_ERROR
+
+GenerationStatus = FAILED
+emitted candidates = 1, 2, 3
+candidate 4 = not emitted
+```
+
+#### TRUNCATE_AT_N
+
+When explicitly declared:
+
+```text
+GenerationStatus = TRUNCATED
+```
+
+The generator stops before producing/evaluating additional counted units for
+that counter. No `GENERATION_ERROR` is raised solely because the declared
+truncation boundary was reached. Truncation **MUST** be explicit in
+provenance/evidence.
+
+#### Composition atomicity
+
+A composition chain **MUST NOT** expose a partially constructed final
+candidate as valid emitted output.
+
+If a limit is breached during `T0 → T1 → T2` before final emission:
+
+```text
+the incomplete composition branch is NOT emitted
+```
+
+Previously completed **independent** emitted candidates remain observable
+under the GenerationStatus contract above.
+
+#### Status ≠ candidate validity
+
+Do **not** collapse:
+
+```text
+FAILED
+TRUNCATED
+COMPLETE
+```
+
+into candidate `VALID`/`INVALID`.
+
+A generation operation may be:
+
+```text
+FAILED + previously emitted DERIVED+VALID candidates
+```
+
+without making those candidates invalid.
 
 ### 18.3 Non-applicable vs counters
 
-| Outcome | generated scenario count | parameter candidate count | action mutation count |
-| --- | --- | --- | --- |
-| `DERIVED` | +1 | +1 (if driven by a parameter tuple) | +1 per mutating action op |
-| `NON_APPLICABLE` | no | +1 (if a parameter tuple was evaluated) | no |
-| `ERROR` | no | +1 if evaluation began; then generation aborts per precedence | no |
+| Outcome | emitted scenario count | parameter candidate count | action mutation count | transformation applications |
+| --- | --- | --- | --- | --- |
+| `DERIVED` (emitted) | +1 | +1 (if driven by a parameter tuple) | +1 per mutating action op in that application | +1 |
+| `DERIVED` (composition intermediate only) | no | +1 (if parameter-driven) | +1 per mutating action op | +1 |
+| `NON_APPLICABLE` | no | +1 (if a parameter tuple was evaluated) | no | +1 |
+| `ERROR` | no | +1 if evaluation began; then status per §18.2 | no | +1 if begun |
 
 ### 18.4 Ordering
 
-Ordering of enumerated candidates **MUST** follow §29 / §17A.
+Ordering of enumerated **emitted** candidates **MUST** follow §29 / §17A.
 
 No hidden heuristics.
 
@@ -1213,20 +1513,23 @@ OPEN.
 
 ## 20. Provenance
 
-Every derived adversarial scenario **MUST** preserve provenance sufficient to
-reconstruct:
+Every emitted GeneratedAdversarialScenario **MUST** preserve provenance
+sufficient to reconstruct:
 
 ```text
 base scenario identity / version
-intermediate scenario version / identity (each composition step)
+composition intermediates (identity/version markers per step; not auto-emitted)
 transformation identity / version
-transformation parameters
-target resolution method (ActionId vs positional index)
+transformation parameters (typed ParameterValues)
+target resolution method (ActionId vs positional INDEX)
 ApplicabilityPolicy
 candidate generation ordering (plan + dimension + value order)
 composition position
-generation counters / limits (and TruncationPolicy if any)
-resulting ValidationClassification (VALID | INVALID)
+generation counters / limits
+TruncationPolicy / GenerationStatus (COMPLETE | TRUNCATED | FAILED)
+breached counter identity when FAILED/TRUNCATED
+resulting ValidationClassification (VALID | INVALID) + invalid reason if any
+identity-stability inputs (§6.3) — algorithm remains AD-03
 generator configuration
 M04 engine version
 optional seed field (if present)
@@ -1245,21 +1548,28 @@ logging.
 
 Given identical declared inputs and M04 engine version, another conforming
 implementation **MUST** reproduce the same **semantic ordered** adversarial
-result sequence (and provenance classifications).
+result sequence (and provenance classifications), including
+`GenerationStatus` and limit-boundary behavior.
+
+Identity **string** byte-equality across implementations that choose different
+AD-03 algorithms is **not** required (§6.3). Identity **stability** within a
+declared identity/versioning contract **is** required.
 
 ### 21.2 Semantic equivalence (minimum)
 
 ```text
-same ordered candidate sequence
+same ordered emitted candidate sequence
 same transformation application order
 same parameter candidate order
 same NON_APPLICABLE classifications and positions
+same GenerationStatus (COMPLETE | TRUNCATED | FAILED)
 same error class and phase when generation fails
-same limit boundary behavior
+same limit boundary behavior (emitted vs non-emitted)
 same composition target resolution outcomes
+same distinction of intermediates vs emitted scenarios
 same derived Scenario fields that affect M03 execution
 same adversarial category/intent labels
-same ValidationClassification
+same ValidationClassification (+ invalid reasons)
 same provenance semantic fields listed in §20
 ```
 
@@ -1268,6 +1578,7 @@ Non-requirements:
 * identical memory layout
 * identical internal intermediate objects
 * identical host paths / wall-clock stamps
+* byte-identical identity strings across distinct AD-03 algorithms
 
 Formal equality operators remain related to Domain Contract DC-12 /
 **AD-11**.
@@ -1328,9 +1639,14 @@ M04 **MUST** remain fully usable without an LLM.
 | Execution limits / termination | M03 |
 | ExecutionContext construction for M01 | M03 |
 | State adoption from KernelOutcome | M03 |
+| Scenario acceptance / fatal Scenario errors | M03 |
 | Adversarial derivation of Scenario inputs | M04 |
+| Pre-execution structural representability checks | M04 (§8.5 / §14) |
 
 M04 **MUST NOT** duplicate M03 simulation semantics.
+
+`DERIVED + VALID` is M04 structural validation only. M03 may still reject or
+fail the Scenario per its frozen contract.
 
 ---
 
@@ -1362,12 +1678,15 @@ M04 evidence **MUST** answer:
 
 ```text
 What base scenario was used?
-What transformation was applied?
-Why was it applicable / non-applicable?
-What parameters were used?
-What derived scenario resulted?
-Was the scenario Valid / Invalid?
-Was it executed via M03?
+What transformation applications were attempted?
+Which steps were CompositionIntermediates vs emitted?
+Why was each application applicable / non-applicable?
+What typed parameters were used?
+What GeneratedAdversarialScenario (if any) was emitted?
+Was M04 structural validation VALID or INVALID (and why)?
+What was GenerationStatus (COMPLETE | TRUNCATED | FAILED)?
+Was any limit breached (which counter / N)?
+Was the scenario executed via M03?
 Which M03 run / SimulationResult reference applies?
 Which M01 outcomes resulted (if executed)?
 Which M02 evaluations resulted (if executed)?
@@ -1376,15 +1695,19 @@ Which M02 evaluations resulted (if executed)?
 Lifecycle labels (distinct):
 
 ```text
-GENERATED
+GENERATED          (emitted)
 REJECTED
 NON_APPLICABLE
-INVALID
+INVALID            (DERIVED + INVALID)
 EXECUTED
+TRUNCATED          (GenerationStatus)
+FAILED             (GenerationStatus with GENERATION_ERROR or other M04 error)
+COMPLETE           (GenerationStatus)
 ```
 
 Do **not** fabricate downstream M01/M02/M03 evidence when execution did not
-occur.
+occur. Do **not** treat composition intermediates as emitted unless the plan
+explicitly emits them.
 
 ---
 
@@ -1393,12 +1716,13 @@ occur.
 Layers **MUST** remain distinct:
 
 ```text
-1. Generation result
-2. Validation result
-3. Derived scenario (if any)
-4. Execution reference / SimulationResult (if executed)
-5. Downstream M02 evaluations (if any)
-6. M04 errors (if any)
+1. GenerationStatus (COMPLETE | TRUNCATED | FAILED)
+2. Generation result (emitted candidates + NonApplicable/Error records)
+3. M04 structural ValidationClassification per emitted candidate
+4. Derived / emitted scenario (if any)
+5. Execution reference / SimulationResult (if executed via M03)
+6. Downstream M02 evaluations (if any)
+7. M04 errors (if any)
 ```
 
 **Never** collapse into a single PASS/FAIL.
@@ -1406,7 +1730,13 @@ Layers **MUST** remain distinct:
 In particular:
 
 ```text
-adversarial generation succeeded  ≠  economic system failed
+adversarial generation COMPLETE
+    ≠ M04 structural VALID
+    ≠ M03 execution success
+    ≠ economic system failed / succeeded
+
+FAILED generation + prior emitted VALID candidates
+    ≠ those candidates become INVALID
 ```
 
 ---
@@ -1420,11 +1750,13 @@ Normative generation ordering hierarchy:
 2. transformation candidate order (per transformation’s declared candidate set,
    or single application)
 3. parameter-dimension order (ParameterDomain declaration order)
-4. candidate value order (§17A.4; integers ascending unless declared otherwise)
+4. candidate value order (§17A.4; typed defaults)
 5. composition order (left-to-right plan indices 0 .. k-1)
 ```
 
-The generated scenario sequence **MUST** be reproducible under this hierarchy.
+The **emitted** GeneratedAdversarialScenario sequence **MUST** be reproducible
+under this hierarchy. CompositionIntermediates are ordered by composition
+position but are not automatically part of the emitted sequence (§18).
 
 Never depend on:
 
@@ -1460,7 +1792,14 @@ allowed multiplicity is **OPEN** pending freeze (**AD-06** / **AD-19**).
 
 ## 31. Scenario Identity
 
-See §6.3 and **AD-02** / **AD-03**.
+See §6.3 (R-13):
+
+```text
+identity stability = NORMATIVE
+identity derivation algorithm = AD-03 OPEN
+```
+
+Also related: **AD-02** (transformation identity algorithm).
 
 ---
 
@@ -1533,13 +1872,13 @@ M04 **MUST NOT** absorb M05 responsibilities in this specification.
 | --- | --- | --- |
 | AD-01 | Adversarial taxonomy closure / extension process | OPEN |
 | AD-02 | Transformation identity algorithm | OPEN |
-| AD-03 | Scenario identity algorithm | OPEN |
+| AD-03 | Scenario identity **algorithm** (hash/format/declared vs content-derived) | OPEN — identity **stability** is normative (§6.3 R-13) |
 | AD-04 | Formal precondition language for applicability | OPEN |
 | AD-05 | Duplicate transformation behavior in composition | **CLOSED_FOR_GATE-4_SEMANTICS** — explicit plan repeats allowed; no silent dedupe (§10.2) |
 | AD-06 | Deduplication / semantic equivalence | OPEN (default: no silent dedupe) |
 | AD-07 | Candidate / generation ordering | **CLOSED_FOR_GATE-4_SEMANTICS** — hierarchy in §29 / §17A |
-| AD-08 | Parameter candidate generation | **CLOSED_FOR_GATE-4_SEMANTICS** — §17A |
-| AD-09 | Generation limit boundary | **CLOSED_FOR_GATE-4_SEMANTICS** — §18; default numeric values remain **IMPLEMENTATION_DETAIL_OPEN** (must be supplied by config) |
+| AD-08 | Parameter candidate generation + ParameterValue types | **CLOSED_FOR_GATE-4_SEMANTICS** — §17A (R-03/R-09) |
+| AD-09 | Generation limit boundary + emission vs intermediate + GenerationStatus | **CLOSED_FOR_GATE-4_SEMANTICS** — §18 (R-08/R-10/R-11); default numeric values remain **IMPLEMENTATION_DETAIL_OPEN** |
 | AD-10 | Concrete provenance schema | OPEN |
 | AD-11 | Formal reproducibility equality operators | OPEN |
 | AD-12 | Shrinking / minimization | **DEFERRED** |
@@ -1595,15 +1934,23 @@ Future M04 implementation tests **MUST** cover at least:
 base scenario required / missing base error
 single mutation derive
 non-applicable transformation explicit outcome
-invalid parameter error
+invalid parameter type / domain error
+ECONOMIC_AMOUNT vs INTEGER separation (INTEGER is not Money)
 composition order determinism
-incompatible composition error
+composition intermediates not counted as emitted scenarios
+independent branches count as separate emitted scenarios
+FAIL_ON_EXCEED preserves prior emitted candidates + FAILED status
+TRUNCATE_AT_N yields TRUNCATED without GENERATION_ERROR
+incomplete composition branch not emitted on mid-chain breach
+DERIVED+VALID does not imply M03/M01 success
+DERIVED+INVALID has explicit reason and is not silently repaired
 generation limits
-deterministic candidate ordering
-provenance chain completeness
+deterministic candidate ordering by ParameterValue type
+provenance chain completeness (incl. GenerationStatus)
 valid derived scenario executes via M03
 M04 does not mutate M01 state independently
 M02 not evaluated by M04
+identity stability under identical inputs (algorithm may differ)
 LLM proposals rejected without validation (when integrated later)
 no host/env dependency
 replay of identical generation inputs
@@ -1648,11 +1995,21 @@ Adversarial intent is never treated as authoritative economic outcome.
 
 ### M04-INV-09
 
-Generation limits are explicit and deterministic.
+Generation limits are explicit and deterministic; emitted count ≠ application
+count ≠ intermediate count; GenerationStatus is distinct from candidate
+validity.
 
 ### M04-INV-10
 
 No hidden environment state participates in authoritative generation semantics.
+
+### M04-INV-11
+
+M04 structural VALID ≠ M03 acceptance ≠ M01 economic success.
+
+### M04-INV-12
+
+Identity stability is normative; identity derivation algorithm remains AD-03.
 
 ---
 
@@ -1661,7 +2018,7 @@ No hidden environment state participates in authoritative generation semantics.
 | Item | Value |
 | --- | --- |
 | Created by | TASK-10 |
-| Remediation | **TASK-10R** — Gate-4 semantic blockers R-01…R-08 |
+| Remediation | **TASK-10R** (R-01…R-08); **TASK-10RR** (R-09…R-13) |
 | Status | **READY_FOR_REVIEW** |
 | Normative freeze | **NOT FROZEN** |
 | Implementation authorization | **NONE** (blocked) |
