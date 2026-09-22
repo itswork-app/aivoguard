@@ -1,0 +1,79 @@
+---
+description: Rust implementation, dependency, API, testing, and report discipline
+alwaysApply: true
+---
+
+# Rust Implementation & Testing
+
+## Implementation loop
+
+```text
+READ SPEC → AUDIT REPO → IDENTIFY CONTRACT → IMPLEMENT MINIMAL SCOPE
+→ TEST → AUDIT → REPORT
+```
+
+Do not: speculative abstractions, future modules early, unused extension points,
+undocumented behavior, silent API broadening, convenience dependencies.
+
+Prefer the smallest implementation that fully satisfies the frozen contract.
+
+## Dependencies
+
+Justify every crate. Prefer std. Check necessity, maintenance, security,
+determinism, license, compile cost, and scope before adding.
+
+## API discipline
+
+Do not accidentally freeze public APIs. Unspecified surfaces stay internal or
+are marked provisional. Do not infer CLI / REST / GraphQL / SDK / DSL /
+serialization / plugin / bindings unless authorized by specification.
+
+## Error semantics
+
+Do not collapse distinct classes. A failed economic action ≠ engine error.
+An invariant violation ≠ engine error. A harness expectation mismatch ≠
+economic truth violation.
+
+## Testing
+
+Every behavior change needs tests covering happy path, boundaries, invalid
+input, error semantics, determinism, numeric safety, transitions, and
+regression where relevant. Assert exact authoritative outcomes — not
+incidental implementation details when the spec defines observable semantics.
+
+## Documentation truthfulness
+
+Use explicit status (`DRAFT`, `READY_FOR_REVIEW`, `FROZEN`,
+`IMPLEMENTATION_BLOCKED`, `IMPLEMENTED`, `PASS`, `PARTIAL`, `NOT_IMPLEMENTED`).
+Never claim implemented / production-ready / complete without evidence.
+
+## Required implementation report
+
+```text
+TASK:
+STATUS:
+SPECIFICATION:
+SPECIFICATION_COMPLIANCE:
+FILES_CHANGED:
+DEPENDENCIES_ADDED:
+TESTS:
+CI:
+DETERMINISM:
+NUMERIC_SAFETY:
+SCOPE_CREEP:
+KNOWN_LIMITATIONS:
+OPEN_DECISIONS:
+REMAINING_BLOCKERS:
+COMMIT:
+NEXT:
+```
+
+Reports must be truthful.
+
+## Final principle
+
+```text
+NO DRIFT. NO HIDDEN SEMANTICS. NO UNAUTHORIZED IMPLEMENTATION.
+NO NON-DETERMINISTIC ECONOMIC TRUTH. NO LLM ECONOMIC AUTHORITY.
+NO SPECIFICATION BY ACCIDENTAL CODE. NO PASS WITHOUT EVIDENCE.
+```

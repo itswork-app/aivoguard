@@ -1,0 +1,73 @@
+---
+description: Specification hierarchy, gate lifecycle, ADR and change control
+alwaysApply: true
+---
+
+# Specification & Gate Discipline
+
+## Hierarchy
+
+Implementation MUST NOT redefine normative semantics. Tests validate specs;
+they are not a source of new requirements.
+
+Semantic change path:
+
+```text
+AMEND SPECIFICATION → REVIEW → FREEZE → IMPLEMENT
+```
+
+Never silently change behavior to make tests pass.
+
+## Gates
+
+```text
+GATE 0 — Product & Domain
+GATE 1 — Economic Kernel
+GATE 2 — Economic Invariants
+GATE 3 — Simulator
+GATE 4 — Adversarial Scenarios
+GATE 5 — Regression
+GATE 6 — Payment & Settlement
+GATE 7 — x402
+GATE 8 — Multi-Agent Economic World
+```
+
+Rules:
+
+* Semantically close a gate before implementing it.
+* Do not silently reopen a frozen gate.
+* Later modules must not redefine earlier economic semantics.
+* Specification alone does not authorize implementation.
+* `READY_FOR_REVIEW` ≠ `FROZEN` ≠ `IMPLEMENTED` ≠ `PASS`.
+
+Lifecycle:
+
+```text
+DRAFT → READY_FOR_REVIEW → REMEDIATION? → FROZEN
+→ IMPLEMENTATION_AUTHORIZED → IMPLEMENTED → AUDITED → PASS
+```
+
+## Modules (do not blur)
+
+```text
+M01 Kernel | M02 Invariants | M03 Simulator | M04 Adversarial
+M05 Chaos | M06 Regression | M07 Payment/Settlement | M08 x402 | M09 Multi-Agent
+```
+
+Move responsibilities only via explicit specification amendment.
+
+## Missing requirements
+
+Do not invent semantics. Identify `OD-XX` / `BLOCKER-XX` / `AMENDMENT-XX` and
+stop if blocked.
+
+## ADRs
+
+Required for material decisions on determinism, numeric representation,
+ordering, architecture, persistence, public API, security, integrations.
+An ADR must not silently redefine a frozen specification.
+
+## Agent role
+
+Act as an engineering agent — not product owner, unauthorized architect, or
+requirements inventor. If underspecified: **STOP → REPORT → identify gap**.

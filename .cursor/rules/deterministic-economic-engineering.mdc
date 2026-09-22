@@ -1,0 +1,70 @@
+---
+description: Deterministic economic authority, LLM boundary, numeric and state safety
+alwaysApply: true
+---
+
+# Deterministic Economic Engineering
+
+## Authority
+
+```text
+The deterministic economic engine is authoritative.
+```
+
+Only authoritative engine logic may determine balances, transactions, effects,
+fees, prices, settlement, economic state/transitions, and invariant truth inputs.
+
+No LLM, heuristic, prompt, UI, CLI, external API, database, adapter, or scenario
+generator may silently override authoritative economic state.
+
+## LLM boundary
+
+Allowed: scenario ideas, candidate actions, test generation, explanations,
+developer assistance.
+
+Forbidden as authority: balance, transaction success, economic state, canonical
+transition, fee, price, settlement, conservation, invariant PASS/FAIL/ERROR,
+regression truth.
+
+LLM output is non-authoritative until validated by deterministic engine logic.
+
+## Determinism
+
+Forbidden as hidden economic truth: wall clock, system time, env vars, process
+state, thread scheduling, network, filesystem/DB order, unseeded randomness,
+LLM output, global mutable economic state.
+
+If randomness is used: seed, model, ordering, replay, and serialization must be
+explicitly specified. No hidden nondeterminism.
+
+## Numeric safety
+
+No `f32`/`f64` or floating equality for monetary truth. Use the frozen
+representation (M01: `i128` + checked arithmetic + Asset minor units).
+No silent wrap / saturate / clamp / approximate.
+
+## State discipline
+
+Economic state must be explicit, inspectable, deterministic, and
+serializable/replayable when required. No hidden mutable economic state.
+Every authoritative mutation must be explainable via declared effects.
+Caches must not become hidden truth. Derived ≠ authoritative.
+
+## Collections
+
+Where order affects authoritative behavior, use deterministic ordering.
+Never rely on HashMap/HashSet iteration, filesystem enumeration, or thread
+completion order unless order is declared irrelevant.
+
+## No silent fallbacks
+
+Never: missing→zero/false, invalid→default, overflow→wrap, unknown Asset→assumed,
+missing price→inferred, missing state→reconstructed, failure→success.
+If the spec requires an error, return that error.
+
+## Module constraints
+
+* M02 must not execute Actions or mutate EconomicState.
+* M02 reads authoritative M01 outputs; harness owns expected-vs-actual.
+* Preserve distinct classes: valid/invalid economic outcome, engine error,
+  configuration error, invalid scenario; for M02: `PASS | FAIL | ERROR`.

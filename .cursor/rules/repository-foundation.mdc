@@ -1,44 +1,41 @@
 ---
-description: Repository foundation constraints for AivoGuard agents
+description: AivoGuard repository-first workflow and honesty constraints
 alwaysApply: true
 ---
 
-# AivoGuard — Repository Foundation Rules
+# AivoGuard — Repository Foundation
 
-## Before modifying anything
+## Before any change
 
-1. Inspect the repository state first (layout, existing docs, specs, crates).
-2. Treat frozen normative specifications as authoritative when they exist.
-3. If no frozen specification covers the change, do not invent requirements.
+1. Inspect the repository (layout, specs, ADRs, crates, tests, CI).
+2. Establish: `CURRENT_STATE`, `AUTHORITATIVE_SPECS`, `EXISTING_IMPLEMENTATION`,
+   `EXISTING_TESTS`, `EXISTING_ADRS`, `CURRENT_GATE`, `KNOWN_LIMITATIONS`.
+3. Never assume greenfield unless the task says so.
+4. Never duplicate an existing implementation you failed to inspect.
 
-## Specification authority
+## Authority (agent-facing)
 
-* Follow `docs/design/SPECIFICATION-POLICY.md`.
-* Hierarchy: frozen specs → ADRs → implementation → tests → examples → non-normative docs.
-* Code must not silently redefine specifications.
-* Ambiguity must be surfaced, not silently resolved.
-* Semantic changes require specification review / amendment (and an ADR when applicable).
+```text
+1. Frozen normative specifications
+2. Accepted ADRs
+3. Repository Cursor rules (this directory)
+4. Implementation
+5. Tests
+6. Documentation / examples
+```
 
-## Scope discipline
+Normative meaning follows `docs/design/SPECIFICATION-POLICY.md`.
+If code and specification conflict: **specification wins**.
 
-* No speculative implementation.
-* No architectural invention without documentation (spec and/or ADR).
-* No silent scope expansion beyond the assigned task.
-* Do not create domain crates or modules ahead of frozen specifications
-  (for example economic kernel, invariant engine, simulator, adversarial engine).
-* Exact economic semantics will be defined later — do not encode them early.
+## Hard stops
 
-## Engineering principles (foundation)
+* Do not invent requirements, economic semantics, or module architecture.
+* Do not implement a module without explicit task authorization.
+* Do not treat `READY_FOR_REVIEW` as `FROZEN`, or `FROZEN` as `IMPLEMENTED`.
+* Do not claim features without evidence.
 
-* Prefer deterministic behavior as a project principle.
-* No hidden mutable global state.
-* Do not treat LLM output as authoritative economic truth.
-* Tests are required for any implemented behavior.
-* Keep dependencies minimal; do not add “maybe useful later” crates.
+## Related rules
 
-## Honesty
-
-* Do not claim features that do not exist.
-* Do not add fake APIs, placeholder business logic, or TODO-as-implementation.
-* Do not proceed into Gate 0 / Gate 1 / economic implementation unless the
-  assigned task explicitly authorizes that work.
+* `specification-and-gate-discipline.mdc`
+* `deterministic-economic-engineering.mdc`
+* `rust-implementation-and-testing.mdc`

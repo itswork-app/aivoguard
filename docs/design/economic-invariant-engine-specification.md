@@ -1,0 +1,1374 @@
+# AivoGuard Economic Invariant Engine Specification
+
+| Field | Value |
+| --- | --- |
+| Document | `docs/design/economic-invariant-engine-specification.md` |
+| Task | TASK-05 / TASK-05R / TASK-05R2 |
+| Module | **M02 — Economic Invariant Engine** |
+| Gate | Gate 2 — Invariant Engine |
+| **STATUS** | **READY_FOR_REVIEW** |
+| Normative freeze | **NOT FROZEN** |
+| Implementation | **BLOCKED** |
+| Remediation | TASK-05R semantic closure; TASK-05R2 evaluation semantics closure |
+| Depends on | Product Scope (**FROZEN**); Domain Contract (**FROZEN**); Economic Kernel Specification (**FROZEN**); M01 implementation (TASK-04 **PASS**) |
+
+This document is the candidate normative specification for M02 after TASK-05R /
+TASK-05R2 semantic closure. It does **not** authorize M02 implementation.
+Freeze requires explicit TASK-05F approval.
+
+Related:
+
+* [`product-scope.md`](product-scope.md)
+* [`domain-contract.md`](domain-contract.md)
+* [`economic-kernel-specification.md`](economic-kernel-specification.md)
+
+---
+
+## 1. Purpose
+
+M02 evaluates whether **declared economic invariants** hold over authoritative
+M01 economic data (states, transitions, transactions, events, and declared
+history).
+
+Conceptually:
+
+```text
+EconomicWorld
++
+EconomicState / StateTransition / History
++
+KernelOutcome (when relevant)
++
+Declared Invariants
+        ↓
+Invariant Evaluation
+        ↓
+Invariant Results
+        ↓
+Violations
+```
+
+M02 is an **invariant evaluation layer**. It is **not** the Economic Kernel.
+
+---
+
+## 2. Authority hierarchy
+
+```text
+Product Scope FROZEN
+        ↓
+Domain Contract FROZEN
+        ↓
+Economic Kernel Specification FROZEN
+        ↓
+M02 Invariant Engine Specification (this document; READY_FOR_REVIEW)
+        ↓
+M02 Implementation (blocked)
+```
+
+M02 must **not** redefine M01 economic truth.
+
+M01 remains authoritative for:
+
+```text
+state transitions
+transaction disposition
+economic effects
+balances
+money
+fees
+prices
+settlement effects
+economic execution result
+```
+
+M02 evaluates declared properties **over** that authoritative result.
+
+---
+
+## 3. Core distinctions (mandatory)
+
+```text
+Economic Truth          (M01)
+        ≠
+Invariant Evaluation    (M02)
+        ≠
+Test Expectation        (Scenario / regression / test harness)
+```
+
+### Examples
+
+```text
+Kernel:
+  Transfer rejected because balance is insufficient
+M02 invariant:
+  "available balance must never become negative"
+Result:
+  PASS   (property holds on authoritative StateAfter / non-mutation)
+```
+
+```text
+Kernel:
+  Transfer accepted; StateAfter has negative available balance
+M02 invariant:
+  "available balance must never be negative"
+Result:
+  FAIL
+```
+
+M02 must **never** rewrite the Kernel’s economic outcome, disposition, effects,
+or balances.
+
+---
+
+## 4. Responsibilities
+
+### M02 is responsible for
+
+* evaluating declared invariants
+* determining whether an invariant holds
+* producing deterministic invariant results
+* producing violations
+* associating violations with evaluation/state/transition/history location
+* evaluating invariants over state, transition, and history (where supported)
+* preserving deterministic evidence
+* distinguishing invariant failure from invariant engine error
+* supporting reproducible invariant evaluation
+
+### M02 is NOT responsible for
+
+* executing Actions
+* mutating EconomicState
+* determining transaction disposition
+* calculating fees / prices / applying balances / settlement
+* simulations, adversarial generation, chaos, regression orchestration
+* LLM authority, external I/O, payment providers, blockchain RPC
+* generic cybersecurity assertions
+* deciding whether a violation was “expected” by a test
+
+---
+
+## 5. Read-only guarantee
+
+Invariant evaluation **MUST NOT** mutate authoritative economic state.
+
+```text
+Authoritative State
+        ↓
+M02 Evaluation
+        ↓
+Invariant Results / Violations
+```
+
+An invariant may report a violation. It must **not** repair it.
+
+Prohibited automatic behavior:
+
+```text
+balance correction
+rollback
+fee correction
+state normalization
+```
+
+---
+
+## 6. Invariant concept
+
+An **Invariant** is:
+
+> A deterministic, declared economic property that must hold for a specified
+> evaluation scope under a declared EconomicWorld and authoritative economic
+> data.
+
+Each invariant must establish:
+
+```text
+what property is being evaluated
+what data it applies to
+when it applies
+what constitutes satisfaction
+what constitutes violation
+```
+
+Concrete DSL / macro / JSON / YAML / LLM prompt languages are **not** frozen
+here (OD-04 deferred). Semantics of evaluation **are** frozen by this contract.
+
+---
+
+## 7. Invariant identity and versioning
+
+Every declared invariant requires stable semantic identity distinguishing at
+least:
+
+```text
+invariant_id
+definition_version
+applicable World binding (or explicit “World-agnostic with parameters”)
+scope kind
+```
+
+Display names are non-authoritative.
+
+A change that alters whether identical authoritative inputs PASS/FAIL/ERROR is a
+**semantic version change** and requires an explicit definition_version bump
+and specification/amendment discipline for normative shared invariants.
+
+---
+
+## 8. Invariant scopes
+
+M02 MUST distinguish at least:
+
+### 8.1 State invariant
+
+Evaluates one authoritative `EconomicState`.
+
+Example (conceptual): available balance ≥ 0 **when World prohibits negatives**.
+
+### 8.2 Transition invariant
+
+Evaluates:
+
+```text
+StateBefore
++
+Transaction / Effects
++
+StateAfter
+(+ disposition when required by the invariant)
+```
+
+Example (conceptual): material StateAfter differences are explained by declared
+effects (user-level assertion layer; foundational consistency remains M01).
+
+### 8.3 History invariant
+
+Evaluates a declared **ordered** sequence of authoritative economic
+records/transitions.
+
+Example (conceptual): settlement-related event cannot precede authorization
+event in logical order.
+
+History invariants **MUST NOT** assume wall-clock order. They use declared
+logical ordering only.
+
+---
+
+## 9. Evaluation target resolution
+
+```text
+Invariant
++
+EvaluationTarget
+        ↓
+InvariantResult
+```
+
+Conceptual targets:
+
+```text
+State
+Transition
+Transaction
+Effect
+Event
+History
+```
+
+### Compatibility matrix (normative)
+
+| Invariant scope | Compatible targets | Incompatible → |
+| --- | --- | --- |
+| STATE | `State` | any other → `ERROR` (`INCOMPATIBLE_TARGET`) |
+| TRANSITION | `Transition` (StateBefore + Transaction/Effects + StateAfter) | State-only or History-only → `ERROR` (`INCOMPATIBLE_TARGET`) |
+| HISTORY | `History` | State/Transition-only → `ERROR` (`INCOMPATIBLE_TARGET`) |
+
+### Target type vs missing data (TASK-05R2)
+
+```text
+TARGET TYPE / SCOPE MISMATCH
+→ ERROR(INCOMPATIBLE_TARGET)
+
+TARGET IS COMPATIBLE
+but required authoritative field/data is absent
+→ ERROR(MISSING_REQUIRED_DATA)
+```
+
+Examples:
+
+```text
+HISTORY invariant + State target
+→ ERROR(INCOMPATIBLE_TARGET)
+
+TRANSITION invariant + History target
+→ ERROR(INCOMPATIBLE_TARGET)
+
+HISTORY invariant + History target
+  + required logical-order field absent
+→ ERROR(MISSING_REQUIRED_DATA)
+
+STATE invariant + State target
+  + required account missing
+→ ERROR(MISSING_REQUIRED_DATA)
+
+STATE invariant + State target
+  + required balance facet absent
+→ ERROR(MISSING_REQUIRED_DATA)
+```
+
+Additional rules:
+
+* `Transaction` / `Effect` / `Event` targets are valid only when the invariant’s
+  structured definition explicitly binds that target kind; otherwise
+  `ERROR(INCOMPATIBLE_TARGET)`.
+* Compatible History target lacking required logical-order keys →
+  `ERROR(MISSING_REQUIRED_DATA)` (never PASS; never infer order from
+  wall-clock / arrival / DB insertion / filesystem / thread scheduling).
+
+Rust types and serialization are deferred.
+
+---
+
+## 10. Invariant result model
+
+Deterministic result categories (unchanged; **no fourth category**):
+
+| Result | Meaning |
+| --- | --- |
+| `PASS` | Evaluation completed under this contract; no property violation |
+| `FAIL` | Evaluation completed; property does not hold (one or more Violations) |
+| `ERROR` | Property could not be evaluated correctly |
+
+```text
+FAIL ≠ ERROR
+```
+
+`PASS` includes both:
+
+1. property checked and holds; and
+2. valid invariant that is **not applicable** to the World (see §10A), which
+   produces PASS with zero Violations and mandatory evidence
+   `applicability_status = NotApplicable`.
+
+Rationale for not adding `NOT_APPLICABLE` as a fourth result: changing the
+result model would be a breaking semantic amendment; vacuous non-applicability
+is representable inside PASS with explicit evidence so harnesses can distinguish
+it from “property verified true”.
+
+---
+
+## 10A. Applicability semantics (TASK-05R)
+
+Normative distinctions:
+
+| Situation | Result |
+| --- | --- |
+| Applicable invariant; property holds | `PASS` (`applicability_status = Applicable`) |
+| Applicable invariant; property false | `FAIL` + Violation(s) |
+| Valid invariant; World applicability constraints false | `PASS` (`applicability_status = NotApplicable`), zero Violations |
+| Malformed / invalid invariant definition | `ERROR` (`INVALID_INVARIANT_DEFINITION`) |
+| Target incompatible with declared scope | `ERROR` (`INCOMPATIBLE_TARGET`) |
+| Applicable invariant; required authoritative data missing | `ERROR` (`MISSING_REQUIRED_DATA`) |
+
+### Example
+
+```text
+Invariant: collateral ratio >= 150%
+World: no collateral concept exists
+→ PASS with applicability_status = NotApplicable
+```
+
+These MUST NOT collapse:
+
+```text
+valid but inapplicable World
+≠
+invalid invariant definition
+≠
+incompatible evaluation target
+≠
+missing required data for an applicable invariant
+```
+
+No silent PASS/FAIL without recording applicability status in evidence when
+applicability constraints exist.
+
+---
+
+## 10B. Missing authoritative data (TASK-05R)
+
+```text
+required authoritative data exists → evaluation proceeds
+required authoritative data missing → ERROR (MISSING_REQUIRED_DATA)
+observed authoritative data violates property → FAIL
+```
+
+Prohibited inferences unless the invariant **explicitly** declares absence
+semantics:
+
+```text
+missing value → zero
+missing value → false
+missing value → empty collection
+missing value → PASS
+```
+
+Distinguish where relevant:
+
+```text
+absent data
+explicit zero
+empty collection
+unknown value
+```
+
+Implementations must not invent missing economic values.
+
+---
+
+## 11. Violation model
+
+A **Violation** is a first-class deterministic record that an invariant FAILed.
+
+It must answer:
+
+```text
+Which invariant failed?
+Where did it fail?
+What condition did the invariant require?
+What was observed?
+What authoritative state/transition/history was involved?
+Why does the invariant not hold? (structured facts)
+```
+
+Minimum semantic fields:
+
+```text
+invariant identity (id + definition_version)
+evaluation scope
+evaluation location
+required_condition (structured)   — condition required by the invariant
+observed_condition (structured)   — authoritative observation
+authoritative reference (state / transition / history span)
+deterministic context facts
+```
+
+**Terminology (TASK-05R):** `required_condition` is **not** the harness “expected
+test outcome”. Test expectation matching remains outside M02.
+
+Human-readable prose may be derived; **structured facts are authoritative**.
+
+### Multiple violations and partial evaluation (TASK-05R / TASK-05R2)
+
+Policies declared on the invariant:
+
+```text
+all         — retain all Violations discovered in the required domain
+first-only  — retain only the first Violation in deterministic domain order
+```
+
+**Normative rule (TASK-05R2):** `first-only` controls **violation collection**,
+not required-domain **error discovery**.
+
+```text
+required evaluation domain
+        ↓
+must be evaluated completely enough to determine
+whether any required subdomain produces ERROR
+        ↓
+violation collection policy controls retained Violations only
+```
+
+Therefore:
+
+```text
+all:
+  evaluate all required subdomains
+  retain all Violations
+  any required ERROR → overall ERROR
+
+first-only:
+  evaluate all required subdomains
+  retain only the first deterministic Violation
+  any required ERROR → overall ERROR
+```
+
+The implementation MUST NOT short-circuit required evaluation merely because
+the first Violation has been found. If later members of the required domain
+are not to be evaluated, that MUST be an explicit invariant semantic — not an
+accidental consequence of `first-only`.
+
+**Deterministic “first” Violation:** “First” is determined solely by the
+authoritative deterministic domain order already established by the inputs
+(e.g. ordered account keys). Example: ordered accounts `A,B,C,D` with
+violations at `C` and `D` → `first-only` retains the Violation at `C`.
+Prohibited: thread completion order, HashMap iteration, filesystem order,
+network order. If the domain has no deterministic authoritative ordering →
+`ERROR` (do not invent a sorting rule that changes domain semantics).
+
+**ERROR precedence over incomplete FAIL:**
+
+If any **required** subdomain cannot be evaluated (`ERROR` cause), the overall
+invariant result is `ERROR`. Do **not** report a complete `FAIL` while omitting
+unevaluable required subdomains.
+
+Example:
+
+```text
+10 accounts; account 3 violates; account 7 missing required data
+→ overall ERROR (MISSING_REQUIRED_DATA)
+  (may attach diagnostic context for account 3; result remains ERROR)
+```
+
+Evaluation errors are **not** converted into Violations.
+
+---
+
+## 12. Expected violation vs actual violation
+
+M02 reports invariant truth only:
+
+```text
+Invariant PASS | FAIL | ERROR
+```
+
+M02 must **NOT** decide whether a violation was expected/unexpected by a test.
+
+Harness / Scenario / Regression interpret expected-vs-actual **after** M02.
+
+---
+
+## 13. Invariant categories (extensible; not universal)
+
+Documented categories (illustrative bindings, not mandatory for every World):
+
+```text
+Conservation
+BalanceConsistency
+AssetConservation
+LiabilityConsistency
+FeeCorrectness
+SettlementCorrectness
+AuthorizationEconomicValidity
+SupplyConsistency
+CollateralConsistency
+PositionConsistency
+StateTransitionValidity
+```
+
+M02 must **not** assume every World has every category.
+
+---
+
+## 14. World-specific semantics
+
+Invariants operate under the declared `EconomicWorld`.
+
+```text
+World A: negative balances prohibited
+World B: negative balances permitted for explicit credit accounts
+```
+
+Therefore `balance >= 0` is **not** a universal invariant. Applicability must be
+declared by the invariant and/or its World binding.
+
+M02 must never invent economic assumptions absent from World + invariant
+declaration.
+
+---
+
+## 15. Conservation
+
+Conservation is **explicitly scoped**, never universal.
+
+```text
+World / invariant declares what quantity is conserved
+```
+
+A conservation invariant must identify:
+
+```text
+conservation property
+measurement boundary
+asset identity (or declared aggregate definition)
+scope (state / transition / history)
+```
+
+No silent cross-asset conservation.
+
+---
+
+## 16. Balance consistency
+
+M02 may evaluate World-declared balance relationships (e.g. facet sums) **only**
+where the World explicitly declares that relationship.
+
+M01 permits bucket, orthogonal, and other declared facet models. M02 must
+respect the World model and must **not** impose universal facet arithmetic.
+
+---
+
+## 17. Fee correctness
+
+M02 may evaluate declared fee invariants over **authoritative M01 fee effects**.
+
+M02 does **not** recalculate fees as an alternative economic authority.
+
+---
+
+## 18. State transition validity (user-declared)
+
+M02 may verify higher-level transition assertions.
+
+Foundational state/effect consistency required for safe M01 evaluation remains
+**M01** responsibility. M02 must not become a second economic engine.
+
+---
+
+## 19. Composition of multiple invariants
+
+Multiple invariants over the same target are evaluated as **independent
+deterministic evaluations** by default.
+
+```text
+Invariant A = PASS
+Invariant B = ERROR
+Invariant C = FAIL
+```
+
+must be representable simultaneously.
+
+Failure/error of one must not suppress unrelated invariants unless a composite
+invariant explicitly defines dependent evaluation.
+
+Do not collapse the batch into a single generic FAIL at the M02 layer; batch
+aggregation for CI/tests belongs to a later composition/harness layer unless a
+frozen composite invariant defines otherwise.
+
+---
+
+## 20. Short-circuiting
+
+Default:
+
+```text
+Independent invariants: evaluate all independently (no accidental order dependence).
+Composite invariant: may short-circuit only if its semantics explicitly define it.
+```
+
+Evaluation order among independent invariants must not change their individual
+PASS/FAIL/ERROR results. Where emission order of results matters for evidence,
+use deterministic ordering by `invariant_id` (lexicographic) then
+`definition_version`.
+
+**Constraint (TASK-05R2):** `first-only` violation policy is **not** a license
+to short-circuit required-domain ERROR discovery (§11). Any short-circuit of
+required members must be an explicit invariant semantic, not implied by
+violation-collection policy.
+
+---
+
+## 21. Invariant ERROR classification (TASK-05R / TASK-05R2)
+
+Conceptual ERROR cause classes (Rust enum names **not** frozen):
+
+| Class | Meaning | Kind |
+| --- | --- | --- |
+| `INVALID_INVARIANT_DEFINITION` | Malformed / incomplete structured definition | definition problem |
+| `INVALID_INVARIANT_CONFIGURATION` | Config inconsistent with definition/World | configuration problem |
+| `INCOMPATIBLE_TARGET` | Target **type/scope** cannot satisfy declared scope | target problem |
+| `MISSING_REQUIRED_DATA` | Target type is compatible; required authoritative field/data absent | authoritative-data problem |
+| `INCOMPATIBLE_OPERANDS` | Operands not comparable/aggregable under rules | operation problem |
+| `UNSUPPORTED_OPERATION` | Operation not part of Gate-2 conceptual set / not declared | operation problem |
+| `ARITHMETIC_ERROR` | Overflow/underflow / invalid numeric domain | arithmetic problem |
+| `ENGINE_ERROR` | Internal M02 failure | engine problem |
+
+### `INCOMPATIBLE_TARGET` vs `MISSING_REQUIRED_DATA` (TASK-05R2)
+
+```text
+TARGET TYPE / SCOPE MISMATCH
+→ INCOMPATIBLE_TARGET
+
+TARGET IS COMPATIBLE
+but required authoritative field/data is absent
+→ MISSING_REQUIRED_DATA
+```
+
+Do **not** manufacture `INCOMPATIBLE_TARGET` when the target type is compatible
+and only a required field is absent. Example:
+
+```text
+valid State target + missing balance
+→ MISSING_REQUIRED_DATA
+(not INCOMPATIBLE_TARGET)
+```
+
+### Precedence (when multiple independent ERROR causes are actually discovered)
+
+```text
+INVALID_INVARIANT_DEFINITION
+  > INVALID_INVARIANT_CONFIGURATION
+  > INCOMPATIBLE_TARGET
+  > MISSING_REQUIRED_DATA
+  > INCOMPATIBLE_OPERANDS
+  > UNSUPPORTED_OPERATION
+  > ARITHMETIC_ERROR
+  > ENGINE_ERROR
+```
+
+**Discovery rule (TASK-05R2):** Error precedence applies only when multiple
+independent error causes are **actually discovered** within the required
+evaluation. Do not manufacture an error merely to satisfy precedence.
+
+The same condition must not arbitrarily become FAIL in one implementation and
+ERROR in another.
+
+```text
+FAIL  = property evaluated; property false
+ERROR = property could not be evaluated correctly
+```
+
+---
+
+## 22. Determinism
+
+```text
+same:
+  EconomicWorld
+  EvaluationTarget
+  Invariant definition (+ version)
+  Invariant configuration
+  ordered history (when in scope)
+  M02 EngineVersion
+
+⇒ same semantic InvariantResult (+ violations) + same ERROR class when ERROR
+```
+
+Prohibited hidden influences: clock, randomness, network, database, filesystem,
+environment, LLM, process/thread state, unordered map iteration for
+authoritative emission.
+
+Result ordering for multi-invariant batches:
+
+```text
+invariant_id (lexicographic)
+  then definition_version
+  then evaluation location / stable target order
+```
+
+Collection traversal for quantification/aggregation uses deterministic domain
+ordering already established by authoritative inputs (e.g. `BTreeMap` key order
+from M01 state), without inventing a sorting rule that changes economic meaning.
+
+---
+
+## 23. Ordering and history
+
+History/transition invariants use **authoritative logical ordering** only.
+
+* Ordered authoritative history → evaluate.
+* History target type incompatible (e.g. State supplied) →
+  `ERROR(INCOMPATIBLE_TARGET)`.
+* Compatible History target missing required logical-order field/record →
+  `ERROR(MISSING_REQUIRED_DATA)`.
+* Never infer order from wall-clock, arrival, DB insertion, filesystem order,
+  or thread scheduling.
+
+---
+
+## 24. Numeric and arithmetic failure semantics (TASK-05R)
+
+M02 consumes M01 authoritative numerics:
+
+```text
+i128 minor units
+checked arithmetic
+Asset identity
+no f32/f64 authoritative economics
+World-declared rounding when a calculation requires it
+```
+
+```text
+representable arithmetic → continue
+overflow / underflow → ERROR (ARITHMETIC_ERROR)
+invalid numeric domain → ERROR (ARITHMETIC_ERROR)
+unsupported conversion → ERROR (INCOMPATIBLE_OPERANDS or MISSING_REQUIRED_DATA)
+```
+
+Prohibited: wrap, saturate, clamp, approximate, silent round, invent rounding.
+
+If rounding is required, use the World/invariant-declared rule only.
+
+---
+
+## 25. Comparison semantics (TASK-05R)
+
+Supported conceptual operators:
+
+```text
+=
+!=
+<
+<=
+>
+>=
+```
+
+Rules:
+
+* Operands must share the same Asset identity **or** an explicit authoritative
+  conversion/valuation to a common Asset must be declared (M01 price
+  identity/direction/category).
+* `100 USD >= 99 USD` → valid comparison domain.
+* `100 USD >= 99 EUR` without declared conversion → `ERROR`
+  (`INCOMPATIBLE_OPERANDS`), **not** FAIL, **never** PASS by raw integer compare.
+* Missing operand → `ERROR` (`MISSING_REQUIRED_DATA`) unless absence is
+  explicitly defined.
+* No floating-point comparison.
+
+Equality/ordering are integer minor-unit comparisons after any declared
+exact conversion into a common Asset domain.
+
+---
+
+## 25A. Quantification semantics (TASK-05R)
+
+Conceptual quantifiers:
+
+```text
+FOR_ALL (∀)
+EXISTS  (∃)
+```
+
+Domain resolution uses deterministic ordered collections from authoritative
+data.
+
+| Quantifier | Empty domain | Missing domain collection |
+| --- | --- | --- |
+| `FOR_ALL` | `PASS` (vacuous truth) | `ERROR` (`MISSING_REQUIRED_DATA`) |
+| `EXISTS` | `FAIL` (no witness) | `ERROR` (`MISSING_REQUIRED_DATA`) |
+
+Invalid/non-collection domain binding → `ERROR` (`INVALID_INVARIANT_DEFINITION`
+or `INCOMPATIBLE_OPERANDS`).
+
+### Nested evaluation
+
+If evaluating a member of a quantified domain yields `ERROR`, the whole
+invariant is `ERROR` (no silent skip). If a member yields a Violation under
+`all`/`first-only`, apply §11 multi-violation rules, subject to ERROR
+precedence.
+
+---
+
+## 25B. Aggregation semantics (TASK-05R)
+
+Gate-2 conceptual aggregations:
+
+```text
+SUM
+COUNT
+MIN
+MAX
+```
+
+| Op | Empty input | Missing input | Asset rules | Overflow |
+| --- | --- | --- | --- | --- |
+| `COUNT` | `0` | `ERROR` | N/A (cardinality) | N/A |
+| `SUM` | `0` in the **declared** Asset domain of the aggregation | `ERROR` | all terms same Asset unless declared conversion first | `ERROR` (`ARITHMETIC_ERROR`) |
+| `MIN` | `ERROR` (no mathematically valid value) | `ERROR` | same Asset domain | N/A |
+| `MAX` | `ERROR` | `ERROR` | same Asset domain | N/A |
+
+No silent sentinel monetary values for MIN/MAX empty sets.
+
+`SUM` of mixed Assets without conversion → `ERROR` (`INCOMPATIBLE_OPERANDS`).
+
+---
+
+## 25C. Cross-asset semantics
+
+```text
+same Asset → direct arithmetic/comparison allowed
+different Assets → explicit authoritative conversion/valuation required
+no valid conversion → ERROR
+```
+
+M02 cannot invent exchange rate, price direction, rounding, or valuation time.
+Those remain governed by M01 / World declaration.
+---
+
+## 26. History semantics (TASK-05R2)
+
+History invariants operate over **declared authoritative history** composed of
+M01-authoritative records (transactions/effects/events/transitions), not
+arbitrary logs.
+
+Distinguish:
+
+```text
+State
+Transaction
+Event
+Transition
+History
+```
+
+### History traversal (conceptual; no DSL freeze)
+
+Conceptual traversal operations:
+
+```text
+ordered iteration
+position access
+range/span selection
+relationship/order inspection
+```
+
+Rules:
+
+```text
+authoritative + ordered + complete for required domain
+→ traversal proceeds
+
+compatible History target; required record/order absent
+→ ERROR(MISSING_REQUIRED_DATA)
+
+supplied target is not a History target
+→ ERROR(INCOMPATIBLE_TARGET)
+```
+
+Never infer history ordering from wall clock, arrival time, database insertion
+order, filesystem order, or thread scheduling.
+
+### Range / span semantics
+
+If an invariant requests a history span:
+
+* `start <= end` must be valid under authoritative logical ordering.
+* Invalid range binding → `ERROR(INVALID_INVARIANT_DEFINITION)`.
+* Missing records required by the declared range →
+  `ERROR(MISSING_REQUIRED_DATA)`.
+* Do not silently shrink the range.
+* Do not silently skip missing records.
+
+---
+
+## 27. Violation location
+
+Conceptual location may associate a violation with:
+
+```text
+state
+transaction
+effect
+event
+logical sequence position
+history range
+```
+
+Location must be deterministic. Concrete Rust shape is implementation-only.
+
+---
+
+## 28. Evidence and reproducibility
+
+Evidence must enable reproduction/understanding of:
+
+```text
+which invariant
+what target
+what World
+what State/Transition/History
+what configuration
+what logical ordering
+what required_condition
+what observed_condition
+what result
+why FAIL/ERROR
+```
+
+Evidence must also record `applicability_status` when applicability constraints exist.
+Reproducibility inputs:
+
+```text
+World
++
+Target
++
+Invariant (+ version)
++
+Configuration
++
+Ordered history (if any)
++
+M02 EngineVersion
+```
+
+No external live state may be required. Serialization format deferred.
+
+---
+
+## 29. LLM boundary
+
+```text
+LLM proposal
+        ↓
+deterministic validation / declaration
+        ↓
+declared invariant
+        ↓
+M02 evaluation
+```
+
+LLM must never determine PASS/FAIL/ERROR, observed economic state, or expected
+economic value.
+
+---
+
+## 30. Boundary tables
+
+### M01 vs M02
+
+| Responsibility | M01 | M02 |
+| --- | --- | --- |
+| Execute Action | YES | NO |
+| Determine transaction disposition | YES | NO |
+| Calculate state effects | YES | NO |
+| Apply authoritative state transition | YES | NO |
+| Foundational state consistency | YES | NO |
+| User-declared invariant evaluation | NO | YES |
+| Conservation rules | World binding; evaluated in M02 | YES |
+| Business-specific assertions | NO | YES |
+| Produce invariant Violations | NO (foundational errors only) | YES |
+| Test expectation matching | NO | NO |
+
+### M02 vs M03
+
+```text
+M03 Simulator
+  ↓
+many kernel evaluations / orchestration
+  ↓
+M02 invariant evaluation
+  ↓
+results
+```
+
+M02 must not implement scenario scheduling, multi-step execution, Monte Carlo,
+agent loops, or timeline orchestration.
+
+### M02 vs M04/M05
+
+Adversarial/chaos modules generate conditions. M02 only evaluates declared
+invariants over authoritative results. M02 does not generate attacks.
+
+### M02 vs adapters / I/O
+
+M02 must not perform HTTP, database, blockchain RPC, payment, wallet, or LLM
+calls as hidden dependencies.
+
+---
+
+## 31. Conceptual evaluation operations (not a DSL freeze)
+
+OD-04 (concrete language/API) remains **OPEN**. This specification freezes
+**semantics**, not syntax.
+
+Conceptual operations:
+
+```text
+comparison (§25)
+aggregation (§25B)
+quantification (§25A)
+relationship checking (§31C)
+state lookup (§31A)
+transition lookup (§31B)
+history traversal (logical order) (§26)
+```
+
+### 31A. State lookup semantics (TASK-05R2)
+
+Conceptual lookup of authoritative state components (examples):
+
+```text
+Actor
+Account
+Asset
+Balance
+Balance facet
+other explicitly authoritative state component
+```
+
+Lookup outcomes:
+
+| Outcome | Result |
+| --- | --- |
+| Found authoritative value | continue |
+| Explicit zero | valid value; **not** missing |
+| Missing required component | `ERROR(MISSING_REQUIRED_DATA)` |
+| Invalid/malformed lookup binding | `ERROR(INVALID_INVARIANT_DEFINITION)` or configuration error where appropriate |
+| Unrelated Asset without declared relationship | `ERROR(INCOMPATIBLE_OPERANDS)` or configuration error |
+
+Prohibited silent conversions:
+
+```text
+missing account → zero balance
+missing asset → zero
+missing facet → zero
+```
+
+**Lookup scope** resolves only against the authoritative target:
+
+```text
+State invariant
+→ lookup against authoritative State
+
+Transition invariant
+→ lookup against declared StateBefore / StateAfter context
+  as explicitly bound by the invariant
+
+History invariant
+→ lookup only against state records explicitly present
+  in the declared authoritative history/context
+```
+
+Do not invent hidden state snapshots.
+
+### 31B. Transition lookup semantics (TASK-05R2)
+
+A transition consists conceptually of the authoritative:
+
+```text
+StateBefore
+Effects / Transaction
+StateAfter
+Disposition (where explicitly relevant)
+```
+
+Lookup outcomes:
+
+| Outcome | Result |
+| --- | --- |
+| Valid component lookup | continue |
+| Required transition component absent | `ERROR(MISSING_REQUIRED_DATA)` |
+| Transition invariant bound to non-transition target | `ERROR(INCOMPATIBLE_TARGET)` |
+| Invalid invariant reference to a transition component | `ERROR(INVALID_INVARIANT_DEFINITION)` |
+
+M02 must **NOT**:
+
+* reconstruct `StateAfter` from effects
+* recalculate balances, fees, prices, settlement, or transaction disposition
+
+M02 consumes authoritative M01 transition data only.
+
+### 31C. Relationship checking semantics (TASK-05R2)
+
+Relationship checking evaluates a **declared** relation between authoritative
+values/entities/records. Examples:
+
+```text
+transaction actor == account owner
+event.transaction_id == transition.transaction_id
+StateBefore balance relates to StateAfter balance
+  through declared authoritative effects
+```
+
+| Situation | Result |
+| --- | --- |
+| Relationship exists and satisfies relation | contribute toward `PASS` |
+| Relationship exists but violates relation | `FAIL` + Violation |
+| Required relationship/reference absent | `ERROR(MISSING_REQUIRED_DATA)` |
+| Relationship operands incompatible | `ERROR(INCOMPATIBLE_OPERANDS)` |
+| Relationship expression malformed | `ERROR(INVALID_INVARIANT_DEFINITION)` |
+
+Do not silently interpret missing relationship as false unless the invariant
+explicitly defines absence as the observed value.
+
+```text
+missing data ≠ observed violation
+```
+
+**vs M01 foundational consistency:** M01 remains authoritative for state
+transition consistency, effect consistency, transaction/effect consistency,
+and numeric validity. M02 may assert a higher-level declared property over
+those authoritative records. M02 must not independently calculate whether M01
+should have produced different effects.
+
+### 31D. Nested operation error propagation (TASK-05R2)
+
+General rule: if any required nested evaluation yields `ERROR`, the overall
+invariant is `ERROR` (no silent skip; no partial FAIL claiming completeness).
+
+Example:
+
+```text
+FOR_ALL accounts:
+    SUM(balance facets) >= 0
+
+account A → valid
+account B → valid
+account C → missing facet → ERROR
+account D → negative balance → Violation
+
+→ overall ERROR
+```
+
+`first-only` does not change this; it changes only retained Violations.
+
+### 31E. Deterministic evaluation model (TASK-05R2)
+
+Normative evaluation sequence:
+
+```text
+1. Resolve invariant validity/configuration.
+2. Resolve target compatibility.
+3. Resolve applicability.
+4. Resolve required authoritative data.
+5. Traverse required evaluation domain deterministically.
+6. Evaluate conceptual operations.
+7. Collect violations according to policy (all | first-only).
+8. If any required evaluation ERRORed:
+      overall = ERROR
+   else if one or more Violations:
+      overall = FAIL
+   else:
+      overall = PASS
+```
+
+Where applicability is `NotApplicable`, the invariant does **not** evaluate its
+property and returns `PASS` + `applicability_status = NotApplicable` (§10A).
+
+No hidden partial evaluation.
+
+### Gate-2 implementation-readiness criterion (TASK-05R / TASK-05R2)
+
+> Two independent competent engineers implementing M02 from the frozen Product
+> Scope, Domain Contract, Economic Kernel Specification, and this document must
+> not be able to choose materially different PASS/FAIL/ERROR outcomes for
+> identical valid authoritative inputs solely because this specification leaves
+> the relevant semantic question unspecified — including state lookup,
+> transition lookup, relationship checking, history traversal, first-only
+> behavior, or error classification/precedence.
+
+Given a structured invariant definition specifying identity, version, scope,
+target binding, World applicability, derivation rules using the operations
+above, and multi-violation policy (`all` | `first-only`), implementations MUST
+agree on PASS / FAIL / ERROR (and ERROR class under §21).
+
+Prose-only invariants are not Gate-2 evaluable → `ERROR`
+(`INVALID_INVARIANT_DEFINITION`).
+
+### Composition example
+
+```text
+FOR_ALL accounts:
+    SUM(balance facets of declared Asset) >= 0
+```
+
+If `SUM` errors for any account → whole invariant `ERROR` (no skip).
+
+---
+
+## 32. Security / economic safety
+
+M02 must defend against:
+
+```text
+silent invariant failure
+FAIL → PASS conversion
+ERROR → FAIL conversion
+cross-asset confusion
+floating-point approximation
+hidden time dependency
+unordered history evaluation
+implicit state mutation
+incomplete violation evidence
+non-deterministic evaluation order
+LLM authority over results
+missing data treated as zero/PASS
+raw cross-asset integer comparison
+```
+
+---
+
+## 33. Versioning of this specification
+
+Semantic changes to invariant meaning, evaluation semantics, result categories,
+violation semantics, numeric treatment, history/ordering, applicability,
+comparison/quantification/aggregation semantics require explicit amendment.
+Implementation refactors preserving semantics do not.
+
+---
+
+## 34. Testability (future M02 implementation; not TASK-05)
+
+Future implementation must eventually cover state/transition/history PASS/FAIL,
+applicability NotApplicable PASS, missing-data ERROR, incompatible target ERROR,
+empty FOR_ALL/EXISTS, empty SUM/MIN/MAX, cross-asset ERROR, arithmetic ERROR,
+multi-violation + first-only with full required-domain ERROR discovery,
+state/transition lookup, relationship checking, history range missing-record
+ERROR, determinism, no mutation, harness-side expected-vs-actual separation.
+
+---
+
+## 35. Open decisions
+
+| ID | Topic | Status | Blocks PASS/FAIL/ERROR agreement? |
+| --- | --- | --- | --- |
+| OD-04 | Concrete invariant language / API / DSL | OPEN | No (semantics closed; syntax deferred) |
+| IE-01 | Concrete Rust types | OPEN | No |
+| IE-02 | Persistence/serialization | OPEN | No |
+| IE-03 | Shared normative invariant catalog | OPEN | No |
+| IE-04 | CI/dashboard aggregation | OPEN | No (harness) |
+
+---
+
+## 36. Deferred
+
+* M02 Rust modules / public API / DSL parser / CLI / DB / adapters / LLM
+* Standard invariant catalog
+* M03 orchestration bindings beyond conceptual flow
+* Fourth result category (`NOT_APPLICABLE`) — explicitly **not** introduced
+
+---
+
+## 37. Contradictions with frozen specs
+
+```text
+NONE identified
+```
+
+---
+
+## 38. Semantic closure status (TASK-05R2)
+
+```text
+SEMANTIC_CLOSURE: COMPLETE for Gate-2 PASS/FAIL/ERROR determinism
+  (includes first-only vs ERROR discovery, ERROR class boundary,
+   state/transition lookup, history traversal, relationship checking)
+TASK-05F: AUTHORIZED for freeze review (not auto-started)
+IMPLEMENTATION: BLOCKED until freeze + explicit implementation task
+```
+
+---
+
+## 39. Next step
+
+```text
+TASK-05F — Economic Invariant Engine Specification Freeze
+```
+
+Do not implement M02; do not start TASK-05F automatically.
+
+---
+
+## Document control
+
+| Item | Value |
+| --- | --- |
+| Created by | TASK-05 |
+| Remediated by | TASK-05R, TASK-05R2 |
+| Status | READY_FOR_REVIEW |
+| Normative freeze | NOT FROZEN |
+| Implementation | BLOCKED |
+| Module | M02 |
