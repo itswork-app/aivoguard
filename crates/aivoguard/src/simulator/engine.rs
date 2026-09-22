@@ -75,12 +75,22 @@ pub fn run_simulation(scenario: &Scenario) -> SimulationResult {
         let state_i = current_state.clone();
 
         // 3. BEFORE_ACTION
-        let before_records =
-            run_before_action(scenario, &state_i, &scenario.invariant_plan.before_action);
-        if let Some(reason) = stop_after_m02(
-            &scenario.stop_policy.conditions,
+        let before_records = schedule_invariants(
             EvaluationPoint::BeforeAction,
-            &before_records,
+            scenario,
+            &state_i,
+            None,
+            None,
+            &scenario.invariant_plan.before_action,
+        );
+        if let Some(reason) = evaluate_stop_policy(
+            &scenario.stop_policy.conditions,
+            &StopFacts {
+                completed_step_index: None,
+                disposition: None,
+                m02_point: Some(EvaluationPoint::BeforeAction),
+                m02_records: &before_records,
+            },
         ) {
             result.step_records.push(StepResult {
                 step_index,
@@ -136,12 +146,12 @@ pub fn run_simulation(scenario: &Scenario) -> SimulationResult {
                 });
 
                 // 7c. AFTER_ACTION
-                let after_records = run_after_action_economic(
+                let after_records = schedule_invariants(
+                    EvaluationPoint::AfterAction,
                     scenario,
-                    &state_before,
                     &state_after,
-                    &transaction,
-                    &economic_history,
+                    Some((&state_before, &state_after, &transaction)),
+                    Some(&economic_history),
                     &scenario.invariant_plan.after_action,
                 );
 
@@ -157,18 +167,15 @@ pub fn run_simulation(scenario: &Scenario) -> SimulationResult {
                     after_action: after_records,
                 };
 
-                // 7e. Stop policy
-                if let Some(reason) =
-                    stop_after_economic(&scenario.stop_policy.conditions, step_index, disposition)
-                {
-                    result.step_records.push(step);
-                    early_reason = Some(reason);
-                    break;
-                }
-                if let Some(reason) = stop_after_m02(
+                // 7e. Stop policy — declared condition order is authoritative.
+                if let Some(reason) = evaluate_stop_policy(
                     &scenario.stop_policy.conditions,
-                    EvaluationPoint::AfterAction,
-                    &step.after_action,
+                    &StopFacts {
+                        completed_step_index: Some(step_index),
+                        disposition: Some(disposition),
+                        m02_point: Some(EvaluationPoint::AfterAction),
+                        m02_records: &step.after_action,
+                    },
                 ) {
                     result.step_records.push(step);
                     early_reason = Some(reason);
@@ -178,9 +185,15 @@ pub fn run_simulation(scenario: &Scenario) -> SimulationResult {
                 result.step_records.push(step);
             }
             KernelOutcome::Error { error, evidence } => {
-                // M01 Error path: preserve State_i; no AFTER_ACTION; Fatal.
-                let after_records =
-                    not_executed_after_on_error(&scenario.invariant_plan.after_action);
+                // M01 Error path: preserve State_i; no AFTER_ACTION invoke; Fatal.
+                let after_records = schedule_invariants(
+                    EvaluationPoint::AfterAction,
+                    scenario,
+                    &state_i,
+                    None, // no authoritative post-action Transition / State_(i+1)
+                    None,
+                    &scenario.invariant_plan.after_action,
+                );
                 result.step_records.push(StepResult {
                     step_index,
                     action: action.clone(),
@@ -214,10 +227,12 @@ pub fn run_simulation(scenario: &Scenario) -> SimulationResult {
     } else {
         result.execution_status = ExecutionStatus::NormalCompletion;
     }
-    result.completion_evaluation_records = run_completion(
+    result.completion_evaluation_records = schedule_invariants(
+        EvaluationPoint::OnSimulationCompletion,
         scenario,
         &current_state,
-        &economic_history,
+        None,
+        Some(&economic_history),
         &scenario.invariant_plan.on_completion,
     );
 
@@ -291,187 +306,208 @@ fn validate_scenario(scenario: &Scenario) -> Result<(), SimulationError> {
     Ok(())
 }
 
-fn run_before_action(
-    scenario: &Scenario,
-    state_i: &EconomicState,
-    invariants: &[Invariant],
-) -> Vec<InvariantEvaluationRecord> {
-    let mut records = Vec::new();
-    for inv in invariants {
-        if inv.scope != InvariantScope::State {
-            records.push(InvariantEvaluationRecord::NotExecuted {
-                point: EvaluationPoint::BeforeAction,
-                invariant_id: inv.id.as_str().to_owned(),
-                reason: "BEFORE_ACTION requires State scope".into(),
-            });
-            continue;
-        }
-        let outcome = evaluate_invariant(
-            inv,
-            EvaluationTarget::State {
-                world: &scenario.world,
-                state: state_i,
-            },
-        );
-        records.push(InvariantEvaluationRecord::Executed {
-            point: EvaluationPoint::BeforeAction,
-            invariant_id: inv.id.as_str().to_owned(),
-            outcome,
-        });
-    }
-    records
+/// Facts available when evaluating `StopPolicy` (only what the call site has).
+struct StopFacts<'a> {
+    /// Set only after an Economic M01 step has been fully processed.
+    completed_step_index: Option<usize>,
+    /// Set only after an Economic M01 outcome.
+    disposition: Option<EconomicDisposition>,
+    /// Point whose M02 records may be inspected.
+    m02_point: Option<EvaluationPoint>,
+    m02_records: &'a [InvariantEvaluationRecord],
 }
 
-fn run_after_action_economic(
-    scenario: &Scenario,
-    state_before: &EconomicState,
-    state_after: &EconomicState,
-    transaction: &crate::kernel::Transaction,
-    history: &[HistoryRecord],
-    invariants: &[Invariant],
-) -> Vec<InvariantEvaluationRecord> {
-    let mut records = Vec::new();
-    for inv in invariants {
-        let outcome = match inv.scope {
-            InvariantScope::State => evaluate_invariant(
-                inv,
-                EvaluationTarget::State {
-                    world: &scenario.world,
-                    state: state_after,
-                },
-            ),
-            InvariantScope::Transition => evaluate_invariant(
-                inv,
-                EvaluationTarget::Transition {
-                    world: &scenario.world,
-                    state_before,
-                    state_after,
-                    transaction,
-                },
-            ),
-            InvariantScope::History => evaluate_invariant(
-                inv,
-                EvaluationTarget::History {
-                    world: &scenario.world,
-                    records: history,
-                },
-            ),
-        };
-        records.push(InvariantEvaluationRecord::Executed {
-            point: EvaluationPoint::AfterAction,
-            invariant_id: inv.id.as_str().to_owned(),
-            outcome,
-        });
-    }
-    records
-}
-
-fn not_executed_after_on_error(invariants: &[Invariant]) -> Vec<InvariantEvaluationRecord> {
-    invariants
-        .iter()
-        .map(|inv| InvariantEvaluationRecord::NotExecuted {
-            point: EvaluationPoint::AfterAction,
-            invariant_id: inv.id.as_str().to_owned(),
-            reason: "AFTER_ACTION not executed: M01 non-economic error (no authoritative post-action result)"
-                .into(),
-        })
-        .collect()
-}
-
-fn run_completion(
-    scenario: &Scenario,
-    final_state: &EconomicState,
-    history: &[HistoryRecord],
-    invariants: &[Invariant],
-) -> Vec<InvariantEvaluationRecord> {
-    let mut records = Vec::new();
-    for inv in invariants {
-        let outcome = match inv.scope {
-            InvariantScope::State => evaluate_invariant(
-                inv,
-                EvaluationTarget::State {
-                    world: &scenario.world,
-                    state: final_state,
-                },
-            ),
-            InvariantScope::History => evaluate_invariant(
-                inv,
-                EvaluationTarget::History {
-                    world: &scenario.world,
-                    records: history,
-                },
-            ),
-            InvariantScope::Transition => {
-                records.push(InvariantEvaluationRecord::NotExecuted {
-                    point: EvaluationPoint::OnSimulationCompletion,
-                    invariant_id: inv.id.as_str().to_owned(),
-                    reason: "ON_SIMULATION_COMPLETION does not provide a single Transition target"
-                        .into(),
-                });
-                continue;
-            }
-        };
-        records.push(InvariantEvaluationRecord::Executed {
-            point: EvaluationPoint::OnSimulationCompletion,
-            invariant_id: inv.id.as_str().to_owned(),
-            outcome,
-        });
-    }
-    records
-}
-
-fn stop_after_economic(
-    conditions: &[StopCondition],
-    step_index: usize,
-    disposition: EconomicDisposition,
-) -> Option<String> {
-    for c in conditions {
-        match c {
-            StopCondition::AfterCompletedStep(i) if *i == step_index => {
-                return Some(format!("stop after completed step {step_index}"));
-            }
-            StopCondition::OnEconomicDisposition(d) if *d == disposition => {
-                return Some(format!("stop on disposition {disposition:?}"));
-            }
-            _ => {}
+/// Declared `StopPolicy.conditions` order is authoritative; first match wins.
+fn evaluate_stop_policy(conditions: &[StopCondition], facts: &StopFacts<'_>) -> Option<String> {
+    for (condition_index, condition) in conditions.iter().enumerate() {
+        if let Some(detail) = condition_match_detail(condition, facts) {
+            return Some(format!(
+                "stop condition[{condition_index}] matched: {detail}"
+            ));
         }
     }
     None
 }
 
-fn stop_after_m02(
-    conditions: &[StopCondition],
-    point: EvaluationPoint,
-    records: &[InvariantEvaluationRecord],
-) -> Option<String> {
-    for c in conditions {
-        let StopCondition::OnM02Kind {
-            point: want_point,
-            kind: want_kind,
-        } = c
-        else {
-            continue;
-        };
-        if *want_point != point {
-            continue;
+fn condition_match_detail(condition: &StopCondition, facts: &StopFacts<'_>) -> Option<String> {
+    match condition {
+        StopCondition::AfterCompletedStep(i) => {
+            if facts.completed_step_index == Some(*i) {
+                Some(format!("AfterCompletedStep({i})"))
+            } else {
+                None
+            }
         }
-        for rec in records {
-            if let InvariantEvaluationRecord::Executed {
-                point: p,
-                outcome,
-                invariant_id,
-                ..
-            } = rec
-            {
-                if *p == point && outcome.kind == *want_kind {
-                    return Some(format!(
-                        "stop on M02 {want_kind:?} at {point:?} ({invariant_id})"
-                    ));
+        StopCondition::OnEconomicDisposition(d) => {
+            if facts.disposition == Some(*d) {
+                Some(format!("OnEconomicDisposition({d:?})"))
+            } else {
+                None
+            }
+        }
+        StopCondition::OnM02Kind { point, kind } => {
+            if facts.m02_point != Some(*point) {
+                return None;
+            }
+            for rec in facts.m02_records {
+                if let InvariantEvaluationRecord::Executed {
+                    point: p,
+                    outcome,
+                    invariant_id,
+                    ..
+                } = rec
+                {
+                    if *p == *point && outcome.kind == *kind {
+                        return Some(format!(
+                            "OnM02Kind {{ point: {point:?}, kind: {kind:?}, invariant: {invariant_id} }}"
+                        ));
+                    }
                 }
             }
+            None
         }
     }
-    None
+}
+
+/// Available authoritative target kinds at an evaluation point.
+///
+/// M03 schedules: if the invariant's required target kind is available, invoke
+/// M02 (which owns PASS/FAIL/ERROR including `INCOMPATIBLE_TARGET`). If the
+/// required kind is unavailable, record `NotExecuted` — do not invent an M02
+/// result.
+fn schedule_invariants(
+    point: EvaluationPoint,
+    scenario: &Scenario,
+    state: &EconomicState,
+    transition: Option<(&EconomicState, &EconomicState, &crate::kernel::Transaction)>,
+    history: Option<&[HistoryRecord]>,
+    invariants: &[Invariant],
+) -> Vec<InvariantEvaluationRecord> {
+    let mut records = Vec::new();
+    for inv in invariants {
+        match (point, inv.scope) {
+            (
+                EvaluationPoint::BeforeAction
+                | EvaluationPoint::AfterAction
+                | EvaluationPoint::OnSimulationCompletion,
+                InvariantScope::State,
+            ) => {
+                // AFTER_ACTION requires authoritative State_(i+1); only when
+                // `transition` is Some (Economic path). On M01 Error, transition
+                // is None → NotExecuted below via AfterAction+State with no transition.
+                if point == EvaluationPoint::AfterAction && transition.is_none() {
+                    records.push(not_executed(
+                        point,
+                        inv,
+                        "AFTER_ACTION State not available: no authoritative State_(i+1) (M01 Error)",
+                    ));
+                    continue;
+                }
+                let outcome = evaluate_invariant(
+                    inv,
+                    EvaluationTarget::State {
+                        world: &scenario.world,
+                        state,
+                    },
+                );
+                records.push(executed(point, inv, outcome));
+            }
+            (EvaluationPoint::AfterAction, InvariantScope::Transition) => {
+                let Some((before, after, tx)) = transition else {
+                    records.push(not_executed(
+                        point,
+                        inv,
+                        "AFTER_ACTION Transition not available: no authoritative post-action Transition (M01 Error)",
+                    ));
+                    continue;
+                };
+                let outcome = evaluate_invariant(
+                    inv,
+                    EvaluationTarget::Transition {
+                        world: &scenario.world,
+                        state_before: before,
+                        state_after: after,
+                        transaction: tx,
+                    },
+                );
+                records.push(executed(point, inv, outcome));
+            }
+            (
+                EvaluationPoint::AfterAction | EvaluationPoint::OnSimulationCompletion,
+                InvariantScope::History,
+            ) => {
+                let Some(hist) = history else {
+                    records.push(not_executed(
+                        point,
+                        inv,
+                        "History target not available at this evaluation point",
+                    ));
+                    continue;
+                };
+                // AFTER_ACTION on M01 Error: no economic history update for this
+                // step, but prior history may exist. Spec: all AFTER_ACTION on
+                // M01 Error → NOT_EXECUTED (no authoritative post-action result).
+                if point == EvaluationPoint::AfterAction && transition.is_none() {
+                    records.push(not_executed(
+                        point,
+                        inv,
+                        "AFTER_ACTION History not executed: M01 non-economic error (no authoritative post-action result)",
+                    ));
+                    continue;
+                }
+                let outcome = evaluate_invariant(
+                    inv,
+                    EvaluationTarget::History {
+                        world: &scenario.world,
+                        records: hist,
+                    },
+                );
+                records.push(executed(point, inv, outcome));
+            }
+            (
+                EvaluationPoint::BeforeAction,
+                InvariantScope::Transition | InvariantScope::History,
+            ) => {
+                records.push(not_executed(
+                    point,
+                    inv,
+                    "BEFORE_ACTION provides State_i only; required target kind unavailable",
+                ));
+            }
+            (EvaluationPoint::OnSimulationCompletion, InvariantScope::Transition) => {
+                records.push(not_executed(
+                    point,
+                    inv,
+                    "ON_SIMULATION_COMPLETION does not provide a single Transition target",
+                ));
+            }
+        }
+    }
+    records
+}
+
+fn executed(
+    point: EvaluationPoint,
+    inv: &Invariant,
+    outcome: crate::invariant::InvariantOutcome,
+) -> InvariantEvaluationRecord {
+    InvariantEvaluationRecord::Executed {
+        point,
+        invariant_id: inv.id.as_str().to_owned(),
+        outcome,
+    }
+}
+
+fn not_executed(
+    point: EvaluationPoint,
+    inv: &Invariant,
+    reason: &str,
+) -> InvariantEvaluationRecord {
+    InvariantEvaluationRecord::NotExecuted {
+        point,
+        invariant_id: inv.id.as_str().to_owned(),
+        reason: reason.to_owned(),
+    }
 }
 
 fn flatten_invariant_records(result: &mut SimulationResult) {

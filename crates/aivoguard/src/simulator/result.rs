@@ -65,6 +65,17 @@ pub struct SimulationResult {
     pub m03_engine_version: String,
 }
 
+impl ExecutionStatus {
+    /// Borrow the early-termination reason when status is Early.
+    #[must_use]
+    pub fn early_reason(&self) -> Option<&str> {
+        match self {
+            Self::EarlyTermination { reason } => Some(reason.as_str()),
+            Self::NormalCompletion | Self::FatalTermination { .. } => None,
+        }
+    }
+}
+
 impl SimulationResult {
     /// Whether execution completed normally.
     #[must_use]

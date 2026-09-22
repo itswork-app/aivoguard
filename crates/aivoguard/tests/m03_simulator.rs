@@ -4,10 +4,10 @@ use aivoguard::{
     economic_history_view, run_simulation, Account, AccountId, Action, ActorId, Applicability,
     Asset, AssetId, AttemptClassification, BalanceFacetModel, CmpOp, EconomicDisposition,
     EconomicState, EconomicWorld, EvaluationPoint, ExecutionStatus, FacetId, FatalCause, Invariant,
-    InvariantEvaluationPlan, InvariantEvaluationRecord, InvariantId, InvariantResultKind,
-    InvariantScope, KernelErrorKind, KernelOutcome, Money, PropertyExpr, Scenario,
-    SimulationErrorClass, StopCondition, StopPolicy, TransferRule, ValueExpr, ViolationPolicy,
-    M03_ENGINE_VERSION,
+    InvariantErrorClass, InvariantEvaluationPlan, InvariantEvaluationRecord, InvariantId,
+    InvariantResultKind, InvariantScope, KernelErrorKind, KernelOutcome, Money, PropertyExpr,
+    RelationKind, Scenario, SimulationErrorClass, StopCondition, StopPolicy, TransferRule,
+    ValueExpr, ViolationPolicy, M03_ENGINE_VERSION,
 };
 
 fn facet() -> FacetId {
@@ -451,4 +451,263 @@ fn invalid_scenario_id_is_fatal() {
         out.simulation_errors[0].class,
         SimulationErrorClass::MissingSimulationInput
     );
+}
+
+fn transition_scope_inv(id: &str) -> Invariant {
+    Invariant {
+        id: InvariantId::new(id),
+        definition_version: "1".into(),
+        scope: InvariantScope::Transition,
+        violation_policy: ViolationPolicy::All,
+        applicability: Applicability::Always,
+        property: PropertyExpr::Compare {
+            left: ValueExpr::Literal(Money::new(AssetId::new("USD"), 1)),
+            op: CmpOp::Eq,
+            right: ValueExpr::Literal(Money::new(AssetId::new("USD"), 1)),
+        },
+        history_reverse: false,
+    }
+}
+
+fn state_scope_relation_needs_transition(id: &str) -> Invariant {
+    // State scope + Transition-only relation → M02 ERROR(INCOMPATIBLE_TARGET) when invoked.
+    Invariant {
+        id: InvariantId::new(id),
+        definition_version: "1".into(),
+        scope: InvariantScope::State,
+        violation_policy: ViolationPolicy::All,
+        applicability: Applicability::Always,
+        property: PropertyExpr::Relation {
+            kind: RelationKind::TransactionActorOwnsAccount,
+            account: AccountId::new("alice"),
+            asset: None,
+            facet: None,
+        },
+        history_reverse: false,
+    }
+}
+
+#[test]
+fn blocker1_before_action_state_invokes_m02() {
+    let mut scenario = Scenario::new("b1a", world(), funded(), vec![noop()], 10, "cfg");
+    scenario.invariant_plan.before_action = vec![state_nonneg_inv("ba")];
+    let out = run_simulation(&scenario);
+    assert!(out.is_normal());
+    assert!(matches!(
+        &out.step_records[0].before_action[0],
+        InvariantEvaluationRecord::Executed {
+            outcome,
+            ..
+        } if outcome.kind == InvariantResultKind::Pass
+    ));
+}
+
+#[test]
+fn blocker1_after_action_state_invokes_m02() {
+    let mut scenario = Scenario::new("b1b", world(), funded(), vec![transfer(10)], 10, "cfg");
+    scenario.invariant_plan.after_action = vec![state_nonneg_inv("aa")];
+    let out = run_simulation(&scenario);
+    assert!(out.is_normal());
+    assert!(matches!(
+        &out.step_records[0].after_action[0],
+        InvariantEvaluationRecord::Executed {
+            outcome,
+            ..
+        } if outcome.kind == InvariantResultKind::Pass
+    ));
+}
+
+#[test]
+fn blocker1_m01_error_after_action_transition_not_executed() {
+    let bad = Action::Transfer {
+        actor: ActorId::new("alice-actor"),
+        action_id: None,
+        from: AccountId::new("alice"),
+        to: AccountId::new("bob"),
+        asset: AssetId::new("USD"),
+        amount: 0,
+    };
+    let mut scenario = Scenario::new("b1c", world(), funded(), vec![bad], 10, "cfg");
+    scenario.invariant_plan.after_action = vec![transition_scope_inv("tx")];
+    let out = run_simulation(&scenario);
+    assert!(out.is_fatal());
+    assert!(matches!(
+        &out.step_records[0].after_action[0],
+        InvariantEvaluationRecord::NotExecuted { .. }
+    ));
+}
+
+#[test]
+fn blocker1_m02_incompatible_target_preserved_when_invoked() {
+    let mut scenario = Scenario::new("b1d", world(), funded(), vec![noop()], 10, "cfg");
+    scenario.invariant_plan.before_action = vec![state_scope_relation_needs_transition("bad-rel")];
+    let out = run_simulation(&scenario);
+    assert!(out.is_normal());
+    match &out.step_records[0].before_action[0] {
+        InvariantEvaluationRecord::Executed { outcome, .. } => {
+            assert_eq!(outcome.kind, InvariantResultKind::Error);
+            assert_eq!(
+                outcome.error.as_ref().unwrap().class,
+                InvariantErrorClass::IncompatibleTarget
+            );
+        }
+        InvariantEvaluationRecord::NotExecuted { .. } => {
+            panic!("expected M02 invocation, not M03 NotExecuted")
+        }
+    }
+}
+
+#[test]
+fn blocker1_completion_transition_not_executed() {
+    let mut scenario = Scenario::new("b1e", world(), funded(), vec![noop()], 10, "cfg");
+    scenario.invariant_plan.on_completion = vec![transition_scope_inv("c-tx")];
+    let out = run_simulation(&scenario);
+    assert!(out.is_normal());
+    assert!(matches!(
+        &out.completion_evaluation_records[0],
+        InvariantEvaluationRecord::NotExecuted { .. }
+    ));
+}
+
+#[test]
+fn blocker2_first_condition_wins() {
+    // Both match: Rejected disposition + AfterCompletedStep(0). Order decides.
+    let mut scenario = Scenario::new(
+        "s1",
+        world(),
+        funded(),
+        vec![unauthorized_transfer(), noop()],
+        10,
+        "cfg",
+    );
+    scenario.stop_policy = StopPolicy {
+        conditions: vec![
+            StopCondition::OnEconomicDisposition(EconomicDisposition::Rejected),
+            StopCondition::AfterCompletedStep(0),
+        ],
+    };
+    let out = run_simulation(&scenario);
+    assert!(out.is_early());
+    assert!(out
+        .execution_status
+        .early_reason()
+        .unwrap()
+        .contains("condition[0]"));
+    assert!(out
+        .execution_status
+        .early_reason()
+        .unwrap()
+        .contains("OnEconomicDisposition"));
+    assert_eq!(out.executed_action_count, 1);
+}
+
+#[test]
+fn blocker2_reversed_order_changes_winner() {
+    let mut scenario = Scenario::new(
+        "s2",
+        world(),
+        funded(),
+        vec![unauthorized_transfer(), noop()],
+        10,
+        "cfg",
+    );
+    scenario.stop_policy = StopPolicy {
+        conditions: vec![
+            StopCondition::AfterCompletedStep(0),
+            StopCondition::OnEconomicDisposition(EconomicDisposition::Rejected),
+        ],
+    };
+    let out = run_simulation(&scenario);
+    assert!(out.is_early());
+    assert!(out
+        .execution_status
+        .early_reason()
+        .unwrap()
+        .contains("condition[0]"));
+    assert!(out
+        .execution_status
+        .early_reason()
+        .unwrap()
+        .contains("AfterCompletedStep"));
+}
+
+#[test]
+fn blocker2_first_nonmatch_second_match() {
+    let mut scenario = Scenario::new("s3", world(), funded(), vec![noop(), noop()], 10, "cfg");
+    scenario.stop_policy = StopPolicy {
+        conditions: vec![
+            StopCondition::OnEconomicDisposition(EconomicDisposition::Rejected),
+            StopCondition::AfterCompletedStep(0),
+        ],
+    };
+    let out = run_simulation(&scenario);
+    assert!(out.is_early());
+    assert!(out
+        .execution_status
+        .early_reason()
+        .unwrap()
+        .contains("condition[1]"));
+    assert_eq!(out.executed_action_count, 1);
+}
+
+#[test]
+fn blocker2_no_conditions_match_continues() {
+    let mut scenario = Scenario::new("s4", world(), funded(), vec![noop(), noop()], 10, "cfg");
+    scenario.stop_policy = StopPolicy {
+        conditions: vec![StopCondition::OnEconomicDisposition(
+            EconomicDisposition::Rejected,
+        )],
+    };
+    let out = run_simulation(&scenario);
+    assert!(out.is_normal());
+    assert_eq!(out.executed_action_count, 2);
+}
+
+#[test]
+fn blocker2_before_action_stop_skips_m01() {
+    let mut scenario = Scenario::new("s5", world(), funded(), vec![noop()], 10, "cfg");
+    scenario.invariant_plan.before_action = vec![state_fail_inv("f")];
+    scenario.stop_policy = StopPolicy {
+        conditions: vec![StopCondition::OnM02Kind {
+            point: EvaluationPoint::BeforeAction,
+            kind: InvariantResultKind::Fail,
+        }],
+    };
+    let out = run_simulation(&scenario);
+    assert!(out.is_early());
+    assert_eq!(out.executed_action_count, 0);
+    assert_eq!(
+        out.step_records[0].classification,
+        AttemptClassification::NotAttempted
+    );
+}
+
+#[test]
+fn blocker2_after_action_order_beats_category_bias() {
+    // M02 Fail is first; Rejected disposition also matches. Declared order → M02 wins.
+    let mut scenario = Scenario::new(
+        "s6",
+        world(),
+        funded(),
+        vec![unauthorized_transfer()],
+        10,
+        "cfg",
+    );
+    scenario.invariant_plan.after_action = vec![state_fail_inv("always-fail")];
+    // After Rejected, alice balance still >= 0, so state_fail_inv (alice < 0) FAILs...
+    // wait state_fail_inv is alice < 0 which FAILs when alice >= 0. Good Fail.
+    scenario.stop_policy = StopPolicy {
+        conditions: vec![
+            StopCondition::OnM02Kind {
+                point: EvaluationPoint::AfterAction,
+                kind: InvariantResultKind::Fail,
+            },
+            StopCondition::OnEconomicDisposition(EconomicDisposition::Rejected),
+        ],
+    };
+    let out = run_simulation(&scenario);
+    assert!(out.is_early());
+    let reason = out.execution_status.early_reason().unwrap();
+    assert!(reason.contains("condition[0]"), "{reason}");
+    assert!(reason.contains("OnM02Kind"), "{reason}");
 }
