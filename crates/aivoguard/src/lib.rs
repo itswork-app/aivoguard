@@ -4,6 +4,7 @@
 //! * Gate-2 **M02 Economic Invariant Engine** — [`invariant`] (read-only)
 //! * Gate-3 **M03 Deterministic Simulator** — [`simulator`] (orchestration)
 //! * Gate-4 **M04 Adversarial Scenario Engine** — [`adversarial`] (scenario generation)
+//! * Gate-5 **M06 Economic Regression Engine** — [`regression`] (expectation comparison)
 
 #![forbid(unsafe_code)]
 #![warn(missing_docs)]
@@ -11,6 +12,7 @@
 pub mod adversarial;
 pub mod invariant;
 pub mod kernel;
+pub mod regression;
 pub mod simulator;
 
 pub use adversarial::{
@@ -44,6 +46,13 @@ pub use kernel::{
     EconomicState, EconomicWorld, Evidence, ExecutionContext, FacetId, FeeRule, KernelError,
     KernelErrorKind, KernelOutcome, Money, Price, PriceCategory, PriceId, RoundingMode,
     StateEffect, Transaction, TransferRule, ENGINE_VERSION,
+};
+pub use regression::{
+    compare_absolute_tolerance, evaluate_regression, ComparisonOperator, EnginePins, Expectation,
+    ExpectationClass, ExpectationPhase, ExpectedDisposition, ExpectedExecutionStatus,
+    ExpectedFatalCauseClass, MismatchClass, MismatchEvidence, RegressionCase, RegressionError,
+    RegressionErrorId, RegressionObservation, RegressionProvenance, RegressionResult,
+    RegressionVerdict, ScenarioBinding, StructuredValue, ToleranceCompare, M06_ENGINE_VERSION,
 };
 pub use simulator::{
     economic_history_view, run_simulation, AttemptClassification, EvaluationPoint, ExecutionStatus,
