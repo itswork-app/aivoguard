@@ -6,18 +6,19 @@
 | Task | TASK-00B |
 | Status | **BASELINE** (architecture documentation; not a normative economic spec) |
 | Authority | Subordinate to frozen design specifications and accepted ADRs |
-| Implementation | Documents current + target structure only — does **not** authorize M02+ |
+| Implementation | Documents current + target structure; M01 and M02 are implemented |
 
 This document maps frozen product/domain/economic specifications into repository
 architecture and module boundaries. It does **not** invent economic semantics,
-freeze open DSL/API/serialization decisions, or authorize implementation.
+freeze open DSL/API/serialization decisions, or authorize new modules beyond
+what frozen gates already implement.
 
 Related:
 
 * [`../design/product-scope.md`](../design/product-scope.md) (**FROZEN**)
 * [`../design/domain-contract.md`](../design/domain-contract.md) (**FROZEN**)
 * [`../design/economic-kernel-specification.md`](../design/economic-kernel-specification.md) (**FROZEN**)
-* [`../design/economic-invariant-engine-specification.md`](../design/economic-invariant-engine-specification.md) (**READY_FOR_REVIEW**)
+* [`../design/economic-invariant-engine-specification.md`](../design/economic-invariant-engine-specification.md) (**FROZEN**; Gate 2 **CLOSED**)
 * [`../design/SPECIFICATION-POLICY.md`](../design/SPECIFICATION-POLICY.md)
 * [`../adr/`](../adr/)
 
@@ -118,7 +119,7 @@ Conceptual layers (dependency flows **downward**):
 INTERFACES          CLI / SDK / HTTP / language bindings (future; not frozen)
 ADAPTERS            M07 / M08 external translation (future)
 ORCHESTRATION       M03 simulator, M09 multi-agent composition (future)
-EVALUATION          M02 invariants; M06 regression comparison (future / not impl)
+EVALUATION          M02 invariants (IMPLEMENTED); M06 regression comparison (future)
 ECONOMIC AUTHORITY  M01 kernel (IMPLEMENTED)
 DOMAIN              World / State / Action / Asset / Money primitives (in M01)
 ```
@@ -184,7 +185,7 @@ Does **not** own: invariant language, scenario orchestration, adversarial/
 chaos generation, regression harness, payment/x402 adapters, multi-agent
 orchestration.
 
-### M02 — Economic Invariant Engine (SPEC READY_FOR_REVIEW; NOT IMPLEMENTED)
+### M02 — Economic Invariant Engine (IMPLEMENTED; Gate 2 CLOSED)
 
 ```text
 READ-ONLY · DETERMINISTIC · NON-MUTATING
@@ -198,6 +199,9 @@ Must **not**: execute Actions, mutate EconomicState, recalculate M01 economics,
 repair/rollback state, change fees/prices/settlement, replace M01 evidence.
 
 M02 must not become a second economic engine.
+
+Specification: **FROZEN**. Implementation: present under `crates/aivoguard/src/invariant/`
+(TASK-06 / TASK-06R).
 
 ### M03 — Deterministic Simulator (BOUNDARY ONLY)
 
@@ -315,7 +319,7 @@ M01
       └── Evidence
       │
       ▼
-M02 (when implemented)
+M02 (IMPLEMENTED; Gate 2 CLOSED)
       ├── Invariant evaluation
       ├── Violations
       └── PASS / FAIL / ERROR
@@ -338,6 +342,7 @@ No hidden state between stages. Reporting is not a second economic authority.
 | ExecutionContext | M01 |
 | Economic effects | M01 |
 | Transaction disposition | M01 |
+| Transaction actor | M01 |
 | State transition | M01 |
 | Kernel evidence | M01 |
 | Invariant definition | M02 |
@@ -349,8 +354,8 @@ No hidden state between stages. Reporting is not a second economic authority.
 | Multi-agent composition | M09 |
 
 Alignment check: matches Product Scope module boundaries and Domain Contract
-ownership of economic primitives; M02 ownership matches the M02 specification
-candidate (not yet frozen).
+ownership of economic primitives; M02 ownership matches the **FROZEN** M02
+specification (Gate 2 **CLOSED**).
 
 ---
 
@@ -365,9 +370,10 @@ candidate (not yet frozen).
 | M06 | Read / compare |
 | Adapters | Translate |
 
-Prefer immutable / read-only views for M02 inputs when implemented. Exact Rust
-types remain unfrozen until the M02 specification freezes and an
-implementation task authorizes them.
+Prefer immutable / read-only views for M02 inputs. M02 consumes M01
+authoritative records (`EconomicWorld`, `EconomicState`, `Transaction`,
+history) without mutation. COUNT uses a dimensionless `Count` type; it is
+not Money and not an Asset.
 
 ---
 
@@ -478,7 +484,8 @@ Architecture remains compatible with, and does **not** decide:
 * Authority stack: M01 remains sole economic authority; M02 is optional
   read-only evaluation over authoritative outputs; orchestration / adapters /
   interfaces compose around them
-* M02 as a read-only downstream module (crate or submodule TBD when authorized)
+* M02 as a read-only downstream module under `crates/aivoguard/src/invariant/`
+  (implemented; further packaging remains an implementation decision)
 * M03–M09 as specified by future frozen gates
 * Interfaces and adapters outside the economic core
 
@@ -489,7 +496,7 @@ Architecture remains compatible with, and does **not** decide:
 | Module | Specification | Architecture | Implementation | Gate |
 | --- | --- | --- | --- | --- |
 | M01 | Frozen | Current | Implemented | PASS |
-| M02 | Frozen | Defined | Implemented | Gate 2 **CLOSED** / TASK-06 |
+| M02 | Frozen | Defined | Implemented | Gate 2 **CLOSED** / TASK-06 / TASK-06R |
 | M03 | Future | Boundary only | Not implemented | Future |
 | M04 | Future | Boundary only | Not implemented | Future |
 | M05 | Future | Boundary only | Not implemented | Future |
@@ -504,7 +511,7 @@ Architecture remains compatible with, and does **not** decide:
 
 | # | Criterion | Status |
 | --- | --- | --- |
-| 1 | Every current implemented responsibility has an owner | PASS (M01/kernel) |
+| 1 | Every current implemented responsibility has an owner | PASS (M01/kernel; M02/invariant) |
 | 2 | Every frozen domain responsibility has an architectural home | PASS |
 | 3 | M01 authority unambiguous | PASS |
 | 4 | M02 authority unambiguous | PASS |
@@ -523,6 +530,7 @@ Architecture remains compatible with, and does **not** decide:
 | --- | --- |
 | Created by | TASK-00B |
 | Consistency audit | TASK-00C — M03/M02 optional dependency clarified |
+| Remediation | TASK-06R — transaction actor + COUNT dimensionality |
 | Normative economic semantics | **None** (architecture only) |
 | ADR created by this task | **None** (no new implementation decision) |
-| Next | Continue Gate-2 process only when explicitly authorized |
+| Next | Future gates only when explicitly authorized |

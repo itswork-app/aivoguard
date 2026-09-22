@@ -11,10 +11,10 @@ pub mod kernel;
 
 pub use invariant::{
     evaluate_invariant, resolve_history_index, AggOp, Applicability, ApplicabilityStatus, CmpOp,
-    DomainExpr, EvaluationLocation, EvaluationTarget, HistoryRecord, Invariant, InvariantError,
-    InvariantErrorClass, InvariantEvidence, InvariantId, InvariantOutcome, InvariantResultKind,
-    InvariantScope, PropertyExpr, RelationKind, StructuredFact, TransitionRecord, ValueExpr,
-    Violation, ViolationPolicy, M02_ENGINE_VERSION,
+    Count, DomainExpr, EvaluationLocation, EvaluationTarget, HistoryRecord, Invariant,
+    InvariantError, InvariantErrorClass, InvariantEvidence, InvariantId, InvariantOutcome,
+    InvariantResultKind, InvariantScope, PropertyExpr, RelationKind, StructuredFact,
+    TransitionRecord, ValueExpr, Violation, ViolationPolicy, M02_ENGINE_VERSION,
 };
 pub use kernel::{
     divide_with_rounding, evaluate, Account, AccountId, Action, ActorId, ArithError, Asset,

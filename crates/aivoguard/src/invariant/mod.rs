@@ -12,6 +12,7 @@
 #![allow(clippy::use_self)]
 #![allow(clippy::branches_sharing_code)]
 
+mod count;
 mod definition;
 mod error;
 mod evaluate;
@@ -21,6 +22,7 @@ mod result;
 mod target;
 mod violation;
 
+pub use count::Count;
 pub use definition::{
     AggOp, Applicability, CmpOp, DomainExpr, Invariant, InvariantId, InvariantScope, PropertyExpr,
     RelationKind, ValueExpr, ViolationPolicy,

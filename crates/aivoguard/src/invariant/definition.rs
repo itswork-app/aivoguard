@@ -97,6 +97,8 @@ pub enum RelationKind {
 pub enum ValueExpr {
     /// Literal money.
     Literal(Money),
+    /// Dimensionless count literal (not Money / not an Asset).
+    CountLiteral(i128),
     /// Required balance cell (absence → `MISSING_REQUIRED_DATA`).
     Balance {
         /// Account.
@@ -113,7 +115,7 @@ pub enum ValueExpr {
         /// Facet.
         facet: FacetId,
     },
-    /// Aggregation over a domain of money values.
+    /// Aggregation over a domain of money values (or COUNT of domain members).
     Aggregate {
         /// Operator.
         op: AggOp,
@@ -121,7 +123,7 @@ pub enum ValueExpr {
         domain: DomainExpr,
         /// Per-member value (for Sum/Min/Max); ignored for Count.
         of: Option<Box<ValueExpr>>,
-        /// Declared Asset domain for empty SUM.
+        /// Declared Asset domain for empty SUM (ignored for COUNT).
         declared_asset: Option<AssetId>,
     },
     /// Convert money via named World price (base→quote).

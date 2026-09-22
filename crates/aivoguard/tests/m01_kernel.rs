@@ -158,6 +158,7 @@ fn noop_accepted_effective_zero_effects() {
             ..
         } => {
             assert_eq!(disposition, EconomicDisposition::AcceptedEffective);
+            assert_eq!(transaction.actor, ActorId::new("alice-actor"));
             assert!(transaction.effects.is_empty());
             assert_eq!(state_after, state);
             assert!(evidence.disposition.is_some());

@@ -1,5 +1,6 @@
 //! M02 invariant evaluation engine.
 
+use crate::invariant::count::Count;
 use crate::invariant::definition::{
     AggOp, Applicability, CmpOp, DomainExpr, Invariant, InvariantScope, PropertyExpr, RelationKind,
     ValueExpr, ViolationPolicy,
@@ -206,7 +207,7 @@ fn eval_property(
         PropertyExpr::Compare { left, op, right } => {
             let l = eval_value(invariant, target, left, bindings)?;
             let r = eval_value(invariant, target, right, bindings)?;
-            match compare_money(&l, *op, &r) {
+            match compare_scalars(&l, *op, &r) {
                 Ok(true) => Ok(()),
                 Ok(false) => {
                     let v = make_violation(
@@ -516,22 +517,27 @@ fn eval_value(
     target: EvaluationTarget<'_>,
     expr: &ValueExpr,
     bindings: &Bindings,
-) -> Result<Money, InvariantError> {
+) -> Result<ScalarValue, InvariantError> {
     match expr {
-        ValueExpr::Literal(m) => Ok(m.clone()),
+        ValueExpr::Literal(m) => Ok(ScalarValue::Money(m.clone())),
+        ValueExpr::CountLiteral(n) => Ok(ScalarValue::Count(Count::new(*n))),
         ValueExpr::Balance {
             account,
             asset,
             facet,
-        } => lookup_balance_required(target, account, asset, facet),
+        } => Ok(ScalarValue::Money(lookup_balance_required(
+            target, account, asset, facet,
+        )?)),
         ValueExpr::BoundAccountBalance { asset, facet } => {
             let account = bindings.account.as_ref().ok_or_else(|| {
                 InvariantError::new(
                     InvariantErrorClass::InvalidInvariantDefinition,
-                    "Bound account balance without account binding",
+                    "bound account balance without account binding",
                 )
             })?;
-            lookup_balance_required(target, account, asset, facet)
+            Ok(ScalarValue::Money(lookup_balance_required(
+                target, account, asset, facet,
+            )?))
         }
         ValueExpr::Aggregate {
             op,
@@ -548,10 +554,29 @@ fn eval_value(
             bindings,
         ),
         ValueExpr::Convert { amount, price_id } => {
-            let base_amt = eval_value(invariant, target, amount, bindings)?;
-            convert_amount(target.world(), &base_amt, price_id)
+            let base = eval_value(invariant, target, amount, bindings)?;
+            let base_amt = match base {
+                ScalarValue::Money(m) => m,
+                ScalarValue::Count(_) => {
+                    return Err(InvariantError::new(
+                        InvariantErrorClass::IncompatibleOperands,
+                        "cannot convert COUNT through a price",
+                    ));
+                }
+            };
+            Ok(ScalarValue::Money(convert_amount(
+                target.world(),
+                &base_amt,
+                price_id,
+            )?))
         }
     }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+enum ScalarValue {
+    Money(Money),
+    Count(Count),
 }
 
 fn lookup_balance_required(
@@ -602,17 +627,13 @@ fn eval_aggregate(
     of: Option<&ValueExpr>,
     declared_asset: Option<&AssetId>,
     bindings: &Bindings,
-) -> Result<Money, InvariantError> {
+) -> Result<ScalarValue, InvariantError> {
     let members = resolve_domain(invariant, target, domain, bindings)?;
     if matches!(op, AggOp::Count) {
         let n = i128::try_from(members.len()).map_err(|_| {
             InvariantError::new(InvariantErrorClass::ArithmeticError, "COUNT overflow i128")
         })?;
-        // COUNT is dimensionless; use declared asset if provided else a synthetic unit asset id.
-        let asset = declared_asset
-            .cloned()
-            .unwrap_or_else(|| AssetId::new("__count__"));
-        return Ok(Money::new(asset, n));
+        return Ok(ScalarValue::Count(Count::new(n)));
     }
 
     if members.is_empty() {
@@ -624,7 +645,7 @@ fn eval_aggregate(
                         "empty SUM requires declared_asset",
                     )
                 })?;
-                Ok(Money::new(asset.clone(), 0))
+                Ok(ScalarValue::Money(Money::new(asset.clone(), 0)))
             }
             AggOp::Min | AggOp::Max => Err(InvariantError::new(
                 InvariantErrorClass::ArithmeticError,
@@ -645,12 +666,19 @@ fn eval_aggregate(
     let mut local_bindings = bindings.clone();
     for member in members {
         apply_binding(&mut local_bindings, &member);
-        // For PresentFacetsOf, of should be Balance with facet from member.
         let v = match (&member, of) {
             (DomainMember::Facet(facet), ValueExpr::Balance { account, asset, .. }) => {
                 lookup_balance_required(target, account, asset, facet)?
             }
-            _ => eval_value(invariant, target, of, &local_bindings)?,
+            _ => match eval_value(invariant, target, of, &local_bindings)? {
+                ScalarValue::Money(m) => m,
+                ScalarValue::Count(_) => {
+                    return Err(InvariantError::new(
+                        InvariantErrorClass::IncompatibleOperands,
+                        "SUM/MIN/MAX cannot aggregate COUNT values as Money",
+                    ));
+                }
+            },
         };
         values.push(v);
         clear_binding(&mut local_bindings, &member);
@@ -670,7 +698,7 @@ fn eval_aggregate(
                     ),
                 })?;
             }
-            Ok(acc)
+            Ok(ScalarValue::Money(acc))
         }
         AggOp::Min => {
             let mut best = values[0].clone();
@@ -679,7 +707,7 @@ fn eval_aggregate(
                     best = v.clone();
                 }
             }
-            Ok(best)
+            Ok(ScalarValue::Money(best))
         }
         AggOp::Max => {
             let mut best = values[0].clone();
@@ -688,9 +716,36 @@ fn eval_aggregate(
                     best = v.clone();
                 }
             }
-            Ok(best)
+            Ok(ScalarValue::Money(best))
         }
         AggOp::Count => unreachable!(),
+    }
+}
+
+fn compare_scalars(
+    left: &ScalarValue,
+    op: CmpOp,
+    right: &ScalarValue,
+) -> Result<bool, InvariantError> {
+    match (left, right) {
+        (ScalarValue::Money(l), ScalarValue::Money(r)) => compare_money(l, op, r),
+        (ScalarValue::Count(l), ScalarValue::Count(r)) => {
+            let lv = l.value();
+            let rv = r.value();
+            Ok(match op {
+                CmpOp::Eq => lv == rv,
+                CmpOp::Ne => lv != rv,
+                CmpOp::Lt => lv < rv,
+                CmpOp::Le => lv <= rv,
+                CmpOp::Gt => lv > rv,
+                CmpOp::Ge => lv >= rv,
+            })
+        }
+        (ScalarValue::Money(_), ScalarValue::Count(_))
+        | (ScalarValue::Count(_), ScalarValue::Money(_)) => Err(InvariantError::new(
+            InvariantErrorClass::IncompatibleOperands,
+            "cannot compare Money with dimensionless COUNT",
+        )),
     }
 }
 
@@ -770,22 +825,36 @@ fn eval_relation(
                     "TransactionActorOwnsAccount requires Transition",
                 ));
             };
-            let _ = transaction; // disposition/effects available but ownership uses World
             let acct = world.accounts.get(account).ok_or_else(|| {
                 InvariantError::new(
                     InvariantErrorClass::MissingRequiredData,
                     format!("missing account {}", account.as_str()),
                 )
             })?;
-            // Relation holds if account exists with an owner actor declared in World.
-            if world.actors.contains(&acct.owner) {
+            // Authoritative relation: transaction.actor == account.owner
+            if transaction.actor.as_str().is_empty() {
+                return Err(InvariantError::new(
+                    InvariantErrorClass::MissingRequiredData,
+                    "TransactionActorOwnsAccount requires transaction.actor",
+                ));
+            }
+            if transaction.actor == acct.owner {
                 Ok(())
             } else {
                 let v = make_violation(
                     invariant,
-                    EvaluationLocation::Transition { disposition: None },
-                    vec![fact("required", "account owner in World actors")],
-                    vec![fact("observed", "owner absent from actors")],
+                    EvaluationLocation::Transition {
+                        disposition: Some(format!("{:?}", transaction.disposition)),
+                    },
+                    vec![fact(
+                        "required",
+                        format!(
+                            "transaction.actor ({}) == account.owner ({})",
+                            transaction.actor.as_str(),
+                            acct.owner.as_str()
+                        ),
+                    )],
+                    vec![fact("observed", "actor/owner mismatch")],
                 );
                 record_violation(invariant.violation_policy, violations, v);
                 Ok(())

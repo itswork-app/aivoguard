@@ -182,6 +182,7 @@ fn finish(
     };
 
     let transaction = Transaction {
+        actor: action.actor().clone(),
         disposition,
         effects: effects.clone(),
     };

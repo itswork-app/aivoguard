@@ -644,6 +644,7 @@ fn transition_zero_effect_accepted_and_relation() {
     let before = state_with(100, 0);
     let after = before.clone();
     let tx = Transaction {
+        actor: ActorId::new("alice-actor"),
         disposition: EconomicDisposition::AcceptedEffective,
         effects: vec![],
     };
@@ -847,4 +848,263 @@ fn nested_error_propagates_over_fail() {
         },
     );
     assert_eq!(out.kind, InvariantResultKind::Error);
+}
+
+fn ownership_inv() -> Invariant {
+    inv(
+        "owns",
+        InvariantScope::Transition,
+        ViolationPolicy::All,
+        Applicability::Always,
+        PropertyExpr::Relation {
+            kind: RelationKind::TransactionActorOwnsAccount,
+            account: AccountId::new("alice"),
+            asset: None,
+            facet: None,
+        },
+    )
+}
+
+#[test]
+fn transaction_actor_owns_account_match_pass() {
+    let world = world_usd();
+    let before = state_with(1, 1);
+    let after = before.clone();
+    let tx = Transaction {
+        actor: ActorId::new("alice-actor"),
+        disposition: EconomicDisposition::AcceptedEffective,
+        effects: vec![],
+    };
+    let out = evaluate_invariant(
+        &ownership_inv(),
+        EvaluationTarget::Transition {
+            world: &world,
+            state_before: &before,
+            state_after: &after,
+            transaction: &tx,
+        },
+    );
+    assert_eq!(out.kind, InvariantResultKind::Pass);
+}
+
+#[test]
+fn transaction_actor_owns_account_mismatch_fail() {
+    let world = world_usd();
+    let before = state_with(1, 1);
+    let after = before.clone();
+    let tx = Transaction {
+        actor: ActorId::new("bob-actor"),
+        disposition: EconomicDisposition::AcceptedEffective,
+        effects: vec![],
+    };
+    let out = evaluate_invariant(
+        &ownership_inv(),
+        EvaluationTarget::Transition {
+            world: &world,
+            state_before: &before,
+            state_after: &after,
+            transaction: &tx,
+        },
+    );
+    assert_eq!(out.kind, InvariantResultKind::Fail);
+    assert_eq!(out.violations.len(), 1);
+}
+
+#[test]
+fn transaction_actor_owns_account_missing_account_error() {
+    let world = world_usd();
+    let before = state_with(1, 1);
+    let after = before.clone();
+    let tx = Transaction {
+        actor: ActorId::new("alice-actor"),
+        disposition: EconomicDisposition::AcceptedEffective,
+        effects: vec![],
+    };
+    let i = inv(
+        "owns-missing",
+        InvariantScope::Transition,
+        ViolationPolicy::All,
+        Applicability::Always,
+        PropertyExpr::Relation {
+            kind: RelationKind::TransactionActorOwnsAccount,
+            account: AccountId::new("ghost"),
+            asset: None,
+            facet: None,
+        },
+    );
+    let out = evaluate_invariant(
+        &i,
+        EvaluationTarget::Transition {
+            world: &world,
+            state_before: &before,
+            state_after: &after,
+            transaction: &tx,
+        },
+    );
+    assert_eq!(out.kind, InvariantResultKind::Error);
+    assert_eq!(
+        out.error.as_ref().unwrap().class,
+        InvariantErrorClass::MissingRequiredData
+    );
+}
+
+#[test]
+fn transaction_actor_owns_account_missing_actor_error() {
+    let world = world_usd();
+    let before = state_with(1, 1);
+    let after = before.clone();
+    let tx = Transaction {
+        actor: ActorId::new(""),
+        disposition: EconomicDisposition::AcceptedEffective,
+        effects: vec![],
+    };
+    let out = evaluate_invariant(
+        &ownership_inv(),
+        EvaluationTarget::Transition {
+            world: &world,
+            state_before: &before,
+            state_after: &after,
+            transaction: &tx,
+        },
+    );
+    assert_eq!(out.kind, InvariantResultKind::Error);
+    assert_eq!(
+        out.error.as_ref().unwrap().class,
+        InvariantErrorClass::MissingRequiredData
+    );
+}
+
+#[test]
+fn transaction_actor_owns_account_zero_effect_accepted_effective() {
+    let world = world_usd();
+    let before = state_with(1, 1);
+    let after = before.clone();
+    let tx = Transaction {
+        actor: ActorId::new("alice-actor"),
+        disposition: EconomicDisposition::AcceptedEffective,
+        effects: vec![],
+    };
+    let out = evaluate_invariant(
+        &ownership_inv(),
+        EvaluationTarget::Transition {
+            world: &world,
+            state_before: &before,
+            state_after: &after,
+            transaction: &tx,
+        },
+    );
+    assert_eq!(out.kind, InvariantResultKind::Pass);
+    assert!(tx.effects.is_empty());
+    assert_eq!(tx.disposition, EconomicDisposition::AcceptedEffective);
+}
+
+#[test]
+fn count_semantics_and_dimensional_safety() {
+    let world = world_usd();
+    let state = state_with(1, 1);
+    let target = EvaluationTarget::State {
+        world: &world,
+        state: &state,
+    };
+
+    let count_eq = |n: i128| {
+        inv(
+            "cnt",
+            InvariantScope::State,
+            ViolationPolicy::All,
+            Applicability::Always,
+            PropertyExpr::Compare {
+                left: ValueExpr::Aggregate {
+                    op: AggOp::Count,
+                    domain: DomainExpr::WorldAccounts,
+                    of: None,
+                    declared_asset: None,
+                },
+                op: CmpOp::Eq,
+                right: ValueExpr::CountLiteral(n),
+            },
+        )
+    };
+
+    assert_eq!(
+        evaluate_invariant(&count_eq(2), target).kind,
+        InvariantResultKind::Pass
+    );
+    assert_eq!(
+        evaluate_invariant(&count_eq(5), target).kind,
+        InvariantResultKind::Fail
+    );
+
+    let empty_world = EconomicWorld::new(BalanceFacetModel::OrthogonalDimensions);
+    let empty_state = EconomicState::new();
+    let empty_t = EvaluationTarget::State {
+        world: &empty_world,
+        state: &empty_state,
+    };
+    assert_eq!(
+        evaluate_invariant(&count_eq(0), empty_t).kind,
+        InvariantResultKind::Pass
+    );
+
+    for (op, literal, expect_pass) in [
+        (CmpOp::Ne, 5, true),
+        (CmpOp::Lt, 3, true),
+        (CmpOp::Le, 2, true),
+        (CmpOp::Gt, 1, true),
+        (CmpOp::Ge, 2, true),
+    ] {
+        let i = inv(
+            "cnt-op",
+            InvariantScope::State,
+            ViolationPolicy::All,
+            Applicability::Always,
+            PropertyExpr::Compare {
+                left: ValueExpr::Aggregate {
+                    op: AggOp::Count,
+                    domain: DomainExpr::WorldAccounts,
+                    of: None,
+                    declared_asset: None,
+                },
+                op,
+                right: ValueExpr::CountLiteral(literal),
+            },
+        );
+        let kind = evaluate_invariant(&i, target).kind;
+        if expect_pass {
+            assert_eq!(kind, InvariantResultKind::Pass, "{op:?}");
+        } else {
+            assert_eq!(kind, InvariantResultKind::Fail, "{op:?}");
+        }
+    }
+
+    let mismatch = inv(
+        "cnt-money",
+        InvariantScope::State,
+        ViolationPolicy::All,
+        Applicability::Always,
+        PropertyExpr::Compare {
+            left: ValueExpr::Aggregate {
+                op: AggOp::Count,
+                domain: DomainExpr::WorldAccounts,
+                of: None,
+                declared_asset: None,
+            },
+            op: CmpOp::Eq,
+            right: ValueExpr::Literal(Money::new(AssetId::new("USD"), 2)),
+        },
+    );
+    let out = evaluate_invariant(&mismatch, target);
+    assert_eq!(
+        out.error.as_ref().unwrap().class,
+        InvariantErrorClass::IncompatibleOperands
+    );
+    assert!(!world.assets.contains_key(&AssetId::new("__count__")));
+}
+
+#[test]
+fn count_type_is_not_money() {
+    let c = aivoguard::Count::new(3);
+    assert_eq!(c.value(), 3);
+    assert_eq!(c.checked_add(aivoguard::Count::new(2)).unwrap().value(), 5);
+    assert!(c.checked_add(aivoguard::Count::new(i128::MAX)).is_none());
 }

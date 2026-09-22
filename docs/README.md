@@ -46,7 +46,7 @@ Full hierarchy and process rules:
 | [`design/economic-invariant-engine-specification.md`](design/economic-invariant-engine-specification.md) | Invariant Engine (M02) — **FROZEN** (Gate 2 **CLOSED**) |
 | [`architecture/architecture-baseline.md`](architecture/architecture-baseline.md) | Architecture baseline (TASK-00B) — structural only |
 | M01 implementation | Present in `crates/aivoguard` (`kernel`); TASK-04 **PASS** |
-| M02 implementation | Present in `crates/aivoguard` (`invariant`); TASK-06 |
+| M02 implementation | Present in `crates/aivoguard` (`invariant`); TASK-06 / TASK-06R |
 | Gate 3+ modules (M03+) | Not implemented |
 
 `docs/reference/` remains an intentional placeholder for non-normative
