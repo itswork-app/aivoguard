@@ -135,8 +135,8 @@ crates/aivoguard/
   src/
     lib.rs
     kernel/     ← ECONOMIC AUTHORITY + DOMAIN (M01)
+    invariant/  ← EVALUATION (M02; read-only)
     # future seams (NOT created):
-    # invariants/   ← M02
     # simulation/   ← M03
     # ...
 ```
@@ -467,9 +467,9 @@ Architecture remains compatible with, and does **not** decide:
 
 ### CURRENT
 
-* Single crate `aivoguard` with `kernel` (M01) only
+* Single crate `aivoguard` with `kernel` (M01) and `invariant` (M02)
 * Frozen Product Scope, Domain Contract, Economic Kernel Specification
-* M02 specification: **FROZEN** (Gate 2 **CLOSED**); implementation **BLOCKED**
+* M02 specification: **FROZEN** (Gate 2 **CLOSED**); implemented (TASK-06)
 * M03–M09: product boundaries only; no code
 * No network/DB/LLM in the authoritative core
 
@@ -489,7 +489,7 @@ Architecture remains compatible with, and does **not** decide:
 | Module | Specification | Architecture | Implementation | Gate |
 | --- | --- | --- | --- | --- |
 | M01 | Frozen | Current | Implemented | PASS |
-| M02 | Frozen | Defined | Not implemented | Gate 2 **CLOSED** |
+| M02 | Frozen | Defined | Implemented | Gate 2 **CLOSED** / TASK-06 |
 | M03 | Future | Boundary only | Not implemented | Future |
 | M04 | Future | Boundary only | Not implemented | Future |
 | M05 | Future | Boundary only | Not implemented | Future |

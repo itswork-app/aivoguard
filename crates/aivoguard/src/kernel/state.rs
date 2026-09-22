@@ -47,6 +47,10 @@ impl EconomicState {
     }
 
     /// Read a balance cell (missing = 0).
+    ///
+    /// M01 economic reads treat absent cells as zero. M02 must use
+    /// [`Self::balance_if_present`] when absence must be distinguished from
+    /// explicit zero.
     #[must_use]
     pub fn get_balance(&self, account: &AccountId, asset: &AssetId, facet: &FacetId) -> i128 {
         self.balances
@@ -57,6 +61,35 @@ impl EconomicState {
             })
             .copied()
             .unwrap_or(0)
+    }
+
+    /// Read a balance cell only if the cell is present in authoritative state.
+    ///
+    /// Returns `None` when the cell is absent (distinct from explicit zero).
+    #[must_use]
+    pub fn balance_if_present(
+        &self,
+        account: &AccountId,
+        asset: &AssetId,
+        facet: &FacetId,
+    ) -> Option<i128> {
+        self.balances
+            .get(&BalanceKey {
+                account: account.clone(),
+                asset: asset.clone(),
+                facet: facet.clone(),
+            })
+            .copied()
+    }
+
+    /// Whether a balance cell exists in authoritative state.
+    #[must_use]
+    pub fn has_balance(&self, account: &AccountId, asset: &AssetId, facet: &FacetId) -> bool {
+        self.balances.contains_key(&BalanceKey {
+            account: account.clone(),
+            asset: asset.clone(),
+            facet: facet.clone(),
+        })
     }
 
     /// Borrow all balance entries in deterministic order.

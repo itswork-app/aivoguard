@@ -12,8 +12,8 @@ keywords.workspace = true
 categories.workspace = true
 publish.workspace = true
 
-# This package hosts the Gate-1 M01 Economic Kernel and remains free of
-# M02+ modules, network, database, and LLM dependencies.
+# This package hosts Gate-1 M01 and Gate-2 M02. It remains free of network,
+# database, and LLM dependencies. M02 is read-only over M01 outputs.
 
 [dependencies]
 # None. Keep the Gate-1 kernel dependency-free (std only).

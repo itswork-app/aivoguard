@@ -17,6 +17,12 @@ impl PriceId {
     pub fn new(id: impl Into<String>) -> Self {
         Self(id.into())
     }
+
+    /// Borrow the identity string.
+    #[must_use]
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
 }
 
 /// Price category (EK-PRICE-01).
@@ -111,6 +117,8 @@ pub struct EconomicWorld {
     pub conversion: Option<ConversionRule>,
     /// Declared prices.
     pub prices: BTreeMap<PriceId, Price>,
+    /// World-declared capability/concept labels for M02 applicability (non-economic).
+    pub concepts: BTreeSet<String>,
 }
 
 impl EconomicWorld {
@@ -130,6 +138,7 @@ impl EconomicWorld {
             fee: None,
             conversion: None,
             prices: BTreeMap::new(),
+            concepts: BTreeSet::new(),
         }
     }
 
@@ -152,5 +161,16 @@ impl EconomicWorld {
     /// Insert a price.
     pub fn insert_price(&mut self, price: Price) {
         self.prices.insert(price.id.clone(), price);
+    }
+
+    /// Declare a World capability/concept label (for M02 applicability).
+    pub fn insert_concept(&mut self, concept: impl Into<String>) {
+        self.concepts.insert(concept.into());
+    }
+
+    /// Whether a World concept is declared.
+    #[must_use]
+    pub fn has_concept(&self, concept: &str) -> bool {
+        self.concepts.contains(concept)
     }
 }
