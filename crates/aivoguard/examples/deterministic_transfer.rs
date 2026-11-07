@@ -1,7 +1,7 @@
 //! Minimal reproducible M01 economic transfer example.
 //!
-//! Amounts are integer minor units: USD has 2 decimal places, so 10_000 =
-//! USD 100.00 and 1_500 = USD 15.00. This example exercises the library only;
+//! Amounts are integer minor units: USD has 2 decimal places, so `10_000` =
+//! USD 100.00 and `1_500` = USD 15.00. This example exercises the library only;
 //! it does not connect to a payment provider or move real funds.
 
 use aivoguard::{
@@ -36,7 +36,7 @@ fn main() {
         &state,
         &Action::Transfer {
             actor: ActorId::new("alice-actor"),
-            action_id: Some("demo-transfer-001".into()),
+            action_id: None,
             from: AccountId::new("alice"),
             to: AccountId::new("bob"),
             asset: AssetId::new("USD"),
@@ -56,19 +56,12 @@ fn main() {
             println!("effects: {}", transaction.effects.len());
             println!(
                 "alice USD minor units: {}",
-                state_after.get_balance(
-                    &AccountId::new("alice"),
-                    &AssetId::new("USD"),
-                    &available,
-                )
+                state_after
+                    .get_balance(&AccountId::new("alice"), &AssetId::new("USD"), &available,)
             );
             println!(
                 "bob USD minor units: {}",
-                state_after.get_balance(
-                    &AccountId::new("bob"),
-                    &AssetId::new("USD"),
-                    &available,
-                )
+                state_after.get_balance(&AccountId::new("bob"), &AssetId::new("USD"), &available,)
             );
 
             if disposition != EconomicDisposition::AcceptedEffective {
