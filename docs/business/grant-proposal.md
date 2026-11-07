@@ -1,166 +1,182 @@
-# AivoGuard — Grant Proposal Draft
+# AivoGuard — Public-Good Grant Proposal (Master Draft)
 
 | Field | Value |
 |---|---|
 | Status | **DRAFT — not submission-ready** |
-| Funding model | Company-led hybrid |
-| Planning request | USD 30,000 |
+| Applicant model | Company-led; legal applicant details pending |
+| Funding model | Hybrid: public-good engineering funded separately from commercial work |
+| Planning request | USD 30,000 (planning envelope only) |
 | Planning duration | Six months |
-| Primary deliverable | Open, reproducible deterministic economic safety testing infrastructure |
-| Scope authority | Frozen product/design specifications and authorized implementation gates |
+| Project | Deterministic economic testing infrastructure for autonomous agents |
+| Initial wedge | Reproducible testing of agentic economic and payment workflows |
+| Scope authority | Frozen product/design specifications and explicit implementation authorization |
 
-> This is a reusable master draft. It must be adapted to the selected funder's eligibility, format, ecosystem priorities, intellectual-property terms, and reporting requirements. Do not submit unchanged.
+> This is a master proposal, not an application to a named funder. Do not submit unchanged. The repository currently has an undecided license, no configured private vulnerability-reporting channel, and unresolved M06 implementation-authorization evidence. Funder fit, eligibility, applicant details, IP terms, and budget eligibility must be verified before submission.
 
-## 1. Project summary
+## 1. Executive summary
 
-AivoGuard is building deterministic economic testing infrastructure for autonomous AI agents. As agents are connected to payment systems, digital assets, and other economically consequential workflows, developers need to test whether agent actions preserve explicit economic constraints before those actions reach real systems.
+AivoGuard is a Rust-based deterministic economic testing library for developers building autonomous agents that can initiate or influence economically consequential workflows.
 
-AivoGuard's approach is to evaluate economic state and transitions against explicit, reproducible rules. The engine's deterministic evaluation—not an LLM's explanation—is authoritative for test outcomes within the testing model.
+The current codebase includes an economic kernel (M01), invariant evaluator (M02), deterministic simulator (M03), adversarial scenario engine (M04), regression comparator (M06), payment/settlement testing module (M07), and a bounded inbound x402 semantic adapter (M08). M05 chaos and M09 multi-agent world are not implemented. The current public repository does not provide a CLI, SDK, hosted API, live payment processor, wallet, custody, transaction signer, or runtime enforcement proxy.
 
-The proposed grant will support correctness and reproducibility work, public developer tooling and scenarios, benchmark methodology, documentation, and an independent technical review. The grant-funded outputs will be openly accessible under a license and terms approved before submission.
+The project thesis is that agent developers need reproducible evidence about economic consequences—not only plausible model output or successful tool invocation. AivoGuard evaluates supported economic actions and scenarios using deterministic rules. LLM output is not authoritative for economic state or test verdicts.
 
-## 2. Problem
+Grant funding would support correctness hardening, independent review, reproducible public scenarios, benchmark methodology, documentation, and external developer evaluation. The requested work will remain within existing frozen semantics unless a separately reviewed specification amendment and implementation authorization are approved.
 
-Existing application and agent testing can establish that an action was executed or that an agent produced a plausible explanation. That does not by itself establish that the resulting economic state is valid.
+## 2. Problem and public value
 
-Examples of failure classes that developers need to test include:
+Agent systems are increasingly connected to tools that can affect balances, fees, refunds, transfers, and settlement workflows. Conventional functional tests may prove that an API call returned successfully without proving that the resulting modeled economic state satisfies the developer's declared constraints.
 
-- Spending beyond an explicit budget.
-- Duplicate economic effects after retries or replay.
-- Incorrect fee, refund, or settlement behavior.
-- Unauthorized or inconsistent state transitions.
-- Failure to reproduce an economic regression.
+A reproducible economic test foundation can help developers investigate questions such as:
+- Does a supported action preserve the modeled balance and authorization rules?
+- Does a fee-bearing transfer fail atomically when aggregate funds are insufficient?
+- Do declared invariants hold before and after a transition?
+- Can a deterministic simulation reproduce the same outcome from the same inputs?
+- Does a code or integration change alter previously recorded economic expectations?
+- Does a bounded external payment observation map to the expected semantic fields?
 
-These are target testing scenarios. The proposal must distinguish scenarios already supported by the verified baseline from scenarios that are planned deliverables.
+These examples must be interpreted only within the behavior implemented and specified by AivoGuard. They are not claims that all listed failure modes are already fully covered, nor guarantees that real-world loss is prevented.
 
-## 3. Proposed work
+## 3. Current technical baseline
 
-The project will strengthen an open, protocol-extensible testing foundation with:
+| Component | Current evidence | Explicit limitation |
+|---|---|---|
+| M01 Economic Kernel | Rust source and integration tests | Only supported modeled actions; not a production ledger or payment processor |
+| M02 Invariant Engine | Rust source and integration tests | Read-only deterministic evaluator; no claim of formal verification |
+| M03 Simulator | Rust source and integration tests | Deterministic scenario orchestration; not a live environment sandbox |
+| M04 Adversarial Engine | Rust source and integration tests | Candidate transformations within its implemented model; not exhaustive attack generation |
+| M06 Regression | Rust source and integration tests | Authorization record reconciliation remains open |
+| M07 Payment/Settlement | Implementation master and tests; frozen bounded scope | No provider I/O, live payment, webhook, or wire protocol |
+| M08 x402 Adapter | TASK-63…67 implementation record and tests | Inbound semantic translation only; no HTTP/wire codec, crypto verification, facilitator, outbound path, or M07 observation output |
+| M05 / M09 | No source module or integration test | Not implemented |
 
-1. Correctness and determinism validation of the existing core.
-2. Regression coverage for confirmed defects and supported economic semantics.
-3. A documented, reproducible developer workflow using only interfaces authorized by the applicable specifications.
-4. Public reference scenarios and benchmark methodology.
-5. A scoped developer integration or ecosystem adapter, only after its interface and semantic contract are specified and authorized.
-6. Independent review and a public report describing results, limitations, and remaining risks.
+The authoritative current evidence register is [Implementation Status Ledger](../implementation-status.md). The exact commit and CI run must be updated at submission time.
 
-AivoGuard remains testing infrastructure. It is not a bank, wallet, payment processor, production settlement authority, or production authorization service.
+## 4. Proposed public-good work
 
-## 4. Public-good commitments
+The grant will not fund a speculative expansion into a generic agent platform. It will fund a narrow technical assurance and reproducibility program:
 
-Grant-funded deliverables will be made available to the community in accordance with the selected grant's terms. Expected outputs include:
+1. **Correctness hardening:** independently review M01/M02 edge cases and close confirmed defects with regression coverage.
+2. **Specification-to-code traceability:** reconcile implementation authorization records and maintain a source/spec/test evidence matrix without changing frozen semantics silently.
+3. **Reproducible public scenarios:** curate versioned scenarios using only existing authorized interfaces and supported module behavior.
+4. **Benchmark methodology:** publish repeatable test inputs, expected outcomes, environment requirements, and measurement methodology.
+5. **Bounded ecosystem relevance:** where the selected funder requires it, demonstrate concrete value to its developers using existing authorized integration boundaries. Any new adapter or wire feature requires a separate specification and implementation authorization before work begins.
+6. **Independent review and public reporting:** commission a scoped correctness/security review and publish findings, limitations, and remediation status.
 
-- Correctness fixes and regression tests.
-- Reproducible public test scenarios.
-- Public documentation and integration examples.
-- Benchmark methodology and results.
-- A release and technical report with explicit limitations.
-
-The essential core testing model will not require a paid subscription. Any license claim is conditional on a completed license decision and repository update.
+No grant milestone will claim delivery of an unimplemented CLI, SDK, hosted service, runtime enforcement layer, live x402 verification, M05, or M09.
 
 ## 5. Six-month milestone plan
 
-### M1 — Baseline verification and readiness (Month 1)
-- Re-audit repository implementation and normative specifications.
-- Reconcile implementation status, README, architecture baseline, and module documentation.
-- Confirm all required CI checks on the baseline.
-- Record known defects, risks, and license decision prerequisites.
+### M1 — Baseline integrity and traceability (Month 1)
+- Verify the exact repository baseline and required CI.
+- Reconcile README, architecture, documentation index, module status, and implementation evidence.
+- Resolve M06 implementation authorization evidence or explicitly mark the module as experimental/unverified for grant claims.
+- Publish known limitations and open risks.
 
-**Acceptance evidence:** audit report, status matrix, CI run links, and documented remediation decisions.
+**Acceptance evidence:** versioned implementation ledger, exact commit SHA, green CI run links, and unresolved-risk register.
 
-### M2 — Correctness and regression (Month 2)
-- Fix confirmed defects without silently changing frozen semantics.
-- Add regression tests for each accepted correction.
-- Document edge cases and deterministic behavior.
+### M2 — Independent correctness review (Month 2)
+- Review M01 aggregate debit, state validation boundaries, arithmetic/error classification, and atomicity.
+- Review M02 history ranges, quantifier/binding semantics, deterministic ordering, and error precedence.
+- Review cross-module assumptions where M03/M04/M06 consume M01/M02 results.
+- Fix accepted defects without changing frozen semantics silently.
 
-**Acceptance evidence:** merged reviewed changes, regression tests, and passing required CI.
+**Acceptance evidence:** reviewer report, issue-to-fix traceability, regression tests, and green required CI.
 
-### M3 — Reproducible public scenarios (Month 3)
-- Publish a versioned scenario set for semantics supported by the engine.
-- Document setup, expected outcomes, and reproduction steps.
-- Establish benchmark methodology.
+### M3 — Public reproducible scenario pack (Month 3)
+- Curate scenarios for behavior already supported by the current engine.
+- Include expected outcomes, fixture inputs, version requirements, and reproduction instructions.
+- Separate implemented cases from planned/unsupported cases.
 
-**Acceptance evidence:** public scenario pack and reproducible benchmark instructions.
+**Acceptance evidence:** tagged scenario pack, expected-output documentation, and clean-environment reproduction record.
 
-### M4 — Developer workflow and integration (Month 4)
-- Stabilize a basic developer workflow within authorized interface scope.
-- Publish a reference integration for the selected target audience.
-- Document trust boundaries, assumptions, and failure handling.
+### M4 — Benchmark and developer evaluation (Month 4)
+- Define deterministic benchmark inputs and methodology.
+- Measure runtime and scaling only for declared workloads and hardware/software conditions.
+- Invite external developers to reproduce scenarios and record setup friction and findings.
 
-**Acceptance evidence:** clean-environment demonstration and integration guide.
+**Acceptance evidence:** benchmark methodology, raw reproducible inputs, results with environment metadata, and external feedback log.
 
-### M5 — Ecosystem-specific work and independent review (Month 5)
-- Deliver one ecosystem-specific adapter or reference integration only if justified by the grant.
-- Commission an independent correctness/security review of the funded scope.
-- Publish findings and remediation status.
+### M5 — Ecosystem-facing public integration evidence and review (Month 5)
+- Select one funder-relevant ecosystem only after validating actual developer demand.
+- Use existing authorized integration scope; do not implement live protocol functionality without separate approval.
+- Commission independent review of the funded changes and publish findings.
 
-**Acceptance evidence:** reproducible demo, review report, and issue/remediation register.
+**Acceptance evidence:** documented ecosystem use case, reproducible reference workflow, independent review report, and remediation register.
 
-### M6 — Release and public impact report (Month 6)
-- Publish the funded open-source deliverables.
-- Publish benchmark results, known limitations, and follow-on work.
-- Conduct developer onboarding and collect structured feedback.
+### M6 — Public release and impact report (Month 6)
+- Publish versioned public scenarios, documentation, benchmark methodology/results, and review summary.
+- Report actual external participation and feedback, including negative results.
+- Provide milestone accounting and a follow-on maintenance plan.
 
-**Acceptance evidence:** release tag, documentation, benchmark report, and final grant report.
+**Acceptance evidence:** tagged release or versioned source snapshot, public deliverables, final technical report, and funder report.
 
-## 6. Budget request
+## 6. Planning budget
 
-Planning envelope: **USD 30,000 for six months**.
+**USD 30,000 over six months** is a planning envelope, not a validated quote, approved budget, or grant award.
 
-| Category | Amount |
-|---|---:|
-| Core engineering and correctness | USD 12,000 |
-| Independent security/correctness review | USD 6,000 |
-| Developer integration work | USD 4,500 |
-| Documentation and onboarding | USD 3,000 |
-| CI and test infrastructure | USD 1,500 |
-| Pilot/community support | USD 1,500 |
-| Contingency | USD 1,500 |
-| **Total** | **USD 30,000** |
+| Category | Planning amount | Intended use |
+|---|---:|---|
+| Core engineering and correctness | USD 12,000 | Focused remediation, regression coverage, traceability |
+| Independent review | USD 6,000 | External correctness/security review |
+| Public scenarios and benchmark work | USD 4,500 | Scenario curation, reproducibility, benchmark methodology |
+| Documentation and developer onboarding | USD 3,000 | Guides, limitations, public reports |
+| CI and test infrastructure | USD 1,500 | Reproducible validation infrastructure |
+| External developer evaluation | USD 1,500 | Pilot support and feedback collection |
+| Contingency | USD 1,500 | Funder-approved unforeseen eligible costs |
+| **Total** | **USD 30,000** | |
 
-This is an initial planning allocation. Before submission, convert it into the funder's required currency and format, validate rates and allowable expenses, identify responsible contributors, and define payment timing. No cost should be charged to two funding sources.
+Before submission, replace this planning envelope with named contributor effort, locally validated rates, milestone cash flow, eligible-cost mapping, tax/accounting treatment, and funder-required currency. No expense may be charged to two funding sources. Founder compensation is eligible only if the selected funder explicitly permits it and the budget transparently justifies it.
 
-## 7. Success measures
+## 7. Measurable outcomes
 
-- All funded milestones accepted or deviations transparently reported.
-- Required CI checks passing on the release baseline.
-- Public regression scenarios with documented expected results.
-- Benchmark runs reproducible by an external developer.
-- At least three external teams invited to evaluate the workflow; report actual participation rather than claiming it in advance.
-- At least one public reference integration if authorized and funded.
-- Public limitations and independent review findings.
+Target outcomes for the funded period:
+- 100% of claimed implemented capabilities mapped to source, tests, and a declared specification/authorization record.
+- All required CI checks passing on the release baseline.
+- Every accepted correctness defect linked to a regression test.
+- A public scenario pack with reproduction instructions and expected results.
+- At least three external developer teams invited to evaluate; report actual participation and repeat usage rather than assuming adoption.
+- One independently reviewed funded scope, with findings and remediation status published.
+- A public limitations statement that distinguishes deterministic testing from formal verification or production security assurance.
 
-## 8. Sustainability
+These are proposed targets, not achieved results.
 
-AivoGuard uses a hybrid sustainability model. The essential deterministic testing foundation and public scenarios remain openly available. The company may generate revenue from hosted execution, team workflows, private deployment, advanced reporting, support, and custom integration, subject to separate specifications and customer validation.
+## 8. Sustainability and separation of funds
 
-Grant funds are restricted to the agreed public-good scope. Commercial revenue funds additional operations and services. Grant awards are not treated as recurring revenue.
+AivoGuard follows a company-led hybrid model:
+- Public-good funding supports reusable correctness work, scenarios, benchmark methodology, and documentation.
+- Commercial revenue may later support customer-specific integration assessment, support, hosted execution, and team workflows after customer validation and separate technical/security specifications.
+- The essential inspectability of the deterministic core should remain accessible under the license selected by the project.
+- Grant and commercial deliverables, time, invoices, and infrastructure costs will be tracked separately. Shared work must be allocated transparently and disclosed where required.
 
-## 9. Risk management
+VC funding is not a prerequisite for this stage. Institutional fundraising should be considered only after repeated developer usage and willingness to pay are demonstrated.
+
+## 9. Risks and mitigations
 
 | Risk | Mitigation |
 |---|---|
-| Correctness defects | Regression tests, explicit specifications, independent review |
-| Scope creep | Milestone gates and change control |
-| Ecosystem mismatch | Apply only where measurable ecosystem relevance exists |
-| Adoption uncertainty | Runnable examples and external developer evaluation |
-| Overstated security claims | Publish assumptions, limitations, and review scope |
-| License/IP ambiguity | Resolve license and contributor rights before submission |
-| Funding dependency | Keep paid pilot validation running in parallel |
+| License and contributor-rights ambiguity | Select and publish a license, verify ownership/authority, and establish contributor terms before submission |
+| M06 authorization gap | Reconcile the formal implementation task record; do not overclaim until closed |
+| Hidden correctness defects | Independent review, edge-case tests, fuzz/property testing where justified, transparent issue register |
+| Ecosystem mismatch | Apply only when a measurable developer/ecosystem benefit is demonstrated |
+| Scope expansion | Frozen specs and explicit implementation gates; no grant document silently authorizes code |
+| Weak adoption | External evaluation, repeat-use measurement, and publish negative findings |
+| Overstated security claims | State model assumptions and limitations; no certification or loss-prevention guarantee |
+| Funding overlap | Separate cost centers, time records, invoices, and deliverable mapping |
 
-## 10. Applicant and ecosystem-specific information to complete
+## 10. Mandatory pre-submission checklist
 
-Before submission, complete:
+- [ ] Select a named funder and verify current eligibility, jurisdiction, applicant type, allowable costs, IP terms, and reporting requirements.
+- [ ] Resolve the repository license and contributor-rights policy; publish actual license text and metadata.
+- [ ] Configure private vulnerability reporting or provide a verified private contact and response process.
+- [ ] Reconcile M06 implementation authorization evidence.
+- [ ] Verify green CI on the exact main commit proposed as the application baseline.
+- [ ] Produce a clean-environment reproducible demonstration from documented existing capabilities.
+- [ ] Obtain external developer feedback or clearly state that validation is not yet complete.
+- [ ] Replace planning budget with a contributor/time/rate/cash-flow budget.
+- [ ] Complete legal applicant identity, signatory authority, tax/accounting, and payment details.
+- [ ] Review every application claim against source, tests, specifications, and authorization records.
 
-- Legal applicant name, jurisdiction, and authorized signatory.
-- Company registration and tax details required by the funder.
-- Project maintainer and contributor biographies.
-- Repository baseline commit and current CI evidence.
-- Selected open-source license and contributor-rights confirmation.
-- Ecosystem-specific technical rationale and target users.
-- Funder-specific deliverable mapping and eligible-cost confirmation.
-- Payment details and reporting schedule requested by the funder.
+## 11. Closing statement
 
-## 11. Closing
-
-AivoGuard aims to make economic safety testing for autonomous agents more deterministic, reproducible, and inspectable. Funding this work will create reusable infrastructure that helps developers identify economic failure modes before connecting agents to real economic systems.
+AivoGuard seeks to provide reusable, deterministic infrastructure for testing modeled economic behavior in autonomous-agent workflows. The public value is a transparent and reproducible way for developers to explore supported economic transitions, evaluate declared invariants, and detect regressions before connecting agents to real systems. The project will publish its assumptions, limits, and review findings rather than presenting test infrastructure as a guarantee of security.
