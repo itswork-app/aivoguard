@@ -187,7 +187,7 @@ pub fn parse_exact_integer_digits(raw: &str) -> Result<i128, M08AdapterError> {
     }
 
     let (sign, digits) = match raw.as_bytes() {
-        [b'+', rest @ ..] | [b'-', rest @ ..] => {
+        [b'+' | b'-', rest @ ..] => {
             if rest.is_empty() {
                 return Err(M08AdapterError::new(
                     M08AdapterErrorId::InvalidMapping,
