@@ -758,12 +758,7 @@ fn transfer_with_fee_distinct_fee_payer_checks_each_account_cell() {
         available(),
         1_000,
     );
-    state.set_balance(
-        alice_fee.clone(),
-        AssetId::new("USD"),
-        available(),
-        50,
-    );
+    state.set_balance(alice_fee.clone(), AssetId::new("USD"), available(), 50);
 
     let outcome = evaluate(
         &world,
@@ -807,11 +802,7 @@ fn transfer_with_fee_distinct_fee_payer_checks_each_account_cell() {
                 800
             );
             assert_eq!(
-                state_after.get_balance(
-                    &alice_fee,
-                    &AssetId::new("USD"),
-                    &available(),
-                ),
+                state_after.get_balance(&alice_fee, &AssetId::new("USD"), &available(),),
                 0
             );
         }
