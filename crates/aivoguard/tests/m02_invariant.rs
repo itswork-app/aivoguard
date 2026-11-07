@@ -152,7 +152,7 @@ fn not_applicable_when_world_lacks_concept() {
         out.applicability,
         Some(aivoguard::ApplicabilityStatus::NotApplicable)
     );
-    assert!(out.violations.is_empty());
+    assert_eq!(out.violations, Vec::new());
 }
 
 #[test]
@@ -994,7 +994,7 @@ fn transaction_actor_owns_account_zero_effect_accepted_effective() {
         },
     );
     assert_eq!(out.kind, InvariantResultKind::Pass);
-    assert!(tx.effects.is_empty());
+    assert_eq!(tx.effects, Vec::new());
     assert_eq!(tx.disposition, EconomicDisposition::AcceptedEffective);
 }
 
