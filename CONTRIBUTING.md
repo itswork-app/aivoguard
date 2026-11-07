@@ -85,9 +85,15 @@ Keep PRs focused. Prefer small, reviewable changes.
 Use the issue templates when they apply. For specification questions, mark
 ambiguity clearly rather than proposing silent resolutions.
 
-## License
+## License and contributor rights
 
-The project license is **undecided** (see [`LICENSE`](LICENSE)). The repository license remains undecided. Do not submit contributions until the project has published a license and a contributor-rights policy that you can accept.
+AivoGuard is distributed under the [Apache License, Version 2.0](LICENSE) (`Apache-2.0`). Read the license before using, modifying, or redistributing the project.
+
+By intentionally submitting a contribution for inclusion in AivoGuard (including through a pull request, issue, or other project-managed contribution channel), you agree that the contribution is submitted under Apache-2.0 as described in Section 5, unless you clearly and explicitly state otherwise before the contribution is accepted. No separate Contributor License Agreement (CLA) is currently required.
+
+You retain copyright in your original contributions. You must have the legal right to submit the contribution under these terms. Do not submit code, documentation, data, or other material copied from third parties unless its license permits inclusion and redistribution under the project’s licensing approach. Disclose third-party origin, applicable license, required notices, and any attribution in the pull request. Mark material that is not intended as a contribution clearly and in writing.
+
+The repository's visible commit history has been reviewed for provenance, but this is not a complete legal audit of every source file or third-party right. Maintainers may request additional provenance or permission evidence before accepting a contribution.
 
 ## Code of conduct
 
