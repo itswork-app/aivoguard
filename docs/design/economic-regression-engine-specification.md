@@ -1227,7 +1227,7 @@ clauses recorded below; all other v1.0.0 normative clauses remain unchanged.
 | ID | Area | v1.0.0 contract / observed implementation | Accepted v1.1.0 resolution | Required evidence |
 |---|---|---|---|---|
 | M06-A01 | Positional index portability | Unchecked `u64` → `usize` cast could truncate on narrower targets. | Checked conversion; failure is `ERROR / MissingObservationField`. | Implemented in `engine.rs`; `maximum_step_index_is_a_missing_observation_not_a_wrapped_index`; Verified by GitHub Actions CI run #97 on PR head `6c89350081b0c4ed68795ae2346c61ff271abb60f` (format, check, tests, deterministic example, strict Clippy: PASS). |
-| M06-A02 | Invariant phase identity | Phase vector selection alone did not verify the record's explicit `EvaluationPoint`. | Match invariant id and exact point corresponding to the declared phase. | Implemented in `engine.rs`; `invariant_lookup_requires_explicit_evaluation_point_match`; Final v1.1.0 PR CI verification pending. |
+| M06-A02 | Invariant phase identity | Phase vector selection alone did not verify the record's explicit `EvaluationPoint`. | Match invariant id and exact point corresponding to the declared phase. | Implemented in `engine.rs`; `invariant_lookup_requires_explicit_evaluation_point_match`; Verified by GitHub Actions CI run #101 on PR head `72ce82a53299240584568eb2e9f2b2ca21f367c2` (format, check, tests, deterministic example, strict Clippy: PASS). |
 | M06-A03 | Identifier validation | Empty target tokens were not rejected before observation lookup. | Empty account/asset/facet/invariant tokens produce `ERROR / InvalidExpectation`; no trimming or normalization. | Implemented in `engine.rs`; tests cover empty account/asset/facet/invariant IDs, including non-applicable expectations; CI pending. |
 | M06-A04 | Mismatch target evidence | Invariant mismatch target used `expectation_id`, not the observation location. | Use canonical per-step/completion target descriptors. | Implemented in `engine.rs`; `invariant_mismatch_and_ambiguity_include_lookup_target`; CI pending. |
 | M06-A05 | Ambiguous observation diagnostics | Ambiguity error lacked the target descriptor. | Include target descriptor and exact match count; include target on missing/not-executed invariant errors. | Implemented in `engine.rs`; `invariant_mismatch_and_ambiguity_include_lookup_target`; CI pending. |
@@ -1249,7 +1249,7 @@ clauses recorded below; all other v1.0.0 normative clauses remain unchanged.
 
 - Every accepted amendment item has matching implementation and regression tests.
 - No unaccepted semantic change appears in code.
-- GitHub Actions run #97 passed format, check, all tests, deterministic example, and strict Clippy on PR head `6c89350081b0c4ed68795ae2346c61ff271abb60f`.
+- GitHub Actions run #101 passed format, check, all tests, deterministic example, and strict Clippy on final pre-freeze PR head `72ce82a53299240584568eb2e9f2b2ca21f367c2`.
 - The v1.0.0 text is preserved at the archive path; v1.1.0 supersedes it only for the explicitly amended clauses.
 - TASK-70 records the exact v1.1.0 specification blob and source commit.
 
