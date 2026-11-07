@@ -6,7 +6,7 @@
 | Task | TASK-00B |
 | Status | **BASELINE** (architecture documentation; not a normative economic spec) |
 | Authority | Subordinate to frozen design specifications and accepted ADRs |
-| Implementation | Current source includes M01–M08; M06 implementation is authorized by TASK-68; v1.1.0 spec-to-code amendment is in progress; M05 and M09 are not implemented |
+| Implementation | Current source includes M01–M08; M06 implementation is authorized by TASK-68; v1.1.0 specification is frozen by TASK-70; M05 and M09 are not implemented |
 | Status register | [Implementation Status Ledger](../implementation-status.md) |
 
 This document maps frozen product/domain/economic specifications into repository
@@ -17,7 +17,7 @@ what frozen gates already implement.
 The implementation status ledger is the current code/test/authorization index.
 Freeze-time BLOCKED markers in normative specifications are historical; later
 implementation authority must be supported by a separate task or implementation
-master record. M06 implementation authorization is recorded in TASK-68. Gate-5 v1.0.0 is preserved as a historical frozen baseline; v1.1.0 is open for controlled amendment and will be re-frozen after review.
+master record. M06 implementation authorization is recorded in TASK-68. Gate-5 v1.0.0 is preserved as a historical frozen baseline; v1.1.0 was reviewed and re-frozen under TASK-70.
 
 Related:
 
@@ -133,7 +133,7 @@ ADAPTERS            M07 payment/settlement testing + semantic adapter boundary
                      wire NOT FROZEN / NOT AUTHORIZED)
 ORCHESTRATION       M03 simulator (IMPLEMENTED / PASS; Gate 3 CLOSED); M09 multi-agent (future)
 EVALUATION          M02 invariants (IMPLEMENTED / PASS; Gate 2 CLOSED);
-                    M06 regression (IMPLEMENTED / AUTHORIZED by TASK-68; Gate-5 v1.1.0 amendment in progress)
+                    M06 regression (IMPLEMENTED / AUTHORIZED by TASK-68; Gate-5 v1.1.0 frozen by TASK-70)
 ECONOMIC AUTHORITY  M01 kernel (IMPLEMENTED / PASS; Gate 1 CLOSED)
 DOMAIN              World / State / Action / Asset / Money primitives (in M01)
 ```
@@ -260,12 +260,12 @@ own economic truth (M01), invariant evaluation (M02), or simulation sequencing
 Economic fault-injection perturbations per future specs. Distinct from M04.
 Neither silently alters authoritative economic semantics. No detailed APIs here.
 
-### M06 — Regression (**IMPLEMENTED / AUTHORIZED**; Gate-5 v1.1.0 amendment **IN PROGRESS**)
+### M06 — Regression (**IMPLEMENTED / AUTHORIZED**; Gate-5 v1.1.0 **FROZEN**)
 
 Compares declared expectations against authoritative outputs per
 [`docs/design/economic-regression-engine-specification.md`](../design/economic-regression-engine-specification.md)
 (v1.0.0 **HISTORICALLY FROZEN**, TASK-19; v1.1.0 amendment in progress; TASK-68 implementation authorization). Source and tests are present under
-`crates/aivoguard/src/regression/` and `crates/aivoguard/tests/m06_regression.rs` are authorized and prospectively ratified effective 2026-11-07 by [TASK-68](../design/m06-implementation-authorization.md). TASK-68 supplements the historical freeze-time BLOCKED marker without claiming prior authorization. The v1.1.0 amendment candidate is under review; v1.0.0 is preserved in the archive. AD-03 / AD-12 / AD-14 / AD-15, M06-OD-01/02/03, and DC-13 remain open.
+`crates/aivoguard/src/regression/` and `crates/aivoguard/tests/m06_regression.rs` are authorized and prospectively ratified effective 2026-11-07 by [TASK-68](../design/m06-implementation-authorization.md). TASK-68 supplements the historical freeze-time BLOCKED marker without claiming prior authorization. The v1.1.0 specification is frozen by TASK-70; v1.0.0 is preserved in the archive. AD-03 / AD-12 / AD-14 / AD-15, M06-OD-01/02/03, and DC-13 remain open.
 
 ```text
 Economic Truth ≠ Invariant Evaluation ≠ Test Expectation
@@ -614,7 +614,7 @@ Architecture remains compatible with, and does **not** decide:
 * M04 specification: **FROZEN** (Gate 4 **CLOSED**); implemented (TASK-11;
   authorized TASK-10H)
 * M06 specification: **FROZEN** (Gate 5 **CLOSED**; TASK-19; audit TASK-18);
-  implemented under `src/regression/`; implementation authorized by TASK-68; v1.1.0 spec amendment in progress
+  implemented under `src/regression/`; implementation authorized by TASK-68; v1.1.0 frozen by TASK-70
 * M07 specification: **FROZEN** (Gate 6; @ `b7d1874`); **IMPLEMENTED** /
   **FROZEN_FOR_CURRENT_SCOPE** (core TASK-38…41; semantic adapter TASK-43;
   audits TASK-42 / TASK-44 **PASS**; freeze evidence TASK-45)
@@ -661,7 +661,7 @@ Architecture remains compatible with, and does **not** decide:
 | M03 | Frozen | Defined | Implemented / **PASS** | Gate 3 **CLOSED** / TASK-08 / TASK-08R / TASK-08F / TASK-09 |
 | M04 | **FROZEN** | Defined | **IMPLEMENTED** (TASK-11) | Gate 4 **CLOSED** / TASK-10G / TASK-10H |
 | M05 | Future | Boundary only | Not implemented | Future |
-| M06 | **FROZEN** | Defined | **IMPLEMENTED / AUTHORIZED (TASK-68); SPEC AMENDMENT IN PROGRESS** | Gate 5 **CLOSED** / TASK-19 froze v1.0.0; implementation authorized separately by TASK-68; v1.1.0 amendment is in progress |
+| M06 | **FROZEN** | Defined | **IMPLEMENTED / AUTHORIZED (TASK-68); SPEC AMENDMENT IN PROGRESS** | Gate 5 **CLOSED** / TASK-19 froze v1.0.0; implementation authorized separately by TASK-68; v1.1.0 frozen by TASK-70 |
 | M07 | **FROZEN** | Defined | **IMPLEMENTED** / **FROZEN_FOR_CURRENT_SCOPE** (semantic adapter; no provider/wire) | Gate 6 / TASK-45 (audits TASK-42 / TASK-44) |
 | M08 | **FROZEN** | Defined (Gate 7) | **IMPLEMENTED** / **FROZEN_FOR_CURRENT_SCOPE** (inbound-only; wire **NOT FROZEN**) | Gate 7 **CLOSED_FOR_CURRENT_BOUNDED_INBOUND_SCOPE** / TASK-66 / TASK-67 |
 | M09 | Future | Boundary only | Not implemented | Future |
