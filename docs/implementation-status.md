@@ -48,12 +48,13 @@ The M01/M02 remediation PR was validated by GitHub Actions run #33 on PR head `a
 - `cargo test --workspace --all-targets`: PASS
 - `cargo clippy --workspace --all-targets -- -D warnings`: PASS
 
-The remediation was merged to `main` as `a25cd588f81c67640d31d66ca1478276ae2d65c8`. Post-merge GitHub Actions run #34 on that exact main commit completed successfully. This is the current repository foundation baseline; it is not a release certification or independent security audit.
+The M01/M02 aggregate-debit and history-range remediation was merged to `main` as `a25cd588f81c67640d31d66ca1478276ae2d65c8`; post-merge GitHub Actions run #34 on that exact commit completed successfully. A subsequent M02 existential-witness correction was merged as `63af88838c0b08abe7b8652eb16abeb1f5ca290e`; PR-head run #44 passed all checks and post-merge run #46 is pending at the time of this ledger revision. This is not a release certification or independent security audit.
 
 ## 4. Confirmed remediation history
 
 - M01: aggregate principal + fee debit to the same account/asset/facet now fails economically before effects are applied; regression test covers balance 100, principal 80, fee 30.
 - M02: contiguous history validation now uses one ordered pass and does not increment beyond an inclusive `i64::MAX` endpoint; boundary tests cover `i64::MIN` and `i64::MAX`.
+- M02: `EXISTS` witness detection now uses isolated per-member violations, so `FirstOnly` suppression cannot turn a failing candidate into a witness; regression tests cover no witness and a later valid witness.
 - Strict Clippy findings discovered in M01/M02/M03/M06/M07/M08 tests and source were corrected without weakening `-D warnings`.
 
 ## 5. Remaining technical audit items
@@ -63,10 +64,9 @@ These are not yet closed by the remediation above:
 1. M06 implementation authorization evidence reconciliation.
 2. Full state-construction and invariant validation boundary review in M01.
 3. Nested quantifier/binding restoration review in M02.
-4. M02 `EXISTS` with `FirstOnly` violation policy can misclassify a later suppressed failure as a witness; confirmed as Issue #7 and remediation is open in PR #8.
-5. Cross-module adversarial, simulator, regression, settlement, and adapter semantic audit beyond the current test suite.
-6. Property-based/fuzz testing and deterministic replay verification.
-7. Independent external correctness/security review.
+4. Cross-module adversarial, simulator, regression, settlement, and adapter semantic audit beyond the current test suite.
+5. Property-based/fuzz testing and deterministic replay verification.
+6. Independent external correctness/security review.
 
 Do not claim formal verification, complete security assurance, production readiness, or exhaustive adversarial coverage.
 
