@@ -549,9 +549,7 @@ fn eval_invariant_kind(
     ));
     let matches: Vec<&InvariantEvaluationRecord> = records
         .iter()
-        .filter(|r| {
-            record_invariant_id(r) == invariant_id && record_point(r) == expected_point
-        })
+        .filter(|r| record_invariant_id(r) == invariant_id && record_point(r) == expected_point)
         .collect();
     resolve_invariant_matches(
         expectation,
