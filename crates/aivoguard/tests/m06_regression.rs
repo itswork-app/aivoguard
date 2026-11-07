@@ -949,7 +949,6 @@ fn numeric_unit_boundary_helpers() {
     ));
 }
 
-
 #[test]
 fn empty_balance_target_token_is_invalid_even_before_lookup() {
     let sim = base_sim(EconomicState::new());
@@ -966,7 +965,10 @@ fn empty_balance_target_token_is_invalid_even_before_lookup() {
     assert_eq!(
         r.error.as_ref().unwrap().evidence,
         vec![
-            ("expectation_id".into(), StructuredValue::String("bad-target".into())),
+            (
+                "expectation_id".into(),
+                StructuredValue::String("bad-target".into())
+            ),
             ("field".into(), StructuredValue::String("account_id".into())),
         ]
     );
@@ -1063,13 +1065,28 @@ fn invariant_mismatch_and_ambiguity_include_lookup_target() {
         r.error.as_ref().unwrap().error_id,
         RegressionErrorId::AmbiguousObservation
     );
-    assert!(r.error.as_ref().unwrap().evidence.iter().any(|(key, value)| {
-        key == "target"
-            && value == &StructuredValue::String("step/0/before_action/invariant/inv-target".into())
-    }));
-    assert!(r.error.as_ref().unwrap().evidence.iter().any(|(key, value)| {
-        key == "match_count" && value == &StructuredValue::U64(2)
-    }));
+    assert!(
+        r.error
+            .as_ref()
+            .unwrap()
+            .evidence
+            .iter()
+            .any(|(key, value)| {
+                key == "target"
+                    && value
+                        == &StructuredValue::String(
+                            "step/0/before_action/invariant/inv-target".into()
+                        )
+            })
+    );
+    assert!(
+        r.error
+            .as_ref()
+            .unwrap()
+            .evidence
+            .iter()
+            .any(|(key, value)| { key == "match_count" && value == &StructuredValue::U64(2) })
+    );
 }
 
 #[test]
@@ -1094,14 +1111,17 @@ fn maximum_step_index_is_a_missing_observation_not_a_wrapped_index() {
     );
 }
 
-
 #[test]
 fn all_empty_balance_identity_tokens_are_invalid() {
     for field in ["account_id", "asset_id", "facet_id"] {
         let sim = base_sim(EconomicState::new());
         let mut expectation = bal_exact("empty-token", 0, true);
-        if let ExpectationClass::FinalBalanceExact { account_id, asset_id, facet_id, .. } =
-            &mut expectation.class
+        if let ExpectationClass::FinalBalanceExact {
+            account_id,
+            asset_id,
+            facet_id,
+            ..
+        } = &mut expectation.class
         {
             match field {
                 "account_id" => account_id.clear(),
