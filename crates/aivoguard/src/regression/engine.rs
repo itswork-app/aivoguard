@@ -1,5 +1,7 @@
 //! M06 regression evaluation engine.
 
+use std::collections::BTreeSet;
+
 use crate::invariant::InvariantResultKind;
 use crate::kernel::{AccountId, AssetId, FacetId, KernelOutcome};
 use crate::regression::error::{RegressionError, RegressionErrorId};
@@ -166,7 +168,7 @@ fn validate_binding(case: &RegressionCase) -> Result<(), RegressionError> {
 }
 
 fn validate_expectation_set(expectations: &[Expectation]) -> Result<(), RegressionError> {
-    let mut seen = Vec::new();
+    let mut seen = BTreeSet::new();
     for e in expectations {
         if e.expectation_id.is_empty() {
             return Err(RegressionError::new(
@@ -174,7 +176,7 @@ fn validate_expectation_set(expectations: &[Expectation]) -> Result<(), Regressi
                 "expectation_id is empty",
             ));
         }
-        if seen.iter().any(|id: &String| id == &e.expectation_id) {
+        if !seen.insert(e.expectation_id.clone()) {
             return Err(RegressionError::new(
                 RegressionErrorId::InvalidExpectation,
                 format!("duplicate expectation_id {}", e.expectation_id),
@@ -185,7 +187,6 @@ fn validate_expectation_set(expectations: &[Expectation]) -> Result<(), Regressi
             ));
         }
         validate_expectation_target_tokens(e)?;
-        seen.push(e.expectation_id.clone());
     }
     Ok(())
 }
@@ -461,15 +462,6 @@ fn eval_step_disposition(
         ),
         Err(error) => return EvalOne::Error(error),
     };
-    if idx >= sim.step_records.len() {
-        return EvalOne::Error(
-            RegressionError::new(
-                RegressionErrorId::MissingObservationField,
-                "step_index out of range for step_records",
-            )
-            .with_field("step_index", StructuredValue::U64(step_index)),
-        );
-    }
     let step = &sim.step_records[idx];
     let observed_disp = match &step.kernel_outcome {
         Some(KernelOutcome::Economic { disposition: d, .. }) => Some(*d),
@@ -522,15 +514,6 @@ fn eval_invariant_kind(
         ),
         Err(error) => return EvalOne::Error(error),
     };
-    if idx >= sim.step_records.len() {
-        return EvalOne::Error(
-            RegressionError::new(
-                RegressionErrorId::MissingObservationField,
-                "step_index out of range for invariant lookup",
-            )
-            .with_field("step_index", StructuredValue::U64(step_index)),
-        );
-    }
     let step = &sim.step_records[idx];
     let records: &[InvariantEvaluationRecord] = match phase {
         ExpectationPhase::BeforeAction => &step.before_action,
@@ -601,7 +584,8 @@ fn resolve_invariant_matches(
                 .with_field(
                     "expectation_id",
                     StructuredValue::String(expectation.expectation_id.clone()),
-                ),
+                )
+                .with_field("target", target.clone()),
             ),
             InvariantEvaluationRecord::Executed { outcome, .. } => {
                 if outcome.kind == expected_kind {
