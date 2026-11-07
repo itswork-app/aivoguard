@@ -70,7 +70,7 @@ No grant milestone will claim delivery of an unimplemented CLI, SDK, hosted serv
 ### M1 — Baseline integrity and traceability (Month 1)
 - Verify the exact repository baseline and required CI.
 - Reconcile README, architecture, documentation index, module status, and implementation evidence.
-- Record M06 implementation authorization and align source, tests, and public claims with TASK-68; keep independent audit limitations explicit.
+- Complete TASK-69 M06 v1.1.0 specification-to-code reconciliation and re-freeze; keep independent audit limitations explicit.
 - Publish known limitations and open risks.
 
 **Acceptance evidence:** versioned implementation ledger, exact commit SHA, green CI run links, and unresolved-risk register.
