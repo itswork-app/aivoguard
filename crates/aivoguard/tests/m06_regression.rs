@@ -1052,13 +1052,12 @@ fn invariant_mismatch_and_ambiguity_include_lookup_target() {
         StructuredValue::String("step/0/before_action/invariant/inv-target".into())
     );
 
-    if let StepResult { before_action, .. } = &mut sim.step_records[0] {
-        before_action.push(InvariantEvaluationRecord::Executed {
-            point: EvaluationPoint::BeforeAction,
-            invariant_id: "inv-target".into(),
-            outcome: pass_outcome("inv-target"),
-        });
-    }
+    let StepResult { before_action, .. } = &mut sim.step_records[0];
+    before_action.push(InvariantEvaluationRecord::Executed {
+        point: EvaluationPoint::BeforeAction,
+        invariant_id: "inv-target".into(),
+        outcome: pass_outcome("inv-target"),
+    });
     let r = evaluate_regression(&case_with(vec![expectation], sim, None));
     assert_eq!(r.verdict, RegressionVerdict::Error);
     assert_eq!(
