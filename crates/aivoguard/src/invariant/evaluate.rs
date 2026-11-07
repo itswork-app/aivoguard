@@ -456,15 +456,30 @@ fn select_history_domain(
                 .collect();
             idxs.sort_by_key(|i| records[*i].logical_position);
             if *require_contiguous {
-                let mut pos = *start;
-                while pos <= *end {
-                    if !idxs.iter().any(|i| records[*i].logical_position == pos) {
+                // idxs is already sorted by authoritative logical position.
+                // A single ordered pass avoids O(range_width * record_count)
+                // rescans and never increments beyond the inclusive end.
+                let mut expected = *start;
+                let mut reached_end = false;
+                for index in &idxs {
+                    let actual = records[*index].logical_position;
+                    if actual != expected {
                         return Err(InvariantError::new(
                             InvariantErrorClass::MissingRequiredData,
-                            format!("missing required history logical position {pos}"),
+                            format!("missing required history logical position {expected}"),
                         ));
                     }
-                    pos += 1;
+                    if actual == *end {
+                        reached_end = true;
+                        break;
+                    }
+                    expected = actual + 1;
+                }
+                if !reached_end {
+                    return Err(InvariantError::new(
+                        InvariantErrorClass::MissingRequiredData,
+                        format!("missing required history logical position {expected}"),
+                    ));
                 }
             }
             idxs
