@@ -301,6 +301,13 @@ Every expectation **MUST** include:
 
 Duplicate `expectation_id` within a case → `ERROR` / `InvalidExpectation`.
 
+For v1.1.0, every expectation payload is structurally validated before
+applicability is considered. Target token fields (`account_id`, `asset_id`,
+`facet_id`, and `invariant_id`, where applicable) MUST be non-empty. An empty
+target token produces `ERROR` / `InvalidExpectation`, including when
+`applicable=false`. Non-empty tokens are compared exactly; whitespace is not
+trimmed and is not normalized.
+
 Multiple expectations **MAY** target the same observation cell/record. Each is
 evaluated independently in declaration order under `ALL_MISMATCHES`.
 Contradictory applicable expectations (e.g. two `FinalBalanceExact` on the same
