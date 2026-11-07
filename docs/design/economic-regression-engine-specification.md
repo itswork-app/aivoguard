@@ -59,7 +59,7 @@ Domain Contract FROZEN
         ↓
 M01 / M02 / M03 / M04 FROZEN
         ↓
-M06 v1.0.0 (**HISTORICALLY FROZEN; ARCHIVED**) / v1.1.0 (**AMENDMENT IN PROGRESS**)
+M06 v1.0.0 (**HISTORICALLY FROZEN; ARCHIVED**) / v1.1.0 (**FROZEN / NORMATIVE; TASK-70**)
         ↓
 Accepted ADRs
         ↓
@@ -1228,10 +1228,10 @@ clauses recorded below; all other v1.0.0 normative clauses remain unchanged.
 |---|---|---|---|---|
 | M06-A01 | Positional index portability | Unchecked `u64` → `usize` cast could truncate on narrower targets. | Checked conversion; failure is `ERROR / MissingObservationField`. | Implemented in `engine.rs`; `maximum_step_index_is_a_missing_observation_not_a_wrapped_index`; Verified by GitHub Actions CI run #97 on PR head `6c89350081b0c4ed68795ae2346c61ff271abb60f` (format, check, tests, deterministic example, strict Clippy: PASS). |
 | M06-A02 | Invariant phase identity | Phase vector selection alone did not verify the record's explicit `EvaluationPoint`. | Match invariant id and exact point corresponding to the declared phase. | Implemented in `engine.rs`; `invariant_lookup_requires_explicit_evaluation_point_match`; Verified by GitHub Actions CI run #101 on PR head `72ce82a53299240584568eb2e9f2b2ca21f367c2` (format, check, tests, deterministic example, strict Clippy: PASS). |
-| M06-A03 | Identifier validation | Empty target tokens were not rejected before observation lookup. | Empty account/asset/facet/invariant tokens produce `ERROR / InvalidExpectation`; no trimming or normalization. | Implemented in `engine.rs`; tests cover empty account/asset/facet/invariant IDs, including non-applicable expectations; CI pending. |
-| M06-A04 | Mismatch target evidence | Invariant mismatch target used `expectation_id`, not the observation location. | Use canonical per-step/completion target descriptors. | Implemented in `engine.rs`; `invariant_mismatch_and_ambiguity_include_lookup_target`; CI pending. |
-| M06-A05 | Ambiguous observation diagnostics | Ambiguity error lacked the target descriptor. | Include target descriptor and exact match count; include target on missing/not-executed invariant errors. | Implemented in `engine.rs`; `invariant_mismatch_and_ambiguity_include_lookup_target`; CI pending. |
-| M06-A06 | Version identity | Field name `m06_spec_version_label` was ambiguous; value comes from `ENGINE_VERSION`. | Define the value as implementation engine version label; do not infer normative spec version. Keep field name provisional under AD-15. | Spec clarified; existing `m06_engine_version_exported` test confirms current engine label; CI pending. |
+| M06-A03 | Identifier validation | Empty target tokens were not rejected before observation lookup. | Empty account/asset/facet/invariant tokens produce `ERROR / InvalidExpectation`; no trimming or normalization. | Implemented in `engine.rs`; tests cover empty account/asset/facet/invariant IDs, including non-applicable expectations; Verified by GitHub Actions CI run #102 on v1.1.0 specification commit `712c24dddd202534d62642e346dc3702740d76af` (format, check, tests, deterministic example, strict Clippy: PASS). |
+| M06-A04 | Mismatch target evidence | Invariant mismatch target used `expectation_id`, not the observation location. | Use canonical per-step/completion target descriptors. | Implemented in `engine.rs`; `invariant_mismatch_and_ambiguity_include_lookup_target`; Verified by GitHub Actions CI run #102 on v1.1.0 specification commit `712c24dddd202534d62642e346dc3702740d76af` (format, check, tests, deterministic example, strict Clippy: PASS). |
+| M06-A05 | Ambiguous observation diagnostics | Ambiguity error lacked the target descriptor. | Include target descriptor and exact match count; include target on missing/not-executed invariant errors. | Implemented in `engine.rs`; `invariant_mismatch_and_ambiguity_include_lookup_target`; Verified by GitHub Actions CI run #102 on v1.1.0 specification commit `712c24dddd202534d62642e346dc3702740d76af` (format, check, tests, deterministic example, strict Clippy: PASS). |
+| M06-A06 | Version identity | Field name `m06_spec_version_label` was ambiguous; value comes from `ENGINE_VERSION`. | Define the value as implementation engine version label; do not infer normative spec version. Keep field name provisional under AD-15. | Spec clarified; existing `m06_engine_version_exported` test confirms current engine label; Verified by GitHub Actions CI run #102 on v1.1.0 specification commit `712c24dddd202534d62642e346dc3702740d76af` (format, check, tests, deterministic example, strict Clippy: PASS). |
 
 ### 32.1 Normative validation order
 
