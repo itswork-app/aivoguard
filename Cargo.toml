@@ -6,7 +6,7 @@
 # are frozen. The single member crate `aivoguard` is a minimal library package
 # that keeps the workspace buildable, testable, and CI-ready during bootstrap.
 #
-# License: undecided — see LICENSE.
+# License: Apache-2.0 — see LICENSE.
 
 [workspace]
 resolver = "2"
@@ -20,8 +20,7 @@ rust-version = "1.85"
 authors = ["AivoGuard Contributors"]
 description = "Deterministic economic testing infrastructure for autonomous AI agents (foundation stage)"
 # readme is not inherited: package-relative paths would miss the root README.
-# License intentionally unset until a licensing decision is recorded.
-# See LICENSE for the current decision status.
+license = "Apache-2.0"
 repository = "https://github.com/itswork-app/aivoguard"
 homepage = "https://github.com/itswork-app/aivoguard"
 keywords = ["agents", "deterministic", "economic-testing", "sandbox"]
