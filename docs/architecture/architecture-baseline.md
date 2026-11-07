@@ -400,7 +400,7 @@ M05 → simulation / test interfaces
 M06 → M01 outputs; optionally M02 / M03 outputs
 M07 → payment/settlement testing; consumes M06; semantic adapter boundary
       (not provider truth; not wire protocol)
-M08 → x402 integration/protocol boundary (SPEC FROZEN; not implemented)
+M08 → bounded inbound x402 semantic adapter (IMPLEMENTED / FROZEN_FOR_CURRENT_SCOPE; live wire/verification not implemented)
 M09 → M01 + agent / world composition
 ```
 
