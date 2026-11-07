@@ -48,7 +48,7 @@ The M01/M02 remediation PR was validated by GitHub Actions run #33 on PR head `a
 - `cargo test --workspace --all-targets`: PASS
 - `cargo clippy --workspace --all-targets -- -D warnings`: PASS
 
-The M01/M02 aggregate-debit and history-range remediation was merged to `main` as `a25cd588f81c67640d31d66ca1478276ae2d65c8`; post-merge GitHub Actions run #34 on that exact commit completed successfully. A subsequent M02 existential-witness correction was merged as `63af88838c0b08abe7b8652eb16abeb1f5ca290e`; PR-head run #44 passed all checks and post-merge run #46 is pending at the time of this ledger revision. This is not a release certification or independent security audit.
+The M01/M02 aggregate-debit and history-range remediation was merged to `main` as `a25cd588f81c67640d31d66ca1478276ae2d65c8`; post-merge GitHub Actions run #34 on that exact commit completed successfully. A subsequent M02 existential-witness correction was merged as `63af88838c0b08abe7b8652eb16abeb1f5ca290e`; PR-head run #44 and post-merge main run #46 both passed all checks. This is not a release certification or independent security audit.
 
 ## 4. Confirmed remediation history
 
