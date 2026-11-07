@@ -48,7 +48,7 @@ The M01/M02 remediation PR was validated by GitHub Actions run #33 on PR head `a
 - `cargo test --workspace --all-targets`: PASS
 - `cargo clippy --workspace --all-targets -- -D warnings`: PASS
 
-The remediation was merged to `main` as `a25cd588f81c67640d31d66ca1478276ae2d65c8`. The PR-head CI result is evidence for the tested tree. A post-merge workflow on the exact main commit must also pass before using that commit as a release/grant baseline.
+The remediation was merged to `main` as `a25cd588f81c67640d31d66ca1478276ae2d65c8`. Post-merge GitHub Actions run #34 on that exact main commit completed successfully. This is the current repository foundation baseline; it is not a release certification or independent security audit.
 
 ## 4. Confirmed remediation history
 
