@@ -10,27 +10,30 @@ This directory holds AivoGuard's version-controlled documentation.
 | `docs/architecture/` | Architecture documents describing system structure, boundaries, and component relationships |
 | `docs/reference/` | Non-normative reference material (glossaries, guides, explanatory notes) |
 | `docs/adr/` | Architecture Decision Records for significant, durable decisions |
-
-Do not place build artifacts, generated binaries, or secrets here.
+| `docs/business/` | Non-normative business, funding, grant, and commercial planning |
 
 ## How these differ
 
-* **Design specifications** define *what must be true*. When frozen, they are
-  normative. Implementation must conform to them.
-* **Architecture documents** explain *how the system is structured* to satisfy
-  specifications. They do not silently replace normative specs.
-* **Reference material** helps humans understand the project. It is
-  non-normative unless a document explicitly says otherwise.
-* **ADRs** record *why a significant decision was made*, including context and
-  consequences. See [`adr/README.md`](adr/README.md).
+* **Design specifications** define *what must be true*. When frozen, they are normative. Implementation must conform to them.
+* **Architecture documents** explain *how the system is structured* to satisfy specifications. They do not silently replace normative specs.
+* **Reference material** helps humans understand the project. It is non-normative unless a document explicitly says otherwise.
+* **ADRs** record *why* a significant technical decision was made, including context and consequences. See [`adr/README.md`](adr/README.md).
+* **Business documents** describe funding and commercial hypotheses. They do not authorize product scope, implementation, APIs, or architecture.
+
+## Business and funding documents
+
+| Document | Status | Purpose |
+| --- | --- | --- |
+| [`business/funding-strategy.md`](business/funding-strategy.md) | **DRAFT — non-normative** | Hybrid funding model, company-led governance, grant portfolio, and financial controls |
+| [`business/grant-proposal.md`](business/grant-proposal.md) | **DRAFT — not submission-ready** | Adaptable public-good grant proposal and six-month milestone plan |
+| [`business/commercial-roadmap.md`](business/commercial-roadmap.md) | **DRAFT — non-normative** | Developer-first validation, paid pilots, and staged commercial roadmap |
 
 ## Specification authority
 
-1. Normative specifications are **version-controlled** in this repository.
-2. Implementation must follow **frozen** specifications.
-3. Undocumented semantic changes are **prohibited**.
-4. Discoveries that require semantic change must trigger a specification
-   amendment — not a silent code-only fix.
+1. Normative specifications are version-controlled in this repository.
+2. Implementation must follow frozen specifications.
+3. Undocumented semantic changes are prohibited.
+4. Discoveries that require semantic change must trigger a specification amendment — not a silent code-only fix.
 
 Full hierarchy and process rules:
 [`design/SPECIFICATION-POLICY.md`](design/SPECIFICATION-POLICY.md).
@@ -57,5 +60,4 @@ Full hierarchy and process rules:
 | Gate 5 (M06) | **CLOSED** — specification **FROZEN** (TASK-19; audit TASK-18); implementation **BLOCKED** |
 | Gate 6+ / M05 / M07–M09 | Not implemented |
 
-`docs/reference/` remains an intentional placeholder for non-normative
-reference material.
+`docs/reference/` remains an intentional placeholder for non-normative reference material.
