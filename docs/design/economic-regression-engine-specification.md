@@ -1,16 +1,16 @@
 # AivoGuard Economic Regression Engine Specification
 
-> **AMENDMENT IN PROGRESS — v1.1.0 (2026-11-07).** The prior frozen v1.0.0 text is preserved at [`archive/economic-regression-engine-specification-v1.0-task19.md`](archive/economic-regression-engine-specification-v1.0-task19.md). This working document is open for a controlled spec-to-code reconciliation. Do not treat v1.1.0 as normative/frozen until review, acceptance tests, and freeze evidence are complete.
+> **FROZEN — v1.1.0 (2026-11-07), TASK-70.** The prior frozen v1.0.0 text is preserved at [`archive/economic-regression-engine-specification-v1.0-task19.md`](archive/economic-regression-engine-specification-v1.0-task19.md). This v1.1.0 revision is the current normative M06 specification; only the clauses explicitly amended in §32 differ from v1.0.0.
 
 | Field | Value |
 | --- | --- |
 | Document | `docs/design/economic-regression-engine-specification.md` |
-| Task | **TASK-16** … **TASK-17A**; v1.0 freeze **TASK-19**; amendment **TASK-69** |
+| Task | **TASK-16** … **TASK-17A**; v1.0 freeze **TASK-19**; amendment **TASK-69**; v1.1 freeze **TASK-70** |
 | Module | **M06 — Economic Regression Engine** |
-| Gate | **GATE 5 — IMPLEMENTATION AUTHORIZED**; v1.1.0 amendment in review |
-| **STATUS** | **AMENDMENT IN PROGRESS — NOT FROZEN** |
-| Normative freeze | v1.0.0 archived; v1.1.0 pending review/freeze |
-| Implementation | **AUTHORIZED** by TASK-68; current implementation under v1.1.0 reconciliation |
+| Gate | **GATE 5 — CLOSED / FROZEN v1.1.0**; implementation authorized |
+| **STATUS** | **FROZEN — v1.1.0** |
+| Normative freeze | v1.0.0 historical archive; v1.1.0 frozen by TASK-70 |
+| Implementation | **AUTHORIZED** by TASK-68; implementation aligned to frozen v1.1.0 |
 | Depends on | Product Scope (**FROZEN**); Domain Contract (**FROZEN**); Economic Kernel Specification (**FROZEN**, Gate 1 **CLOSED**); Economic Invariant Engine Specification (**FROZEN**, Gate 2 **CLOSED**); Deterministic Simulator Specification (**FROZEN**, Gate 3 **CLOSED**); Adversarial Scenario Engine Specification (**FROZEN**, Gate 4 **CLOSED**); M01–M04 implementations (**PASS** / **ACCEPTED**) |
 | Historical freeze | **TASK-19** formal freeze (audit: **TASK-18** **READY_FOR_FREEZE**) |
 | Related architecture | [`../architecture/architecture-baseline.md`](../architecture/architecture-baseline.md) (boundary: M06) |
@@ -18,15 +18,15 @@
 
 ```text
 V1.0.0: FROZEN (historical; archived)
-V1.1.0: AMENDMENT IN PROGRESS (not normative until re-frozen)
+V1.1.0: FROZEN / NORMATIVE (TASK-70)
 IMPLEMENTATION: AUTHORIZED by TASK-68
-GATE 5: IMPLEMENTATION AUTHORIZED; semantic amendment review pending
+GATE 5: CLOSED / FROZEN v1.1.0
 ```
 
 Version 1.0.0 was frozen by TASK-19. Its exact text is preserved in the
-archive linked above. This working document is the controlled v1.1.0 amendment
-candidate. The v1.0.0 semantics remain the baseline except where a v1.1.0
-amendment is explicitly recorded and accepted below.
+archive linked above. This document is the frozen v1.1.0 normative specification. The v1.0.0
+semantics remain the baseline except where the accepted v1.1.0 amendments are
+explicitly recorded in §32.
 
 M06 implementation was authorized and the existing bounded implementation
 prospectively ratified by [TASK-68](m06-implementation-authorization.md),
@@ -206,9 +206,8 @@ algorithm. Case identity is **declared**.
 
 Concrete Rust layouts are **provisional** (**AD-15 OPEN**). Semantic fields in
 this document are normative; field names in implementations may differ if a
-bijection to these semantics is documented and tested. The current v1.1.0
-amendment review also checks that every accepted semantic rule has a direct
-implementation and test mapping.
+bijection to these semantics is documented and tested. The frozen v1.1.0 contract requires every accepted semantic rule to have a
+direct implementation and test mapping.
 
 ---
 
@@ -1111,7 +1110,7 @@ AD-15 OPEN  — concrete Rust/API types
 
 ## 26. Self-audit checklist
 
-| Area | Status in this draft |
+| Area | Status in frozen v1.1.0 |
 | --- | --- |
 | Authority | Explicit §1 / §15 |
 | Determinism | Explicit §16 |
@@ -1153,11 +1152,11 @@ shrinker
 | Item | Value |
 | --- | --- |
 | Created by | TASK-16; remediated TASK-17A; freeze TASK-19 |
-| Status | **AMENDMENT IN PROGRESS — NOT FROZEN** |
+| Status | **FROZEN — v1.1.0** |
 | v1.0.0 freeze | **TASK-19 — HISTORICAL / ARCHIVED** |
 | v1.0.0 freeze authority | TASK-19 (audit TASK-18 READY_FOR_FREEZE) |
-| Implementation | **AUTHORIZED** by TASK-68; v1.1.0 reconciliation pending |
-| Supersedes | v1.0.0 only for clauses explicitly amended and frozen in v1.1.0 |
+| v1.1.0 freeze | **TASK-70 — 2026-11-07** |
+| Implementation | **AUTHORIZED** by TASK-68; aligned to frozen v1.1.0 |
 
 Lifecycle:
 
@@ -1165,7 +1164,7 @@ Lifecycle:
 DRAFT → READY_FOR_REVIEW → FROZEN → IMPLEMENTATION_AUTHORIZED → …
 ```
 
-Version 1.0.0 was frozen by TASK-19. Version 1.1.0 remains open pending review and a new explicit freeze record.
+Version 1.0.0 was frozen by TASK-19. Version 1.1.0 was re-frozen by TASK-70; it supersedes v1.0.0 only for the clauses explicitly amended in §32.
 
 ---
 
@@ -1173,9 +1172,10 @@ Version 1.0.0 was frozen by TASK-19. Version 1.1.0 remains open pending review a
 
 ```text
 GATE 4: CLOSED / FROZEN
-GATE 5: implementation authorized by TASK-68; amendment review pending
-M06 v1.0.0: FROZEN (historical archive)
-M06 v1.1.0: AMENDMENT IN PROGRESS; NOT FROZEN
+GATE 5: CLOSED / FROZEN v1.1.0 (TASK-70)
+M06 v1.0.0: FROZEN (historical archive; TASK-19)
+M06 v1.1.0: FROZEN / NORMATIVE (TASK-70)
+IMPLEMENTATION: AUTHORIZED (TASK-68)
 ```
 
 ---
@@ -1218,15 +1218,15 @@ frozen M01–M04 specifications, resolution of AD-03 / AD-12 / AD-14 / AD-15,
 or serialization, CLI/API, or shrinking.
 
 
-## 32. v1.1.0 amendment register — OPEN
+## 32. v1.1.0 accepted amendment register — FROZEN
 
-The following v1.1.0 reconciliation items have been implemented in this branch.
-They remain amendment-candidate semantics until PR review, required CI, and a
-new freeze record are complete.
+The following v1.1.0 clarifications were accepted, implemented, covered by
+regression tests, and frozen under TASK-70. Their scope is limited to the
+clauses recorded below; all other v1.0.0 normative clauses remain unchanged.
 
 | ID | Area | v1.0.0 contract / observed implementation | Proposed v1.1.0 resolution | Required evidence |
 |---|---|---|---|---|
-| M06-A01 | Positional index portability | Unchecked `u64` → `usize` cast could truncate on narrower targets. | Checked conversion; failure is `ERROR / MissingObservationField`. | Implemented in `engine.rs`; `maximum_step_index_is_a_missing_observation_not_a_wrapped_index`; CI pending. |
+| M06-A01 | Positional index portability | Unchecked `u64` → `usize` cast could truncate on narrower targets. | Checked conversion; failure is `ERROR / MissingObservationField`. | Implemented in `engine.rs`; `maximum_step_index_is_a_missing_observation_not_a_wrapped_index`; Verified by GitHub Actions CI run #97 on PR head `6c89350081b0c4ed68795ae2346c61ff271abb60f` (format, check, tests, deterministic example, strict Clippy: PASS). |
 | M06-A02 | Invariant phase identity | Phase vector selection alone did not verify the record's explicit `EvaluationPoint`. | Match invariant id and exact point corresponding to the declared phase. | Implemented in `engine.rs`; `invariant_lookup_requires_explicit_evaluation_point_match`; CI pending. |
 | M06-A03 | Identifier validation | Empty target tokens were not rejected before observation lookup. | Empty account/asset/facet/invariant tokens produce `ERROR / InvalidExpectation`; no trimming or normalization. | Implemented in `engine.rs`; tests cover empty account/asset/facet/invariant IDs, including non-applicable expectations; CI pending. |
 | M06-A04 | Mismatch target evidence | Invariant mismatch target used `expectation_id`, not the observation location. | Use canonical per-step/completion target descriptors. | Implemented in `engine.rs`; `invariant_mismatch_and_ambiguity_include_lookup_target`; CI pending. |
@@ -1245,14 +1245,11 @@ new freeze record are complete.
 6. On comparison error, return `ERROR`; prior mismatch evidence is not
    authoritative and the result mismatch list is empty.
 
-### 32.2 Freeze criteria for v1.1.0
+### 32.2 v1.1.0 freeze evidence
 
 - Every accepted amendment item has matching implementation and regression tests.
 - No unaccepted semantic change appears in code.
-- `cargo fmt --all -- --check`, `cargo check --workspace --all-targets`,
-  `cargo test --workspace --all-targets`, and strict Clippy pass in CI.
-- Architecture baseline, implementation ledger, README, and grant proposal
-  identify the same M06 scope and status.
-- A new freeze record identifies the exact v1.1.0 content commit and supersedes
-  v1.0.0 only for the explicitly amended clauses.
+- GitHub Actions run #97 passed format, check, all tests, deterministic example, and strict Clippy on PR head `6c89350081b0c4ed68795ae2346c61ff271abb60f`.
+- The v1.0.0 text is preserved at the archive path; v1.1.0 supersedes it only for the explicitly amended clauses.
+- TASK-70 records the exact v1.1.0 specification blob and source commit.
 
