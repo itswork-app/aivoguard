@@ -120,8 +120,8 @@ fn zero_action_scenario_normal_completion() {
     assert!(out.is_normal());
     assert_eq!(out.executed_action_count, 0);
     assert_eq!(out.final_state, out.initial_state);
-    assert!(out.step_records.is_empty());
-    assert!(out.completion_evaluation_records.is_empty());
+    assert_eq!(out.step_records, Vec::new());
+    assert_eq!(out.completion_evaluation_records, Vec::new());
 }
 
 #[test]
@@ -226,9 +226,9 @@ fn execution_limit_zero_blocks_first_action() {
         out.step_records[0].classification,
         AttemptClassification::NotAttempted
     );
-    assert!(out.step_records[0].before_action.is_empty());
-    assert!(out.step_records[0].after_action.is_empty());
-    assert!(out.completion_evaluation_records.is_empty());
+    assert_eq!(out.step_records[0].before_action, Vec::new());
+    assert_eq!(out.step_records[0].after_action, Vec::new());
+    assert_eq!(out.completion_evaluation_records, Vec::new());
     match &out.execution_status {
         ExecutionStatus::FatalTermination {
             cause: FatalCause::Simulation(e),
@@ -263,7 +263,7 @@ fn execution_limit_two_allows_exactly_two() {
         out.step_records[2].classification,
         AttemptClassification::NotAttempted
     );
-    assert!(out.completion_evaluation_records.is_empty());
+    assert_eq!(out.completion_evaluation_records, Vec::new());
 }
 
 #[test]
@@ -294,7 +294,7 @@ fn before_action_runs_and_early_stop_skips_m01() {
             ..
         } if outcome.kind == InvariantResultKind::Fail
     ));
-    assert!(out.completion_evaluation_records.is_empty());
+    assert_eq!(out.completion_evaluation_records, Vec::new());
 }
 
 #[test]
@@ -347,7 +347,7 @@ fn m01_invalid_input_is_fatal_no_after_action() {
         &out.step_records[0].after_action[0],
         InvariantEvaluationRecord::NotExecuted { .. }
     ));
-    assert!(out.completion_evaluation_records.is_empty());
+    assert_eq!(out.completion_evaluation_records, Vec::new());
     match out.step_records[0].kernel_outcome.as_ref().unwrap() {
         KernelOutcome::Error { error, .. } => {
             assert_eq!(error.kind, KernelErrorKind::InvalidInput);
@@ -374,7 +374,7 @@ fn completion_runs_on_normal_not_on_fatal_limit() {
     lim.invariant_plan.on_completion = vec![state_nonneg_inv("done")];
     let out_lim = run_simulation(&lim);
     assert!(out_lim.is_fatal());
-    assert!(out_lim.completion_evaluation_records.is_empty());
+    assert_eq!(out_lim.completion_evaluation_records, Vec::new());
 }
 
 #[test]
