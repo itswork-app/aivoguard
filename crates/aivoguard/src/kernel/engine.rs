@@ -344,6 +344,23 @@ fn evaluate_transfer_with_fee(
         return Ok(Decision::failed("insufficient funds for fee"));
     }
 
+    // Principal and fee may debit the exact same balance cell. Individual
+    // affordability checks are insufficient in that case: validate the
+    // combined debit before producing an accepted effect set.
+    let same_debit_cell = from == fee_payer
+        && asset == fee_asset
+        && transfer.debit_facet == fee.debit_facet;
+    if same_debit_cell && fee_amount > 0 && !world.allow_negative_balances {
+        // The principal check above establishes available >= amount, so this
+        // subtraction is safe and avoids overflowing amount + fee_amount.
+        let remaining_after_principal = available - amount;
+        if fee_amount > remaining_after_principal {
+            return Ok(Decision::failed(
+                "insufficient funds for transfer principal and fee",
+            ));
+        }
+    }
+
     let mut effects = vec![
         StateEffect {
             account: from.clone(),
