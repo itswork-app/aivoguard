@@ -42,5 +42,12 @@ jobs:
       - name: Test
         run: cargo test --workspace --all-targets
 
+      - name: Run deterministic M01 example
+        run: |
+          output="$(cargo run --quiet --example deterministic_transfer)"
+          expected="$(printf 'disposition: AcceptedEffective\\neffects: 2\\nalice USD minor units: 8500\\nbob USD minor units: 1500')"
+          test "$output" = "$expected"
+          printf '%s\\n' "$output"
+
       - name: Clippy
         run: cargo clippy --workspace --all-targets -- -D warnings
