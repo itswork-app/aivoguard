@@ -1210,3 +1210,37 @@ fn exists_first_only_accepts_a_later_valid_witness() {
     assert_eq!(out.kind, InvariantResultKind::Pass);
     assert_eq!(out.violations, Vec::new());
 }
+
+#[test]
+fn contiguous_history_range_handles_large_ordered_input() {
+    let world = world_usd();
+    let invariant = inv(
+        "history-large-contiguous",
+        InvariantScope::History,
+        ViolationPolicy::All,
+        Applicability::Always,
+        PropertyExpr::Compare {
+            left: ValueExpr::Literal(Money::new(AssetId::new("USD"), 1)),
+            op: CmpOp::Eq,
+            right: ValueExpr::Literal(Money::new(AssetId::new("USD"), 1)),
+        },
+    );
+    let records: Vec<HistoryRecord> = (0_i64..4_096)
+        .map(|logical_position| HistoryRecord {
+            logical_position,
+            transition: None,
+        })
+        .collect();
+    let target = EvaluationTarget::History {
+        world: &world,
+        records: &records,
+    };
+    let range = DomainExpr::HistoryRange {
+        start: 0,
+        end: 4_095,
+        require_contiguous: true,
+    };
+
+    let record = resolve_history_index(&invariant, target, &range, 4_095).unwrap();
+    assert_eq!(record.logical_position, 4_095);
+}
