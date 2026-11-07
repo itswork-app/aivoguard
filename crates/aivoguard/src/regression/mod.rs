@@ -1,9 +1,9 @@
 //! M06 Economic Regression Engine — declared expectation comparison.
 //!
 //! Implements the frozen Gate-5 Economic Regression Engine Specification
-//! (`ca4c88a`) under the prospective maintainer authorization in
+//! v1.1.0 (TASK-70), under the maintainer implementation authorization in
 //! `docs/design/m06-implementation-authorization.md` (TASK-68, effective
-//! 2026-11-07). The authorization does not amend the frozen semantics. This
+//! 2026-11-07). The original v1.0.0 freeze is preserved in the archive. This
 //! module does **not** calculate economic truth (M01),
 //! evaluate invariants (M02), execute simulations (M03), or generate
 //! adversarial scenarios (M04).
