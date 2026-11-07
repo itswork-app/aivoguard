@@ -1168,7 +1168,7 @@ Version 1.0.0 was frozen by TASK-19. Version 1.1.0 was re-frozen by TASK-70; it 
 
 ---
 
-## 29. Gate state (as of TASK-19)
+## 29. Gate state (as of TASK-70)
 
 ```text
 GATE 4: CLOSED / FROZEN
@@ -1213,7 +1213,7 @@ No edit to `docs/design/domain-contract.md`.
 
 ## 31. Hard stop
 
-This v1.1.0 amendment candidate does **not** authorize semantic changes to
+This v1.1.0 frozen specification does **not** authorize semantic changes to
 frozen M01–M04 specifications, resolution of AD-03 / AD-12 / AD-14 / AD-15,
 or serialization, CLI/API, or shrinking.
 
@@ -1224,16 +1224,16 @@ The following v1.1.0 clarifications were accepted, implemented, covered by
 regression tests, and frozen under TASK-70. Their scope is limited to the
 clauses recorded below; all other v1.0.0 normative clauses remain unchanged.
 
-| ID | Area | v1.0.0 contract / observed implementation | Proposed v1.1.0 resolution | Required evidence |
+| ID | Area | v1.0.0 contract / observed implementation | Accepted v1.1.0 resolution | Required evidence |
 |---|---|---|---|---|
 | M06-A01 | Positional index portability | Unchecked `u64` → `usize` cast could truncate on narrower targets. | Checked conversion; failure is `ERROR / MissingObservationField`. | Implemented in `engine.rs`; `maximum_step_index_is_a_missing_observation_not_a_wrapped_index`; Verified by GitHub Actions CI run #97 on PR head `6c89350081b0c4ed68795ae2346c61ff271abb60f` (format, check, tests, deterministic example, strict Clippy: PASS). |
-| M06-A02 | Invariant phase identity | Phase vector selection alone did not verify the record's explicit `EvaluationPoint`. | Match invariant id and exact point corresponding to the declared phase. | Implemented in `engine.rs`; `invariant_lookup_requires_explicit_evaluation_point_match`; CI pending. |
+| M06-A02 | Invariant phase identity | Phase vector selection alone did not verify the record's explicit `EvaluationPoint`. | Match invariant id and exact point corresponding to the declared phase. | Implemented in `engine.rs`; `invariant_lookup_requires_explicit_evaluation_point_match`; Final v1.1.0 PR CI verification pending. |
 | M06-A03 | Identifier validation | Empty target tokens were not rejected before observation lookup. | Empty account/asset/facet/invariant tokens produce `ERROR / InvalidExpectation`; no trimming or normalization. | Implemented in `engine.rs`; tests cover empty account/asset/facet/invariant IDs, including non-applicable expectations; CI pending. |
 | M06-A04 | Mismatch target evidence | Invariant mismatch target used `expectation_id`, not the observation location. | Use canonical per-step/completion target descriptors. | Implemented in `engine.rs`; `invariant_mismatch_and_ambiguity_include_lookup_target`; CI pending. |
 | M06-A05 | Ambiguous observation diagnostics | Ambiguity error lacked the target descriptor. | Include target descriptor and exact match count; include target on missing/not-executed invariant errors. | Implemented in `engine.rs`; `invariant_mismatch_and_ambiguity_include_lookup_target`; CI pending. |
 | M06-A06 | Version identity | Field name `m06_spec_version_label` was ambiguous; value comes from `ENGINE_VERSION`. | Define the value as implementation engine version label; do not infer normative spec version. Keep field name provisional under AD-15. | Spec clarified; existing `m06_engine_version_exported` test confirms current engine label; CI pending. |
 
-### 32.1 Proposed validation order
+### 32.1 Normative validation order
 
 1. Validate case identity and scenario binding structure.
 2. Validate observation-to-scenario binding.
