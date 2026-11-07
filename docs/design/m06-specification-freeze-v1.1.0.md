@@ -16,8 +16,8 @@
 The v1.1.0 specification content frozen by this record is identified by both its
 repository commit and Git blob SHA:
 
-- Specification commit: `712c24dddd202534d62642e346dc3702740d76af`
-- Specification blob SHA: `a35df312270b88f5eae537155250ff76b60debbf`
+- Specification commit: `47bb83b45e7093c1e1aa4cfdf653e01381f4f00b`
+- Specification blob SHA: `bfaafd8ff9eaae1734c26709e4ed79cf1fa34ef2`
 - Path: `docs/design/economic-regression-engine-specification.md`
 - Branch at freeze: `governance/m06-implementation-ratification`
 - Base branch: `main`
@@ -63,7 +63,7 @@ GitHub Actions **run #102** passed on the exact v1.1.0 specification commit
 - deterministic M01 example and exact output assertion: PASS
 - `cargo clippy --workspace --all-targets -- -D warnings`: PASS
 
-Run: https://github.com/itswork-app/aivoguard/actions/runs/42329977283
+Run: https://github.com/itswork-app/aivoguard/actions/runs/42330110308
 
 ## 4. Authority and unchanged decisions
 
