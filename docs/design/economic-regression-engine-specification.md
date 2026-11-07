@@ -1,32 +1,36 @@
 # AivoGuard Economic Regression Engine Specification
 
+> **AMENDMENT IN PROGRESS — v1.1.0 (2026-11-07).** The prior frozen v1.0.0 text is preserved at [`archive/economic-regression-engine-specification-v1.0-task19.md`](archive/economic-regression-engine-specification-v1.0-task19.md). This working document is open for a controlled spec-to-code reconciliation. Do not treat v1.1.0 as normative/frozen until review, acceptance tests, and freeze evidence are complete.
+
 | Field | Value |
 | --- | --- |
 | Document | `docs/design/economic-regression-engine-specification.md` |
-| Task | **TASK-16** … **TASK-17A**; freeze **TASK-19** |
+| Task | **TASK-16** … **TASK-17A**; v1.0 freeze **TASK-19**; amendment **TASK-69** |
 | Module | **M06 — Economic Regression Engine** |
-| Gate | **GATE 5 — CLOSED** (specification freeze; implementation **BLOCKED**) |
-| **STATUS** | **FROZEN** |
-| Normative freeze | **FROZEN** |
-| Implementation | **BLOCKED** — freeze does **not** authorize implementation |
+| Gate | **GATE 5 — IMPLEMENTATION AUTHORIZED**; v1.1.0 amendment in review |
+| **STATUS** | **AMENDMENT IN PROGRESS — NOT FROZEN** |
+| Normative freeze | v1.0.0 archived; v1.1.0 pending review/freeze |
+| Implementation | **AUTHORIZED** by TASK-68; current implementation under v1.1.0 reconciliation |
 | Depends on | Product Scope (**FROZEN**); Domain Contract (**FROZEN**); Economic Kernel Specification (**FROZEN**, Gate 1 **CLOSED**); Economic Invariant Engine Specification (**FROZEN**, Gate 2 **CLOSED**); Deterministic Simulator Specification (**FROZEN**, Gate 3 **CLOSED**); Adversarial Scenario Engine Specification (**FROZEN**, Gate 4 **CLOSED**); M01–M04 implementations (**PASS** / **ACCEPTED**) |
-| Freeze authority | **TASK-19** formal freeze (audit: **TASK-18** **READY_FOR_FREEZE**) |
+| Historical freeze | **TASK-19** formal freeze (audit: **TASK-18** **READY_FOR_FREEZE**) |
 | Related architecture | [`../architecture/architecture-baseline.md`](../architecture/architecture-baseline.md) (boundary: M06) |
 | Process | [`SPECIFICATION-POLICY.md`](SPECIFICATION-POLICY.md) |
 
 ```text
-STATUS: FROZEN
-NORMATIVE FREEZE: FROZEN
-IMPLEMENTATION: BLOCKED
-GATE: GATE 5 — CLOSED
+V1.0.0: FROZEN (historical; archived)
+V1.1.0: AMENDMENT IN PROGRESS (not normative until re-frozen)
+IMPLEMENTATION: AUTHORIZED by TASK-68
+GATE 5: IMPLEMENTATION AUTHORIZED; semantic amendment review pending
 ```
 
-This document is the **frozen** normative specification for Gate-5 M06.
-Material semantic changes require an explicit specification amendment. Freeze
-does **not** authorize M06 implementation, API/CLI/DSL design, or crate
-creation. A separate implementation-authorization task is required.
+Version 1.0.0 was frozen by TASK-19. Its exact text is preserved in the
+archive linked above. This working document is the controlled v1.1.0 amendment
+candidate. The v1.0.0 semantics remain the baseline except where a v1.1.0
+amendment is explicitly recorded and accepted below.
 
-> **Post-freeze administrative notice (2026-11-07):** The statement above records the authority state at the TASK-19 freeze point. M06 implementation was subsequently authorized and the existing bounded implementation prospectively ratified by [TASK-68](m06-implementation-authorization.md), effective 2026-11-07. This later authorization does not amend the normative semantics in this frozen specification or resolve any open decision.
+M06 implementation was authorized and the existing bounded implementation
+prospectively ratified by [TASK-68](m06-implementation-authorization.md),
+effective 2026-11-07. That authorization does not itself amend semantics.
 
 Open decisions **AD-03**, **AD-12**, **AD-14**, and **AD-15** remain **OPEN**
 and are not resolved by this freeze. **DC-13** remains formally **OPEN** in the
@@ -202,7 +206,9 @@ algorithm. Case identity is **declared**.
 
 Concrete Rust layouts are **provisional** (**AD-15 OPEN**). Semantic fields in
 this document are normative; field names in implementations may differ if a
-bijection to these semantics is documented and tested.
+bijection to these semantics is documented and tested. The current v1.1.0
+amendment review also checks that every accepted semantic rule has a direct
+implementation and test mapping.
 
 ---
 
@@ -1116,10 +1122,10 @@ shrinker
 | Item | Value |
 | --- | --- |
 | Created by | TASK-16; remediated TASK-17A; freeze TASK-19 |
-| Status | **FROZEN** |
-| Freeze | **FROZEN** |
-| Freeze authority | TASK-19 (audit TASK-18 READY_FOR_FREEZE) |
-| Implementation | **BLOCKED** (not authorized by freeze) |
+| Status | **AMENDMENT IN PROGRESS — NOT FROZEN** |
+| v1.0.0 freeze | **TASK-19 — HISTORICAL / ARCHIVED** |
+| v1.0.0 freeze authority | TASK-19 (audit TASK-18 READY_FOR_FREEZE) |
+| Implementation | **AUTHORIZED** by TASK-68; v1.1.0 reconciliation pending |
 | Supersedes | None (first M06 specification) |
 
 Lifecycle:
@@ -1128,7 +1134,7 @@ Lifecycle:
 DRAFT → READY_FOR_REVIEW → FROZEN → IMPLEMENTATION_AUTHORIZED → …
 ```
 
-This document is **FROZEN** by TASK-19.
+Version 1.0.0 was frozen by TASK-19. Version 1.1.0 remains open pending review and a new explicit freeze record.
 
 ---
 
@@ -1136,9 +1142,9 @@ This document is **FROZEN** by TASK-19.
 
 ```text
 GATE 4: CLOSED / FROZEN
-GATE 5: CLOSED (specification FROZEN; implementation BLOCKED)
-M06:    FROZEN
-IMPLEMENTATION: NOT AUTHORIZED
+GATE 5: implementation authorized by TASK-68; amendment review pending
+M06 v1.0.0: FROZEN (historical archive)
+M06 v1.1.0: AMENDMENT IN PROGRESS; NOT FROZEN
 ```
 
 ---
@@ -1176,10 +1182,47 @@ No edit to `docs/design/domain-contract.md`.
 
 ## 31. Hard stop
 
-This specification does **not** authorize:
-
-* M06 implementation
-* M06 tests in-tree as product code
+This v1.1.0 amendment candidate does **not** itself authorize:
+* semantic changes to frozen M01–M04 specifications
 * changes to frozen M01–M04 specifications
 * resolution of AD-03 / AD-12 / AD-14 / AD-15
 * serialization, CLI/API, or shrinking
+
+
+## 32. v1.1.0 amendment register — OPEN
+
+The following implementation-to-contract reconciliation items are under review.
+They are proposed clarifications, not normative until accepted and frozen.
+
+| ID | Area | v1.0.0 contract / observed implementation | Proposed v1.1.0 resolution | Required evidence |
+|---|---|---|---|---|
+| M06-A01 | Positional index portability | `step_index: u64` is converted to `usize` with an unchecked cast in the implementation. On targets where `usize` is narrower, large values can truncate and select the wrong slot. | Convert with checked `usize::try_from`; conversion failure is `ERROR / MissingObservationField`, identical to out-of-range. | Unit/integration tests for checked conversion and out-of-range behavior. |
+| M06-A02 | Invariant phase identity | Per-step lookup selects the before/after vector but currently matches only `invariant_id`, not the record's explicit `EvaluationPoint`. | Match both invariant id and the exact point corresponding to the declared phase. Wrong-point records do not count as matches. | Tests with a mismatched EvaluationPoint injected into the selected phase vector. |
+| M06-A03 | Identifier validation | The implementation validates case and expectation IDs, but not all target token fields (account, asset, facet, invariant id). | Empty target tokens are malformed expectation payloads and produce `ERROR / InvalidExpectation` before observation lookup. Preserve exact, non-trimming token semantics. | Tests for each empty target token and for non-empty whitespace-preserving tokens. |
+| M06-A04 | Mismatch target evidence | Invariant mismatch evidence currently uses `expectation_id` as target, which does not identify the observed invariant location. | Target descriptor identifies invariant id, step index, and phase; completion target identifies completion phase and invariant id. | Tests assert structured target fields/descriptor. |
+| M06-A05 | Ambiguous observation diagnostics | Ambiguity error includes match count but omits the target descriptor required by §13. | Include invariant id and lookup location (step/phase or completion) alongside match count. | Tests assert deterministic structured error evidence. |
+| M06-A06 | Version identity | Implementation engine label `m06-0.1.0` is distinct in purpose from specification version, but provenance field is named `m06_spec_version_label`. | Explicitly define whether this field identifies implementation engine version or normative spec version; do not silently conflate. Proposed: preserve current field for compatibility but define it as the M06 engine implementation version label, with spec version tracked separately in docs until AD-14 serialization/API decisions. | Contract wording and tests for provenance label. |
+
+### 32.1 Proposed validation order
+
+1. Validate case identity and scenario binding structure.
+2. Validate observation-to-scenario binding.
+3. Validate all expectation identifiers and target token payloads, including
+   expectations marked non-applicable; malformed declarations remain malformed.
+4. Validate optional engine pins.
+5. Evaluate applicable expectations in declaration order. A non-applicable
+   expectation is skipped before any observation lookup.
+6. On comparison error, return `ERROR`; prior mismatch evidence is not
+   authoritative and the result mismatch list is empty.
+
+### 32.2 Freeze criteria for v1.1.0
+
+- Every accepted amendment item has matching implementation and regression tests.
+- No unaccepted semantic change appears in code.
+- `cargo fmt --all -- --check`, `cargo check --workspace --all-targets`,
+  `cargo test --workspace --all-targets`, and strict Clippy pass in CI.
+- Architecture baseline, implementation ledger, README, and grant proposal
+  identify the same M06 scope and status.
+- A new freeze record identifies the exact v1.1.0 content commit and supersedes
+  v1.0.0 only for the explicitly amended clauses.
+
