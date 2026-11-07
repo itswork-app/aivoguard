@@ -12,7 +12,7 @@ AivoGuard is a testing and verification toolchain. It is **not** a production pa
 
 ## Current repository status
 
-This repository is beyond bootstrap: it contains implemented Rust modules for M01–M04 and M06–M08. M06 implementation is authorized and prospectively ratified effective 2026-11-07 by [TASK-68](docs/design/m06-implementation-authorization.md), under Gate-5; the v1.1.0 specification is frozen by TASK-70. M05 (chaos/fault injection) and M09 (multi-agent economic world) are not implemented.
+This repository is beyond bootstrap: it contains implemented Rust modules for M01–M04 and M06–M08. M06 implementation is authorized and prospectively ratified effective 2026-11-07 by [TASK-68](docs/design/m06-implementation-authorization.md), under Gate-5; the v1.1.0 specification is frozen by [TASK-70](docs/design/m06-specification-freeze-v1.1.0.md). M05 (chaos/fault injection) and M09 (multi-agent economic world) are not implemented.
 
 The exact implementation boundary, authorization evidence, test coverage, and known limitations are maintained in the [Implementation Status Ledger](docs/implementation-status.md). Frozen normative specifications remain the authority for semantics; this ledger reports subsequent implementation status without changing those semantics.
 
