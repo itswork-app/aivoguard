@@ -12,7 +12,7 @@ AivoGuard is a testing and verification toolchain. It is **not** a production pa
 
 ## Current repository status
 
-This repository is beyond bootstrap: it contains implemented Rust modules for M01–M04 and M06–M08. M05 (chaos/fault injection) and M09 (multi-agent economic world) are not implemented.
+This repository is beyond bootstrap: it contains implemented Rust modules for M01–M04 and M06–M08. M06 implementation is authorized and prospectively ratified effective 2026-11-07 by [TASK-68](docs/design/m06-implementation-authorization.md), under Gate-5; the v1.1.0 specification is frozen by [TASK-70](docs/design/m06-specification-freeze-v1.1.0.md). M05 (chaos/fault injection) and M09 (multi-agent economic world) are not implemented.
 
 The exact implementation boundary, authorization evidence, test coverage, and known limitations are maintained in the [Implementation Status Ledger](docs/implementation-status.md). Frozen normative specifications remain the authority for semantics; this ledger reports subsequent implementation status without changing those semantics.
 
@@ -23,7 +23,7 @@ The exact implementation boundary, authorization evidence, test coverage, and kn
 | M03 Deterministic Simulator | Implemented; scenario orchestration | `src/simulator/` | `m03_simulator.rs` |
 | M04 Adversarial Scenario Engine | Implemented; candidate scenario generation | `src/adversarial/` | `m04_adversarial.rs` |
 | M05 Chaos | Not implemented | — | — |
-| M06 Economic Regression | Source and tests present; authorization record requires reconciliation | `src/regression/` | `m06_regression.rs` |
+| M06 Economic Regression | Implemented; authorized by TASK-68; Gate-5 v1.1.0 frozen by TASK-70 | `src/regression/` | `m06_regression.rs` |
 | M07 Payment & Settlement Testing | Implemented and frozen for bounded current scope | `src/payment_settlement/` | `m07_payment_settlement.rs` |
 | M08 x402 Adapter | Implemented and frozen for bounded inbound semantic scope | `src/x402_adapter/` | `m08_x402_adapter.rs` |
 | M09 Multi-Agent World | Not implemented | — | — |

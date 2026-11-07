@@ -948,3 +948,211 @@ fn numeric_unit_boundary_helpers() {
         }
     ));
 }
+
+#[test]
+fn empty_balance_target_token_is_invalid_even_before_lookup() {
+    let sim = base_sim(EconomicState::new());
+    let mut expectation = bal_exact("bad-target", 0, true);
+    if let ExpectationClass::FinalBalanceExact { account_id, .. } = &mut expectation.class {
+        account_id.clear();
+    }
+    let r = evaluate_regression(&case_with(vec![expectation], sim, None));
+    assert_eq!(r.verdict, RegressionVerdict::Error);
+    assert_eq!(
+        r.error.as_ref().unwrap().error_id,
+        RegressionErrorId::InvalidExpectation
+    );
+    assert_eq!(
+        r.error.as_ref().unwrap().evidence,
+        vec![
+            (
+                "expectation_id".into(),
+                StructuredValue::String("bad-target".into())
+            ),
+            ("field".into(), StructuredValue::String("account_id".into())),
+        ]
+    );
+}
+
+#[test]
+fn invariant_lookup_requires_explicit_evaluation_point_match() {
+    let mut sim = base_sim(state_with(0, None));
+    sim.step_records = vec![StepResult {
+        step_index: 0,
+        action: noop_action(),
+        classification: AttemptClassification::AttemptedM01EconomicOutcome,
+        state_before: None,
+        state_after: None,
+        kernel_outcome: None,
+        execution_context: None,
+        before_action: vec![InvariantEvaluationRecord::Executed {
+            point: EvaluationPoint::AfterAction,
+            invariant_id: "inv-point".into(),
+            outcome: pass_outcome("inv-point"),
+        }],
+        after_action: vec![],
+    }];
+    let r = evaluate_regression(&case_with(
+        vec![Expectation {
+            expectation_id: "point-check".into(),
+            applicable: true,
+            class: ExpectationClass::InvariantKindExact {
+                invariant_id: "inv-point".into(),
+                phase: ExpectationPhase::BeforeAction,
+                step_index: 0,
+                expected_kind: InvariantResultKind::Pass,
+            },
+        }],
+        sim,
+        None,
+    ));
+    assert_eq!(r.verdict, RegressionVerdict::Error);
+    assert_eq!(
+        r.error.as_ref().unwrap().error_id,
+        RegressionErrorId::MissingObservationField
+    );
+    assert_eq!(
+        r.error.as_ref().unwrap().evidence[0].1,
+        StructuredValue::String("step/0/before_action/invariant/inv-point".into())
+    );
+}
+
+#[test]
+fn invariant_mismatch_and_ambiguity_include_lookup_target() {
+    let mut sim = base_sim(state_with(0, None));
+    sim.step_records = vec![StepResult {
+        step_index: 0,
+        action: noop_action(),
+        classification: AttemptClassification::AttemptedM01EconomicOutcome,
+        state_before: None,
+        state_after: None,
+        kernel_outcome: None,
+        execution_context: None,
+        before_action: vec![InvariantEvaluationRecord::Executed {
+            point: EvaluationPoint::BeforeAction,
+            invariant_id: "inv-target".into(),
+            outcome: fail_outcome("inv-target"),
+        }],
+        after_action: vec![],
+    }];
+    let expectation = Expectation {
+        expectation_id: "inv-expectation".into(),
+        applicable: true,
+        class: ExpectationClass::InvariantKindExact {
+            invariant_id: "inv-target".into(),
+            phase: ExpectationPhase::BeforeAction,
+            step_index: 0,
+            expected_kind: InvariantResultKind::Pass,
+        },
+    };
+    let r = evaluate_regression(&case_with(vec![expectation.clone()], sim.clone(), None));
+    assert_eq!(r.verdict, RegressionVerdict::Mismatch);
+    assert_eq!(
+        r.mismatches[0].target,
+        StructuredValue::String("step/0/before_action/invariant/inv-target".into())
+    );
+
+    let StepResult { before_action, .. } = &mut sim.step_records[0];
+    before_action.push(InvariantEvaluationRecord::Executed {
+        point: EvaluationPoint::BeforeAction,
+        invariant_id: "inv-target".into(),
+        outcome: pass_outcome("inv-target"),
+    });
+    let r = evaluate_regression(&case_with(vec![expectation], sim, None));
+    assert_eq!(r.verdict, RegressionVerdict::Error);
+    assert_eq!(
+        r.error.as_ref().unwrap().error_id,
+        RegressionErrorId::AmbiguousObservation
+    );
+    assert!(r
+        .error
+        .as_ref()
+        .unwrap()
+        .evidence
+        .iter()
+        .any(|(key, value)| {
+            key == "target"
+                && value
+                    == &StructuredValue::String("step/0/before_action/invariant/inv-target".into())
+        }));
+    assert!(r
+        .error
+        .as_ref()
+        .unwrap()
+        .evidence
+        .iter()
+        .any(|(key, value)| { key == "match_count" && value == &StructuredValue::U64(2) }));
+}
+
+#[test]
+fn maximum_step_index_is_a_missing_observation_not_a_wrapped_index() {
+    let sim = base_sim(state_with(0, None));
+    let r = evaluate_regression(&case_with(
+        vec![Expectation {
+            expectation_id: "max-step".into(),
+            applicable: true,
+            class: ExpectationClass::StepDispositionExact {
+                step_index: u64::MAX,
+                disposition: ExpectedDisposition::Accepted,
+            },
+        }],
+        sim,
+        None,
+    ));
+    assert_eq!(r.verdict, RegressionVerdict::Error);
+    assert_eq!(
+        r.error.as_ref().unwrap().error_id,
+        RegressionErrorId::MissingObservationField
+    );
+}
+
+#[test]
+fn all_empty_balance_identity_tokens_are_invalid() {
+    for field in ["account_id", "asset_id", "facet_id"] {
+        let sim = base_sim(EconomicState::new());
+        let mut expectation = bal_exact("empty-token", 0, true);
+        if let ExpectationClass::FinalBalanceExact {
+            account_id,
+            asset_id,
+            facet_id,
+            ..
+        } = &mut expectation.class
+        {
+            match field {
+                "account_id" => account_id.clear(),
+                "asset_id" => asset_id.clear(),
+                "facet_id" => facet_id.clear(),
+                _ => unreachable!(),
+            }
+        }
+        let result = evaluate_regression(&case_with(vec![expectation], sim, None));
+        assert_eq!(result.verdict, RegressionVerdict::Error, "{field}");
+        assert_eq!(
+            result.error.as_ref().unwrap().error_id,
+            RegressionErrorId::InvalidExpectation,
+            "{field}"
+        );
+    }
+}
+
+#[test]
+fn empty_invariant_identity_token_is_invalid() {
+    let sim = base_sim(state_with(0, None));
+    let result = evaluate_regression(&case_with(
+        vec![Expectation {
+            expectation_id: "empty-invariant".into(),
+            applicable: false,
+            class: ExpectationClass::CompletionInvariantKindExact {
+                invariant_id: String::new(),
+                expected_kind: InvariantResultKind::Pass,
+            },
+        }],
+        sim,
+        None,
+    ));
+    assert_eq!(result.verdict, RegressionVerdict::Error);
+    assert_eq!(
+        result.error.as_ref().unwrap().error_id,
+        RegressionErrorId::InvalidExpectation
+    );
+}

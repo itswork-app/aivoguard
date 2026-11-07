@@ -1,5 +1,7 @@
 //! M06 regression evaluation engine.
 
+use std::collections::BTreeSet;
+
 use crate::invariant::InvariantResultKind;
 use crate::kernel::{AccountId, AssetId, FacetId, KernelOutcome};
 use crate::regression::error::{RegressionError, RegressionErrorId};
@@ -166,7 +168,7 @@ fn validate_binding(case: &RegressionCase) -> Result<(), RegressionError> {
 }
 
 fn validate_expectation_set(expectations: &[Expectation]) -> Result<(), RegressionError> {
-    let mut seen = Vec::new();
+    let mut seen = BTreeSet::new();
     for e in expectations {
         if e.expectation_id.is_empty() {
             return Err(RegressionError::new(
@@ -174,7 +176,7 @@ fn validate_expectation_set(expectations: &[Expectation]) -> Result<(), Regressi
                 "expectation_id is empty",
             ));
         }
-        if seen.iter().any(|id: &String| id == &e.expectation_id) {
+        if !seen.insert(e.expectation_id.clone()) {
             return Err(RegressionError::new(
                 RegressionErrorId::InvalidExpectation,
                 format!("duplicate expectation_id {}", e.expectation_id),
@@ -184,9 +186,66 @@ fn validate_expectation_set(expectations: &[Expectation]) -> Result<(), Regressi
                 StructuredValue::String(e.expectation_id.clone()),
             ));
         }
-        seen.push(e.expectation_id.clone());
+        validate_expectation_target_tokens(e)?;
     }
     Ok(())
+}
+
+fn validate_expectation_target_tokens(expectation: &Expectation) -> Result<(), RegressionError> {
+    match &expectation.class {
+        ExpectationClass::FinalBalanceExact {
+            account_id,
+            asset_id,
+            facet_id,
+            ..
+        }
+        | ExpectationClass::FinalBalanceAbsoluteTolerance {
+            account_id,
+            asset_id,
+            facet_id,
+            ..
+        } => {
+            validate_target_token(expectation, "account_id", account_id)?;
+            validate_target_token(expectation, "asset_id", asset_id)?;
+            validate_target_token(expectation, "facet_id", facet_id)
+        }
+        ExpectationClass::InvariantKindExact { invariant_id, .. }
+        | ExpectationClass::CompletionInvariantKindExact { invariant_id, .. } => {
+            validate_target_token(expectation, "invariant_id", invariant_id)
+        }
+        ExpectationClass::ExecutionStatusExact { .. }
+        | ExpectationClass::ExecutedActionCountExact { .. }
+        | ExpectationClass::StepDispositionExact { .. } => Ok(()),
+    }
+}
+
+fn validate_target_token(
+    expectation: &Expectation,
+    field: &str,
+    value: &str,
+) -> Result<(), RegressionError> {
+    if value.is_empty() {
+        return Err(RegressionError::new(
+            RegressionErrorId::InvalidExpectation,
+            format!("{field} must be a non-empty token"),
+        )
+        .with_field(
+            "expectation_id",
+            StructuredValue::String(expectation.expectation_id.clone()),
+        )
+        .with_field("field", StructuredValue::String(field.to_owned())));
+    }
+    Ok(())
+}
+
+fn checked_step_index(step_index: u64) -> Result<usize, RegressionError> {
+    usize::try_from(step_index).map_err(|_| {
+        RegressionError::new(
+            RegressionErrorId::MissingObservationField,
+            "step_index cannot be represented on this target",
+        )
+        .with_field("step_index", StructuredValue::U64(step_index))
+    })
 }
 
 fn validate_engine_pins(case: &RegressionCase) -> Result<(), RegressionError> {
@@ -405,16 +464,19 @@ fn eval_step_disposition(
     step_index: u64,
     disposition: crate::regression::types::ExpectedDisposition,
 ) -> EvalOne {
-    let idx = step_index as usize;
-    if idx >= sim.step_records.len() {
-        return EvalOne::Error(
-            RegressionError::new(
-                RegressionErrorId::MissingObservationField,
-                "step_index out of range for step_records",
-            )
-            .with_field("step_index", StructuredValue::U64(step_index)),
-        );
-    }
+    let idx = match checked_step_index(step_index) {
+        Ok(index) if index < sim.step_records.len() => index,
+        Ok(_) => {
+            return EvalOne::Error(
+                RegressionError::new(
+                    RegressionErrorId::MissingObservationField,
+                    "step_index out of range for step_records",
+                )
+                .with_field("step_index", StructuredValue::U64(step_index)),
+            );
+        }
+        Err(error) => return EvalOne::Error(error),
+    };
     let step = &sim.step_records[idx];
     let observed_disp = match &step.kernel_outcome {
         Some(KernelOutcome::Economic { disposition: d, .. }) => Some(*d),
@@ -456,26 +518,46 @@ fn eval_invariant_kind(
     step_index: u64,
     expected_kind: InvariantResultKind,
 ) -> EvalOne {
-    let idx = step_index as usize;
-    if idx >= sim.step_records.len() {
-        return EvalOne::Error(
-            RegressionError::new(
-                RegressionErrorId::MissingObservationField,
-                "step_index out of range for invariant lookup",
-            )
-            .with_field("step_index", StructuredValue::U64(step_index)),
-        );
-    }
+    let idx = match checked_step_index(step_index) {
+        Ok(index) if index < sim.step_records.len() => index,
+        Ok(_) => {
+            return EvalOne::Error(
+                RegressionError::new(
+                    RegressionErrorId::MissingObservationField,
+                    "step_index out of range for step_records",
+                )
+                .with_field("step_index", StructuredValue::U64(step_index)),
+            );
+        }
+        Err(error) => return EvalOne::Error(error),
+    };
     let step = &sim.step_records[idx];
     let records: &[InvariantEvaluationRecord] = match phase {
         ExpectationPhase::BeforeAction => &step.before_action,
         ExpectationPhase::AfterAction => &step.after_action,
     };
+    let expected_point = match phase {
+        ExpectationPhase::BeforeAction => EvaluationPoint::BeforeAction,
+        ExpectationPhase::AfterAction => EvaluationPoint::AfterAction,
+    };
+    let target = StructuredValue::String(format!(
+        "step/{step_index}/{}/invariant/{invariant_id}",
+        match phase {
+            ExpectationPhase::BeforeAction => "before_action",
+            ExpectationPhase::AfterAction => "after_action",
+        }
+    ));
     let matches: Vec<&InvariantEvaluationRecord> = records
         .iter()
-        .filter(|r| record_invariant_id(r) == invariant_id)
+        .filter(|r| record_invariant_id(r) == invariant_id && record_point(r) == expected_point)
         .collect();
-    resolve_invariant_matches(expectation, "InvariantKindExact", &matches, expected_kind)
+    resolve_invariant_matches(
+        expectation,
+        "InvariantKindExact",
+        &matches,
+        expected_kind,
+        target,
+    )
 }
 
 fn eval_completion_invariant(
@@ -484,7 +566,8 @@ fn eval_completion_invariant(
     invariant_id: &str,
     expected_kind: InvariantResultKind,
 ) -> EvalOne {
-    // completion_evaluation_records is already completion-scoped by M03.
+    // Completion records are checked against their explicit evaluation point.
+    let target = StructuredValue::String(format!("completion/invariant/{invariant_id}"));
     let matches: Vec<&InvariantEvaluationRecord> = sim
         .completion_evaluation_records
         .iter()
@@ -498,6 +581,7 @@ fn eval_completion_invariant(
         "CompletionInvariantKindExact",
         &matches,
         expected_kind,
+        target,
     )
 }
 
@@ -506,12 +590,16 @@ fn resolve_invariant_matches(
     class_name: &str,
     matches: &[&InvariantEvaluationRecord],
     expected_kind: InvariantResultKind,
+    target: StructuredValue,
 ) -> EvalOne {
     match matches.len() {
-        0 => EvalOne::Error(RegressionError::new(
-            RegressionErrorId::MissingObservationField,
-            format!("no matching {class_name} observation records"),
-        )),
+        0 => EvalOne::Error(
+            RegressionError::new(
+                RegressionErrorId::MissingObservationField,
+                format!("no matching {class_name} observation records"),
+            )
+            .with_field("target", target),
+        ),
         1 => match matches[0] {
             InvariantEvaluationRecord::NotExecuted { .. } => EvalOne::Error(
                 RegressionError::new(
@@ -521,7 +609,8 @@ fn resolve_invariant_matches(
                 .with_field(
                     "expectation_id",
                     StructuredValue::String(expectation.expectation_id.clone()),
-                ),
+                )
+                .with_field("target", target),
             ),
             InvariantEvaluationRecord::Executed { outcome, .. } => {
                 if outcome.kind == expected_kind {
@@ -530,7 +619,7 @@ fn resolve_invariant_matches(
                     EvalOne::Mismatch(MismatchEvidence {
                         expectation_id: expectation.expectation_id.clone(),
                         class: class_name.into(),
-                        target: StructuredValue::String(expectation.expectation_id.clone()),
+                        target,
                         expected: StructuredValue::InvariantKind(expected_kind),
                         observed: StructuredValue::InvariantKind(outcome.kind),
                         operator: ComparisonOperator::Exact,
@@ -545,6 +634,7 @@ fn resolve_invariant_matches(
                 RegressionErrorId::AmbiguousObservation,
                 format!("{n} matching observation records"),
             )
+            .with_field("target", target)
             .with_field("match_count", StructuredValue::U64(n as u64)),
         ),
     }

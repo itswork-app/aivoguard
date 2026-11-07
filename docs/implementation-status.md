@@ -18,7 +18,7 @@ This ledger is the current index of what is present in the repository. It does *
 | M03 Deterministic Simulator | `src/simulator/` | `tests/m03_simulator.rs` | IMPLEMENTED | Orchestrates scenarios and calls M01/M02; does not redefine economics. |
 | M04 Adversarial Scenario Engine | `src/adversarial/` | `tests/m04_adversarial.rs` | IMPLEMENTED | Produces candidate adversarial inputs; M01 remains authoritative. |
 | M05 Chaos | No source module | No integration test | NOT IMPLEMENTED | Future scope only; do not claim as a feature. |
-| M06 Economic Regression | `src/regression/` | `tests/m06_regression.rs` | IMPLEMENTATION PRESENT; AUTHORIZATION EVIDENCE RECONCILIATION REQUIRED | Architecture baseline reports implemented, but frozen M06 specification still carries its freeze-time BLOCKED marker. Do not represent this module as independently authorization-audited until the task/approval record is reconciled. |
+| M06 Economic Regression | `src/regression/` | `tests/m06_regression.rs` | **IMPLEMENTED — AUTHORIZED; PROSPECTIVELY RATIFIED 2026-11-07** | Authorized by TASK-68; v1.0.0 Gate-5 specification archived; v1.1.0 frozen by [TASK-70](design/m06-specification-freeze-v1.1.0.md). No independent implementation audit is claimed by the authorization record. |
 | M07 Payment & Settlement Testing | `src/payment_settlement/` | `tests/m07_payment_settlement.rs` | IMPLEMENTED — BOUNDED CURRENT SCOPE | Implementation master records TASK-37…45 and freeze-for-current-scope. No provider I/O, live payments, webhook, or wire protocol. |
 | M08 x402 Adapter | `src/x402_adapter/` | `tests/m08_x402_adapter.rs` | IMPLEMENTED — BOUNDED INBOUND SEMANTIC SCOPE | TASK-63 authorization, TASK-64 implementation, TASK-65 audit, TASK-66 freeze, TASK-67 sync. No live wire, cryptographic verification, facilitator, outbound payment, or M07 output. |
 | M09 Multi-Agent World | No source module | No integration test | NOT IMPLEMENTED | Future boundary only. |
@@ -33,11 +33,11 @@ This ledger is the current index of what is present in the repository. It does *
 | Gate 2 / M02 | `design/economic-invariant-engine-specification.md` | TASK-06 / TASK-06R; invariant source/tests | Implemented; frozen semantics remain authoritative. |
 | Gate 3 / M03 | `design/deterministic-simulator-specification.md` | TASK-08 / TASK-08R / TASK-08F; simulator source/tests | Implemented; independent implementation audit recorded as PASS. |
 | Gate 4 / M04 | `design/adversarial-scenario-engine-specification.md` | TASK-10H authorization; TASK-11 implementation; source/tests | Implemented; frozen semantics remain authoritative. |
-| Gate 5 / M06 | `design/economic-regression-engine-specification.md` | Regression source/tests and architecture baseline | Code exists; explicit implementation authorization record must be reconciled before a strong governance claim. |
+| Gate 5 / M06 | `design/economic-regression-engine-specification.md` | TASK-68 authorization record; regression source/tests | **IMPLEMENTATION AUTHORIZED; EXISTING SOURCE/TESTS PROSPECTIVELY RATIFIED EFFECTIVE 2026-11-07**. v1.1.0 spec-to-code amendment is frozen by [TASK-70](design/m06-specification-freeze-v1.1.0.md); v1.0.0 remains the historical baseline. |
 | Gate 6 / M07 | `design/payment-settlement-testing-specification.md` | `m07-implementation-master-specification.md`, TASK-37…45 | Bounded implementation is frozen for current scope; provider/live execution remains excluded. |
 | Gate 7 / M08 | `design/x402-adapter-specification.md` | `m08-implementation-master-specification.md`, TASK-63…67 | Bounded inbound semantic adapter only; wire and live verification remain unauthorized/unimplemented. |
 
-**Important:** A frozen specification's historical “BLOCKED / NOT AUTHORIZED” header is not evidence that later code is authorized. The later task record must exist and be reviewed. For M06, that reconciliation is explicitly open.
+**Authority note:** The M06 specification's “BLOCKED / NOT AUTHORIZED” marker records the status at the TASK-19 freeze point. Subsequent authorization is recorded in [TASK-68 — M06 Implementation Authorization](design/m06-implementation-authorization.md), effective 2026-11-07. TASK-68 prospectively ratifies the existing bounded implementation; it does not claim historical authorization. The M06 v1.1.0 specification is frozen under [TASK-70](design/m06-specification-freeze-v1.1.0.md); v1.0.0 is preserved in the archive.
 
 ## 3. CI evidence
 
@@ -63,7 +63,7 @@ The M01/M02 aggregate-debit and history-range remediation was merged to `main` a
 
 These are not yet closed by the remediation above:
 
-1. M06 implementation authorization evidence reconciliation (tracked in Issue #9; source/tests exist, but no separate authorization record has been identified).
+1. M06 v1.1.0 specification/code reconciliation is frozen under TASK-70; independent implementation audit and cross-module semantic review remain open. Authorization is resolved by TASK-68; this is not a correctness/security certification.
 2. M01 initial `EconomicState` validation boundary requires a normative interpretation before code changes (Issue #10).
 3. Cross-module adversarial, simulator, regression, settlement, and adapter semantic audit beyond the current test suite.
 4. Property-based/fuzz testing and deterministic replay verification.
@@ -76,7 +76,7 @@ Do not claim formal verification, complete security assurance, production readin
 | Gate | Status | Evidence required |
 |---|---|---|
 | Accurate public implementation claims | PASS — current docs baseline | README, architecture, and this ledger agree; main commit `6d09ed8` passed run #49. |
-| Frozen spec / implementation authority reconciliation | BLOCKED | M06 implementation authorization evidence must be located or explicitly decided (Issue #9); preserve freeze-time semantics. |
+| M06 implementation authority | **PASS — TASK-68** | Prospective maintainer authorization is recorded by TASK-68; v1.1.0 is frozen by TASK-70. Independent M06 audit remains separate. |
 | License and contributor IP | PARTIAL — Apache-2.0 published and merged | Full license text, SPDX metadata, README, governance, and contributor policy are aligned. Visible commit history is attributed to the repository owner; a complete third-party provenance/title/patent audit and funder-specific IP review remain outstanding. |
 | Private vulnerability reporting | BLOCKED | Enable private reporting or publish a verified private contact and process. |
 | Reproducible external demo | PARTIAL | In-repo M01 example and expected output compile under all-targets CI; still needs independent clean-environment execution and external feedback. |

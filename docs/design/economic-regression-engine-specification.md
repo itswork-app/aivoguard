@@ -1,30 +1,36 @@
 # AivoGuard Economic Regression Engine Specification
 
+> **FROZEN — v1.1.0 (2026-11-07), TASK-70.** The prior frozen v1.0.0 text is preserved at [`archive/economic-regression-engine-specification-v1.0-task19.md`](archive/economic-regression-engine-specification-v1.0-task19.md). This v1.1.0 revision is the current normative M06 specification; only the clauses explicitly amended in §32 differ from v1.0.0.
+
 | Field | Value |
 | --- | --- |
 | Document | `docs/design/economic-regression-engine-specification.md` |
-| Task | **TASK-16** … **TASK-17A**; freeze **TASK-19** |
+| Task | **TASK-16** … **TASK-17A**; v1.0 freeze **TASK-19**; amendment **TASK-69**; v1.1 freeze **TASK-70** |
 | Module | **M06 — Economic Regression Engine** |
-| Gate | **GATE 5 — CLOSED** (specification freeze; implementation **BLOCKED**) |
-| **STATUS** | **FROZEN** |
-| Normative freeze | **FROZEN** |
-| Implementation | **BLOCKED** — freeze does **not** authorize implementation |
+| Gate | **GATE 5 — CLOSED / FROZEN v1.1.0**; implementation authorized |
+| **STATUS** | **FROZEN — v1.1.0** |
+| Normative freeze | v1.0.0 historical archive; v1.1.0 frozen by TASK-70 |
+| Implementation | **AUTHORIZED** by TASK-68; implementation aligned to frozen v1.1.0 |
 | Depends on | Product Scope (**FROZEN**); Domain Contract (**FROZEN**); Economic Kernel Specification (**FROZEN**, Gate 1 **CLOSED**); Economic Invariant Engine Specification (**FROZEN**, Gate 2 **CLOSED**); Deterministic Simulator Specification (**FROZEN**, Gate 3 **CLOSED**); Adversarial Scenario Engine Specification (**FROZEN**, Gate 4 **CLOSED**); M01–M04 implementations (**PASS** / **ACCEPTED**) |
-| Freeze authority | **TASK-19** formal freeze (audit: **TASK-18** **READY_FOR_FREEZE**) |
+| Historical freeze | **TASK-19** formal freeze (audit: **TASK-18** **READY_FOR_FREEZE**) |
 | Related architecture | [`../architecture/architecture-baseline.md`](../architecture/architecture-baseline.md) (boundary: M06) |
 | Process | [`SPECIFICATION-POLICY.md`](SPECIFICATION-POLICY.md) |
 
 ```text
-STATUS: FROZEN
-NORMATIVE FREEZE: FROZEN
-IMPLEMENTATION: BLOCKED
-GATE: GATE 5 — CLOSED
+V1.0.0: FROZEN (historical; archived)
+V1.1.0: FROZEN / NORMATIVE (TASK-70)
+IMPLEMENTATION: AUTHORIZED by TASK-68
+GATE 5: CLOSED / FROZEN v1.1.0
 ```
 
-This document is the **frozen** normative specification for Gate-5 M06.
-Material semantic changes require an explicit specification amendment. Freeze
-does **not** authorize M06 implementation, API/CLI/DSL design, or crate
-creation. A separate implementation-authorization task is required.
+Version 1.0.0 was frozen by TASK-19. Its exact text is preserved in the
+archive linked above. This document is the frozen v1.1.0 normative specification. The v1.0.0
+semantics remain the baseline except where the accepted v1.1.0 amendments are
+explicitly recorded in §32.
+
+M06 implementation was authorized and the existing bounded implementation
+prospectively ratified by [TASK-68](m06-implementation-authorization.md),
+effective 2026-11-07. That authorization does not itself amend semantics.
 
 Open decisions **AD-03**, **AD-12**, **AD-14**, and **AD-15** remain **OPEN**
 and are not resolved by this freeze. **DC-13** remains formally **OPEN** in the
@@ -53,7 +59,7 @@ Domain Contract FROZEN
         ↓
 M01 / M02 / M03 / M04 FROZEN
         ↓
-This M06 specification (**FROZEN**)
+M06 v1.0.0 (**HISTORICALLY FROZEN; ARCHIVED**) / v1.1.0 (**FROZEN / NORMATIVE; TASK-70**)
         ↓
 Accepted ADRs
         ↓
@@ -98,7 +104,7 @@ Scenario/Test expectation) remains listed **OPEN** in `domain-contract.md`.
 M06 defines the Gate-5 expectation-matching semantics required by the
 regression engine.
 
-This specification provides the M06 realization of regression expectations,
+The M06 v1.0.0 specification provides the baseline realization of regression expectations,
 but DC-13 remains formally OPEN in the Domain Contract until an explicit
 Domain Contract amendment is authorized and applied.
 
@@ -183,10 +189,10 @@ ERROR     ⇒ comparison could not produce a valid MATCH/MISMATCH verdict
 ### 4.1 Declared tokens
 
 Unless otherwise stated, identity strings in M06 (`case_id`, `expectation_id`,
-account/asset/facet string ids when declared as tokens) use:
+account/asset/facet/invariant string ids when declared as tokens) use:
 
 ```text
-non-empty UTF-8
+non-empty UTF-8 (empty string is invalid; whitespace-only is non-empty and is not trimmed)
 exact equality
 case-sensitive
 no trim
@@ -200,7 +206,8 @@ algorithm. Case identity is **declared**.
 
 Concrete Rust layouts are **provisional** (**AD-15 OPEN**). Semantic fields in
 this document are normative; field names in implementations may differ if a
-bijection to these semantics is documented and tested.
+bijection to these semantics is documented and tested. The frozen v1.1.0 contract requires every accepted semantic rule to have a
+direct implementation and test mapping.
 
 ---
 
@@ -256,7 +263,7 @@ unless ERROR conditions trigger first (invalid case / observation).
 
 ---
 
-## 6. Expectation model (M06 regression expectations)
+## 6. Expectation model (M06 regression expectations; v1.0.0 baseline with v1.1.0 amendments)
 
 ### 6.1 Closed Gate-5 expectation classes
 
@@ -292,6 +299,13 @@ Every expectation **MUST** include:
 | `applicable` | YES | Boolean; if `false`, expectation is skipped (not a mismatch) |
 
 Duplicate `expectation_id` within a case → `ERROR` / `InvalidExpectation`.
+
+For v1.1.0, every expectation payload is structurally validated before
+applicability is considered. Target token fields (`account_id`, `asset_id`,
+`facet_id`, and `invariant_id`, where applicable) MUST be non-empty. An empty
+target token produces `ERROR` / `InvalidExpectation`, including when
+`applicable=false`. Non-empty tokens are compared exactly; whitespace is not
+trimmed and is not normalized.
 
 Multiple expectations **MAY** target the same observation cell/record. Each is
 evaluated independently in declaration order under `ALL_MISMATCHES`.
@@ -403,7 +417,10 @@ step_index in range                               → exactly 1 positional recor
 ```
 
 Positional indexing never selects “first/last among duplicates”; the index
-identifies exactly one vector slot when in range.
+identifies exactly one vector slot when in range. The `u64` index MUST be
+converted to the platform index type using checked conversion. Conversion
+failure is equivalent to out-of-range and MUST return `ERROR /
+MissingObservationField`; truncating or wrapping casts are forbidden.
 
 Requires the selected step record to expose an M01 economic disposition.
 Step present without economic disposition (e.g. only M01 Error path) when this
@@ -420,9 +437,13 @@ step_index   : u64
 expected_kind: Pass | Fail | Error
 ```
 
-**Matching key:** records in `invariant_evaluation_records` whose
-`(step_index, phase, invariant_id)` equal the expectation target
-(see §7.5 for cardinality and Executed / NotExecuted rules).
+**Matching key:** within the positional `step_records[step_index]` slot, collect
+records whose `invariant_id` equals the declared id **and** whose explicit
+`EvaluationPoint` equals the point mapped from `phase` (`BeforeAction` →
+`BeforeAction`; `AfterAction` → `AfterAction`). A record stored in the wrong
+phase vector does not match unless its explicit point also agrees. The
+`step_index` is the checked positional slot, not a search by embedded index.
+See §7.5 for cardinality and Executed / NotExecuted rules.
 
 **Important:** M02 `FAIL` does **not** by itself create M06 `MISMATCH` unless
 an expectation of this (or completion) class declares the relationship.
@@ -435,8 +456,9 @@ expected_kind: Pass | Fail | Error
 ```
 
 **Matching key:** records in `completion_evaluation_records` whose
-`invariant_id` equals the expectation target (and whose evaluation point is
-completion), subject to §7.5 cardinality and Executed / NotExecuted rules.
+`invariant_id` equals the expectation target **and** whose explicit evaluation
+point is `OnSimulationCompletion`, subject to §7.5 cardinality and
+Executed / NotExecuted rules.
 ---
 
 ## 7. Observation model
@@ -773,6 +795,17 @@ MismatchEvidence
 
 Machine authority = structured fields. Human messages optional and non-authoritative.
 
+For Gate-5 M06 v1.1.0, invariant target descriptors use these canonical labels:
+
+- Per-step: `step/{step_index}/before_action/invariant/{invariant_id}` or
+  `step/{step_index}/after_action/invariant/{invariant_id}`.
+- Completion: `completion/invariant/{invariant_id}`.
+
+The same target descriptor MUST be attached to `MissingObservationField`,
+`AmbiguousObservation`, and `NotExecutedObservation` errors. Ambiguity evidence
+also MUST include the exact matching-record count. These labels are diagnostic
+identity descriptors, not wire serialization (AD-14 remains OPEN).
+
 Mismatch list ordering = increasing `ordinal` = declared expectation order among
 failing applicable expectations.
 
@@ -800,7 +833,7 @@ RegressionResult
 RegressionProvenance
 ├── scenario_id / scenario_version / configuration_id
 ├── observation_engine_pins (m01/m02/m03 versions as present)
-├── m06_spec_version_label  // declared document/engine label when implemented
+├── m06_spec_version_label  // current implementation engine label (e.g. m06-0.1.0); not normative spec version
 └── evaluation_policy       // ALL_MISMATCHES
 ```
 
@@ -811,7 +844,12 @@ Provenance **MUST** allow a consumer to answer:
 3. Which authoritative observation was used?
 4. What matched / mismatched / errored and why?
 
-Wire serialization of provenance is **OUT OF SCOPE** (**AD-14 OPEN**).
+The existing Rust field name `m06_spec_version_label` is retained provisionally
+under AD-15, but its current value identifies the M06 implementation engine
+version label (`ENGINE_VERSION`), not the normative document version. Consumers
+MUST NOT infer a specification version from this field. A future public API /
+serialization decision may introduce separate explicit engine and spec version
+fields. Wire serialization of provenance is **OUT OF SCOPE** (**AD-14 OPEN**).
 
 ---
 
@@ -936,7 +974,7 @@ No hash algorithm is mandated.
 
 ## 22. Acceptance tests (normative for future implementation)
 
-A conforming implementation **MUST** provide deterministic tests covering:
+The implementation **MUST** provide deterministic tests covering:
 
 ### 22.1 Basic
 
@@ -1072,7 +1110,7 @@ AD-15 OPEN  — concrete Rust/API types
 
 ## 26. Self-audit checklist
 
-| Area | Status in this draft |
+| Area | Status in frozen v1.1.0 |
 | --- | --- |
 | Authority | Explicit §1 / §15 |
 | Determinism | Explicit §16 |
@@ -1114,11 +1152,11 @@ shrinker
 | Item | Value |
 | --- | --- |
 | Created by | TASK-16; remediated TASK-17A; freeze TASK-19 |
-| Status | **FROZEN** |
-| Freeze | **FROZEN** |
-| Freeze authority | TASK-19 (audit TASK-18 READY_FOR_FREEZE) |
-| Implementation | **BLOCKED** (not authorized by freeze) |
-| Supersedes | None (first M06 specification) |
+| Status | **FROZEN — v1.1.0** |
+| v1.0.0 freeze | **TASK-19 — HISTORICAL / ARCHIVED** |
+| v1.0.0 freeze authority | TASK-19 (audit TASK-18 READY_FOR_FREEZE) |
+| v1.1.0 freeze | **TASK-70 — 2026-11-07** |
+| Implementation | **AUTHORIZED** by TASK-68; aligned to frozen v1.1.0 |
 
 Lifecycle:
 
@@ -1126,17 +1164,18 @@ Lifecycle:
 DRAFT → READY_FOR_REVIEW → FROZEN → IMPLEMENTATION_AUTHORIZED → …
 ```
 
-This document is **FROZEN** by TASK-19.
+Version 1.0.0 was frozen by TASK-19. Version 1.1.0 was re-frozen by TASK-70; it supersedes v1.0.0 only for the clauses explicitly amended in §32.
 
 ---
 
-## 29. Gate state (as of TASK-19)
+## 29. Gate state (as of TASK-70)
 
 ```text
 GATE 4: CLOSED / FROZEN
-GATE 5: CLOSED (specification FROZEN; implementation BLOCKED)
-M06:    FROZEN
-IMPLEMENTATION: NOT AUTHORIZED
+GATE 5: CLOSED / FROZEN v1.1.0 (TASK-70)
+M06 v1.0.0: FROZEN (historical archive; TASK-19)
+M06 v1.1.0: FROZEN / NORMATIVE (TASK-70)
+IMPLEMENTATION: AUTHORIZED (TASK-68)
 ```
 
 ---
@@ -1174,10 +1213,43 @@ No edit to `docs/design/domain-contract.md`.
 
 ## 31. Hard stop
 
-This specification does **not** authorize:
+This v1.1.0 frozen specification does **not** authorize semantic changes to
+frozen M01–M04 specifications, resolution of AD-03 / AD-12 / AD-14 / AD-15,
+or serialization, CLI/API, or shrinking.
 
-* M06 implementation
-* M06 tests in-tree as product code
-* changes to frozen M01–M04 specifications
-* resolution of AD-03 / AD-12 / AD-14 / AD-15
-* serialization, CLI/API, or shrinking
+
+## 32. v1.1.0 accepted amendment register — FROZEN
+
+The following v1.1.0 clarifications were accepted, implemented, covered by
+regression tests, and frozen under TASK-70. Their scope is limited to the
+clauses recorded below; all other v1.0.0 normative clauses remain unchanged.
+
+| ID | Area | v1.0.0 contract / observed implementation | Accepted v1.1.0 resolution | Required evidence |
+|---|---|---|---|---|
+| M06-A01 | Positional index portability | Unchecked `u64` → `usize` cast could truncate on narrower targets. | Checked conversion; failure is `ERROR / MissingObservationField`. | Implemented in `engine.rs`; `maximum_step_index_is_a_missing_observation_not_a_wrapped_index`; Verified by GitHub Actions CI run #97 on PR head `6c89350081b0c4ed68795ae2346c61ff271abb60f` (format, check, tests, deterministic example, strict Clippy: PASS). |
+| M06-A02 | Invariant phase identity | Phase vector selection alone did not verify the record's explicit `EvaluationPoint`. | Match invariant id and exact point corresponding to the declared phase. | Implemented in `engine.rs`; `invariant_lookup_requires_explicit_evaluation_point_match`; Verified by GitHub Actions CI run #101 on PR head `72ce82a53299240584568eb2e9f2b2ca21f367c2` (format, check, tests, deterministic example, strict Clippy: PASS). |
+| M06-A03 | Identifier validation | Empty target tokens were not rejected before observation lookup. | Empty account/asset/facet/invariant tokens produce `ERROR / InvalidExpectation`; no trimming or normalization. | Implemented in `engine.rs`; tests cover empty account/asset/facet/invariant IDs, including non-applicable expectations; Verified by GitHub Actions CI run #102 on v1.1.0 specification commit `712c24dddd202534d62642e346dc3702740d76af` (format, check, tests, deterministic example, strict Clippy: PASS). |
+| M06-A04 | Mismatch target evidence | Invariant mismatch target used `expectation_id`, not the observation location. | Use canonical per-step/completion target descriptors. | Implemented in `engine.rs`; `invariant_mismatch_and_ambiguity_include_lookup_target`; Verified by GitHub Actions CI run #102 on v1.1.0 specification commit `712c24dddd202534d62642e346dc3702740d76af` (format, check, tests, deterministic example, strict Clippy: PASS). |
+| M06-A05 | Ambiguous observation diagnostics | Ambiguity error lacked the target descriptor. | Include target descriptor and exact match count; include target on missing/not-executed invariant errors. | Implemented in `engine.rs`; `invariant_mismatch_and_ambiguity_include_lookup_target`; Verified by GitHub Actions CI run #102 on v1.1.0 specification commit `712c24dddd202534d62642e346dc3702740d76af` (format, check, tests, deterministic example, strict Clippy: PASS). |
+| M06-A06 | Version identity | Field name `m06_spec_version_label` was ambiguous; value comes from `ENGINE_VERSION`. | Define the value as implementation engine version label; do not infer normative spec version. Keep field name provisional under AD-15. | Spec clarified; existing `m06_engine_version_exported` test confirms current engine label; Verified by GitHub Actions CI run #102 on v1.1.0 specification commit `712c24dddd202534d62642e346dc3702740d76af` (format, check, tests, deterministic example, strict Clippy: PASS). |
+
+### 32.1 Normative validation order
+
+1. Validate case identity and scenario binding structure.
+2. Validate observation-to-scenario binding.
+3. Validate all expectation identifiers and target token payloads, including
+   expectations marked non-applicable; malformed declarations remain malformed.
+4. Validate optional engine pins.
+5. Evaluate applicable expectations in declaration order. A non-applicable
+   expectation is skipped before any observation lookup.
+6. On comparison error, return `ERROR`; prior mismatch evidence is not
+   authoritative and the result mismatch list is empty.
+
+### 32.2 v1.1.0 freeze evidence
+
+- Every accepted amendment item has matching implementation and regression tests.
+- No unaccepted semantic change appears in code.
+- GitHub Actions run #101 passed format, check, all tests, deterministic example, and strict Clippy on final pre-freeze PR head `72ce82a53299240584568eb2e9f2b2ca21f367c2`.
+- The v1.0.0 text is preserved at the archive path; v1.1.0 supersedes it only for the explicitly amended clauses.
+- TASK-70 records the exact v1.1.0 specification blob and source commit.
+
