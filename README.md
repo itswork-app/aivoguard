@@ -1,5 +1,7 @@
 # AivoGuard
 
+[![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](LICENSE)
+
 **AivoGuard is deterministic economic testing infrastructure for autonomous AI agents.**
 
 It helps developers model economic state, execute deterministic test scenarios, evaluate explicit economic invariants, generate adversarial inputs, compare regression expectations, and test bounded payment/settlement observations before connecting an agent to real economic systems.
@@ -121,6 +123,8 @@ This repository is a pre-production testing library. Do not use it as a producti
 
 ## License and grant readiness
 
-**No open-source license has been selected.** The repository is not yet granted Apache-2.0, MIT, or any other redistribution license. Do not treat it as an already licensed open-source release. License selection and contributor-rights review are explicit pre-submission gates; see [LICENSE](LICENSE) and the implementation/grant readiness ledger.
+AivoGuard is licensed under the **Apache License, Version 2.0** (`Apache-2.0`). The complete license text is in [LICENSE](LICENSE). Contributions intentionally submitted for inclusion are governed by Section 5 of Apache-2.0 unless the submitter explicitly states otherwise; see [CONTRIBUTING.md](CONTRIBUTING.md) for the contributor policy.
+
+The repository history review found the visible commits attributed to the repository owner account. This is useful provenance evidence, not a legal opinion or a complete audit of third-party material, copyright ownership, or patent rights. Grant applications still require funder-specific IP and eligibility review.
 
 Grant documents are planning drafts only. No funder endorsement, award, partnership, eligibility, or product-market fit is implied.

@@ -39,9 +39,13 @@ external participation.
 | --- | --- |
 | Normative product/semantic rules | Frozen specification under `docs/design/` |
 | Architecture / compatibility / determinism / API surface | ADR under `docs/adr/` (see ADR README) |
-| License selection | Replace `LICENSE` placeholder; update metadata |
+| License selection | Repository owner/maintainer decision recorded 2026-11-07; Apache-2.0 text and metadata published through PR |
 | Security contact / process | Update `SECURITY.md` before production release |
 | Routine foundation fixes | PR review only |
+
+## License decision
+
+On 2026-11-07, the repository owner/maintainer approved Apache License, Version 2.0 (`Apache-2.0`) for AivoGuard. The decision is implemented in the root `LICENSE`, Cargo workspace metadata, README, and contributor policy. Contributors retain copyright in their original contributions; intentionally submitted contributions are licensed under Apache-2.0 in accordance with Section 5 unless explicitly stated otherwise. No CLA is currently required. This decision does not imply that a full third-party provenance, copyright-title, patent, or funder-specific IP audit has been completed.
 
 ## Conflict resolution
 

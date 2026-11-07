@@ -77,11 +77,15 @@ Do not claim formal verification, complete security assurance, production readin
 |---|---|---|
 | Accurate public implementation claims | PASS — current docs baseline | README, architecture, and this ledger agree; main commit `6d09ed8` passed run #49. |
 | Frozen spec / implementation authority reconciliation | BLOCKED | M06 implementation authorization evidence must be located or explicitly decided (Issue #9); preserve freeze-time semantics. |
-| License and contributor IP | BLOCKED | Explicit license decision, rights review, actual license text, metadata. |
+| License and contributor IP | PARTIAL — Apache-2.0 decision and repository metadata prepared in PR | Full license text, SPDX metadata, README, governance, and contributor policy are aligned. Visible commit history is attributed to the repository owner; a complete third-party provenance/title/patent audit and funder-specific IP review remain outstanding. |
 | Private vulnerability reporting | BLOCKED | Enable private reporting or publish a verified private contact and process. |
 | Reproducible external demo | PARTIAL | In-repo M01 example and expected output compile under all-targets CI; still needs independent clean-environment execution and external feedback. |
 | External validation | NOT STARTED | Design-partner evidence, feedback, repeat usage. |
 | Funder fit and eligibility | NOT STARTED | Selected funder, jurisdiction, eligible costs, IP/reporting terms. |
 | Budget and applicant package | DRAFT | Applicant details, realistic contributor time/rates, tax/accounting and milestone mapping. |
+
+## 7. License decision and provenance evidence
+
+On 2026-11-07, the repository owner/maintainer approved Apache License, Version 2.0 (`Apache-2.0`). The implementation is being published through a focused pull request: full standard license text, Cargo SPDX metadata, README declaration, governance decision record, and contributor submission policy. The visible 47-commit history was reviewed and all returned commit authors resolve to the repository owner account (`itswork-app`, `rejaputraperdana@gmail.com`). This is repository-history evidence only; it does not independently establish title to every line or third-party material, patent clearance, or eligibility under a particular funder's IP terms. Those checks remain necessary before a grant submission.
 
 AivoGuard is **not yet grant-submission-ready**. This ledger identifies the remaining prerequisites and prevents planning documents from being mistaken for verified product capability.
