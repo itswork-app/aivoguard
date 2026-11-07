@@ -56,19 +56,12 @@ fn main() {
             println!("effects: {}", transaction.effects.len());
             println!(
                 "alice USD minor units: {}",
-                state_after.get_balance(
-                    &AccountId::new("alice"),
-                    &AssetId::new("USD"),
-                    &available,
-                )
+                state_after
+                    .get_balance(&AccountId::new("alice"), &AssetId::new("USD"), &available,)
             );
             println!(
                 "bob USD minor units: {}",
-                state_after.get_balance(
-                    &AccountId::new("bob"),
-                    &AssetId::new("USD"),
-                    &available,
-                )
+                state_after.get_balance(&AccountId::new("bob"), &AssetId::new("USD"), &available,)
             );
 
             if disposition != EconomicDisposition::AcceptedEffective {
