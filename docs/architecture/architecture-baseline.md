@@ -6,12 +6,18 @@
 | Task | TASK-00B |
 | Status | **BASELINE** (architecture documentation; not a normative economic spec) |
 | Authority | Subordinate to frozen design specifications and accepted ADRs |
-| Implementation | Documents current + target structure; M01 and M02 are implemented |
+| Implementation | Current source includes M01–M04 and M06–M08; M05 and M09 are not implemented |
+| Status register | [Implementation Status Ledger](../implementation-status.md) |
 
 This document maps frozen product/domain/economic specifications into repository
 architecture and module boundaries. It does **not** invent economic semantics,
 freeze open DSL/API/serialization decisions, or authorize new modules beyond
 what frozen gates already implement.
+
+The implementation status ledger is the current code/test/authorization index.
+Freeze-time BLOCKED markers in normative specifications are historical; later
+implementation authority must be supported by a separate task or implementation
+master record. M06 authorization evidence remains an open reconciliation item.
 
 Related:
 
