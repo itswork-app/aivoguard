@@ -1065,28 +1065,24 @@ fn invariant_mismatch_and_ambiguity_include_lookup_target() {
         r.error.as_ref().unwrap().error_id,
         RegressionErrorId::AmbiguousObservation
     );
-    assert!(
-        r.error
-            .as_ref()
-            .unwrap()
-            .evidence
-            .iter()
-            .any(|(key, value)| {
-                key == "target"
-                    && value
-                        == &StructuredValue::String(
-                            "step/0/before_action/invariant/inv-target".into()
-                        )
-            })
-    );
-    assert!(
-        r.error
-            .as_ref()
-            .unwrap()
-            .evidence
-            .iter()
-            .any(|(key, value)| { key == "match_count" && value == &StructuredValue::U64(2) })
-    );
+    assert!(r
+        .error
+        .as_ref()
+        .unwrap()
+        .evidence
+        .iter()
+        .any(|(key, value)| {
+            key == "target"
+                && value
+                    == &StructuredValue::String("step/0/before_action/invariant/inv-target".into())
+        }));
+    assert!(r
+        .error
+        .as_ref()
+        .unwrap()
+        .evidence
+        .iter()
+        .any(|(key, value)| { key == "match_count" && value == &StructuredValue::U64(2) }));
 }
 
 #[test]
