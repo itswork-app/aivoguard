@@ -189,10 +189,10 @@ ERROR     ⇒ comparison could not produce a valid MATCH/MISMATCH verdict
 ### 4.1 Declared tokens
 
 Unless otherwise stated, identity strings in M06 (`case_id`, `expectation_id`,
-account/asset/facet string ids when declared as tokens) use:
+account/asset/facet/invariant string ids when declared as tokens) use:
 
 ```text
-non-empty UTF-8
+non-empty UTF-8 (empty string is invalid; whitespace-only is non-empty and is not trimmed)
 exact equality
 case-sensitive
 no trim
@@ -411,7 +411,10 @@ step_index in range                               → exactly 1 positional recor
 ```
 
 Positional indexing never selects “first/last among duplicates”; the index
-identifies exactly one vector slot when in range.
+identifies exactly one vector slot when in range. The `u64` index MUST be
+converted to the platform index type using checked conversion. Conversion
+failure is equivalent to out-of-range and MUST return `ERROR /
+MissingObservationField`; truncating or wrapping casts are forbidden.
 
 Requires the selected step record to expose an M01 economic disposition.
 Step present without economic disposition (e.g. only M01 Error path) when this
@@ -428,9 +431,13 @@ step_index   : u64
 expected_kind: Pass | Fail | Error
 ```
 
-**Matching key:** records in `invariant_evaluation_records` whose
-`(step_index, phase, invariant_id)` equal the expectation target
-(see §7.5 for cardinality and Executed / NotExecuted rules).
+**Matching key:** within the positional `step_records[step_index]` slot, collect
+records whose `invariant_id` equals the declared id **and** whose explicit
+`EvaluationPoint` equals the point mapped from `phase` (`BeforeAction` →
+`BeforeAction`; `AfterAction` → `AfterAction`). A record stored in the wrong
+phase vector does not match unless its explicit point also agrees. The
+`step_index` is the checked positional slot, not a search by embedded index.
+See §7.5 for cardinality and Executed / NotExecuted rules.
 
 **Important:** M02 `FAIL` does **not** by itself create M06 `MISMATCH` unless
 an expectation of this (or completion) class declares the relationship.
@@ -443,8 +450,9 @@ expected_kind: Pass | Fail | Error
 ```
 
 **Matching key:** records in `completion_evaluation_records` whose
-`invariant_id` equals the expectation target (and whose evaluation point is
-completion), subject to §7.5 cardinality and Executed / NotExecuted rules.
+`invariant_id` equals the expectation target **and** whose explicit evaluation
+point is `OnSimulationCompletion`, subject to §7.5 cardinality and
+Executed / NotExecuted rules.
 ---
 
 ## 7. Observation model
@@ -781,6 +789,17 @@ MismatchEvidence
 
 Machine authority = structured fields. Human messages optional and non-authoritative.
 
+For Gate-5 M06 v1.1.0, invariant target descriptors use these canonical labels:
+
+- Per-step: `step/{step_index}/before_action/invariant/{invariant_id}` or
+  `step/{step_index}/after_action/invariant/{invariant_id}`.
+- Completion: `completion/invariant/{invariant_id}`.
+
+The same target descriptor MUST be attached to `MissingObservationField`,
+`AmbiguousObservation`, and `NotExecutedObservation` errors. Ambiguity evidence
+also MUST include the exact matching-record count. These labels are diagnostic
+identity descriptors, not wire serialization (AD-14 remains OPEN).
+
 Mismatch list ordering = increasing `ordinal` = declared expectation order among
 failing applicable expectations.
 
@@ -808,7 +827,7 @@ RegressionResult
 RegressionProvenance
 ├── scenario_id / scenario_version / configuration_id
 ├── observation_engine_pins (m01/m02/m03 versions as present)
-├── m06_spec_version_label  // declared document/engine label when implemented
+├── m06_spec_version_label  // current implementation engine label (e.g. m06-0.1.0); not normative spec version
 └── evaluation_policy       // ALL_MISMATCHES
 ```
 
@@ -819,7 +838,12 @@ Provenance **MUST** allow a consumer to answer:
 3. Which authoritative observation was used?
 4. What matched / mismatched / errored and why?
 
-Wire serialization of provenance is **OUT OF SCOPE** (**AD-14 OPEN**).
+The existing Rust field name `m06_spec_version_label` is retained provisionally
+under AD-15, but its current value identifies the M06 implementation engine
+version label (`ENGINE_VERSION`), not the normative document version. Consumers
+MUST NOT infer a specification version from this field. A future public API /
+serialization decision may introduce separate explicit engine and spec version
+fields. Wire serialization of provenance is **OUT OF SCOPE** (**AD-14 OPEN**).
 
 ---
 
@@ -1126,7 +1150,7 @@ shrinker
 | v1.0.0 freeze | **TASK-19 — HISTORICAL / ARCHIVED** |
 | v1.0.0 freeze authority | TASK-19 (audit TASK-18 READY_FOR_FREEZE) |
 | Implementation | **AUTHORIZED** by TASK-68; v1.1.0 reconciliation pending |
-| Supersedes | None (first M06 specification) |
+| Supersedes | v1.0.0 only for clauses explicitly amended and frozen in v1.1.0 |
 
 Lifecycle:
 
@@ -1182,26 +1206,25 @@ No edit to `docs/design/domain-contract.md`.
 
 ## 31. Hard stop
 
-This v1.1.0 amendment candidate does **not** itself authorize:
-* semantic changes to frozen M01–M04 specifications
-* changes to frozen M01–M04 specifications
-* resolution of AD-03 / AD-12 / AD-14 / AD-15
-* serialization, CLI/API, or shrinking
+This v1.1.0 amendment candidate does **not** authorize semantic changes to
+frozen M01–M04 specifications, resolution of AD-03 / AD-12 / AD-14 / AD-15,
+or serialization, CLI/API, or shrinking.
 
 
 ## 32. v1.1.0 amendment register — OPEN
 
-The following implementation-to-contract reconciliation items are under review.
-They are proposed clarifications, not normative until accepted and frozen.
+The following v1.1.0 reconciliation items have been implemented in this branch.
+They remain amendment-candidate semantics until the PR review, required CI, and
+new freeze record are complete.
 
 | ID | Area | v1.0.0 contract / observed implementation | Proposed v1.1.0 resolution | Required evidence |
 |---|---|---|---|---|
-| M06-A01 | Positional index portability | `step_index: u64` is converted to `usize` with an unchecked cast in the implementation. On targets where `usize` is narrower, large values can truncate and select the wrong slot. | Convert with checked `usize::try_from`; conversion failure is `ERROR / MissingObservationField`, identical to out-of-range. | Unit/integration tests for checked conversion and out-of-range behavior. |
-| M06-A02 | Invariant phase identity | Per-step lookup selects the before/after vector but currently matches only `invariant_id`, not the record's explicit `EvaluationPoint`. | Match both invariant id and the exact point corresponding to the declared phase. Wrong-point records do not count as matches. | Tests with a mismatched EvaluationPoint injected into the selected phase vector. |
-| M06-A03 | Identifier validation | The implementation validates case and expectation IDs, but not all target token fields (account, asset, facet, invariant id). | Empty target tokens are malformed expectation payloads and produce `ERROR / InvalidExpectation` before observation lookup. Preserve exact, non-trimming token semantics. | Tests for each empty target token and for non-empty whitespace-preserving tokens. |
-| M06-A04 | Mismatch target evidence | Invariant mismatch evidence currently uses `expectation_id` as target, which does not identify the observed invariant location. | Target descriptor identifies invariant id, step index, and phase; completion target identifies completion phase and invariant id. | Tests assert structured target fields/descriptor. |
-| M06-A05 | Ambiguous observation diagnostics | Ambiguity error includes match count but omits the target descriptor required by §13. | Include invariant id and lookup location (step/phase or completion) alongside match count. | Tests assert deterministic structured error evidence. |
-| M06-A06 | Version identity | Implementation engine label `m06-0.1.0` is distinct in purpose from specification version, but provenance field is named `m06_spec_version_label`. | Explicitly define whether this field identifies implementation engine version or normative spec version; do not silently conflate. Proposed: preserve current field for compatibility but define it as the M06 engine implementation version label, with spec version tracked separately in docs until AD-14 serialization/API decisions. | Contract wording and tests for provenance label. |
+| M06-A01 | Positional index portability | Unchecked `u64` → `usize` cast could truncate on narrower targets. | Checked conversion; failure is `ERROR / MissingObservationField`. | Implemented in `engine.rs`; `maximum_step_index_is_a_missing_observation_not_a_wrapped_index`; CI pending. |
+| M06-A02 | Invariant phase identity | Phase vector selection alone did not verify the record's explicit `EvaluationPoint`. | Match invariant id and exact point corresponding to the declared phase. | Implemented in `engine.rs`; `invariant_lookup_requires_explicit_evaluation_point_match`; CI pending. |
+| M06-A03 | Identifier validation | Empty target tokens were not rejected before observation lookup. | Empty account/asset/facet/invariant tokens produce `ERROR / InvalidExpectation`; no trimming or normalization. | Implemented in `engine.rs`; tests cover empty account/asset/facet/invariant IDs, including non-applicable expectations; CI pending. |
+| M06-A04 | Mismatch target evidence | Invariant mismatch target used `expectation_id`, not the observation location. | Use canonical per-step/completion target descriptors. | Implemented in `engine.rs`; `invariant_mismatch_and_ambiguity_include_lookup_target`; CI pending. |
+| M06-A05 | Ambiguous observation diagnostics | Ambiguity error lacked the target descriptor. | Include target descriptor and exact match count; include target on missing/not-executed invariant errors. | Implemented in `engine.rs`; `invariant_mismatch_and_ambiguity_include_lookup_target`; CI pending. |
+| M06-A06 | Version identity | Field name `m06_spec_version_label` was ambiguous; value comes from `ENGINE_VERSION`. | Define the value as implementation engine version label; do not infer normative spec version. Keep field name provisional under AD-15. | Spec clarified; existing `m06_engine_version_exported` test confirms current engine label; CI pending. |
 
 ### 32.1 Proposed validation order
 
