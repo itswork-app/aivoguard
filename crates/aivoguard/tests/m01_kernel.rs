@@ -649,3 +649,50 @@ fn unknown_asset_is_invalid_input() {
         KernelOutcome::Economic { .. } => panic!("expected invalid input"),
     }
 }
+
+#[test]
+fn transfer_with_fee_aggregate_same_cell_debit_is_failed_economic() {
+    let world = base_world();
+    let mut state = funded_state();
+    state.set_balance(
+        aivoguard::AccountId::new("alice"),
+        AssetId::new("USD"),
+        available(),
+        100,
+    );
+    let before = state.clone();
+
+    let outcome = evaluate(
+        &world,
+        &state,
+        &Action::TransferWithFee {
+            actor: ActorId::new("alice-actor"),
+            action_id: None,
+            from: aivoguard::AccountId::new("alice"),
+            to: aivoguard::AccountId::new("bob"),
+            asset: AssetId::new("USD"),
+            amount: 80,
+            fee_payer: aivoguard::AccountId::new("alice"),
+            fee_recipient: aivoguard::AccountId::new("fee"),
+            fee_asset: AssetId::new("USD"),
+            fee_amount: 30,
+        },
+        &ctx(),
+    );
+
+    match outcome {
+        KernelOutcome::Economic {
+            disposition,
+            state_after,
+            transaction,
+            ..
+        } => {
+            assert_eq!(disposition, EconomicDisposition::FailedEconomic);
+            assert!(transaction.effects.is_empty());
+            assert_eq!(state_after, before);
+        }
+        KernelOutcome::Error { error, .. } => {
+            panic!("aggregate insufficiency must be economic failure: {error:?}");
+        }
+    }
+}
