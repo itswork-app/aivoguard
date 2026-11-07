@@ -696,3 +696,298 @@ fn transfer_with_fee_aggregate_same_cell_debit_is_failed_economic() {
         }
     }
 }
+
+#[test]
+fn transfer_with_fee_zero_fee_preserves_same_cell_transfer() {
+    let world = base_world();
+    let mut state = EconomicState::new();
+    state.set_balance(
+        aivoguard::AccountId::new("alice"),
+        AssetId::new("USD"),
+        available(),
+        100,
+    );
+
+    let outcome = evaluate(
+        &world,
+        &state,
+        &Action::TransferWithFee {
+            actor: ActorId::new("alice-actor"),
+            action_id: None,
+            from: aivoguard::AccountId::new("alice"),
+            to: aivoguard::AccountId::new("bob"),
+            asset: AssetId::new("USD"),
+            amount: 80,
+            fee_payer: aivoguard::AccountId::new("alice"),
+            fee_recipient: aivoguard::AccountId::new("fee"),
+            fee_asset: AssetId::new("USD"),
+            fee_amount: 0,
+        },
+        &ctx(),
+    );
+
+    match outcome {
+        KernelOutcome::Economic {
+            disposition,
+            state_after,
+            ..
+        } => {
+            assert_eq!(disposition, EconomicDisposition::AcceptedEffective);
+            assert_eq!(
+                state_after.get_balance(
+                    &aivoguard::AccountId::new("alice"),
+                    &AssetId::new("USD"),
+                    &available(),
+                ),
+                20
+            );
+        }
+        KernelOutcome::Error { error, .. } => panic!("unexpected error: {error:?}"),
+    }
+}
+
+#[test]
+fn transfer_with_fee_distinct_fee_payer_checks_each_account_cell() {
+    let world = base_world();
+    let mut state = EconomicState::new();
+    state.set_balance(
+        aivoguard::AccountId::new("alice"),
+        AssetId::new("USD"),
+        available(),
+        1_000,
+    );
+    state.set_balance(
+        aivoguard::AccountId::new("bob"),
+        AssetId::new("USD"),
+        available(),
+        50,
+    );
+
+    let outcome = evaluate(
+        &world,
+        &state,
+        &Action::TransferWithFee {
+            actor: ActorId::new("alice-actor"),
+            action_id: None,
+            from: aivoguard::AccountId::new("alice"),
+            to: aivoguard::AccountId::new("bob"),
+            asset: AssetId::new("USD"),
+            amount: 800,
+            fee_payer: aivoguard::AccountId::new("bob"),
+            fee_recipient: aivoguard::AccountId::new("fee"),
+            fee_asset: AssetId::new("USD"),
+            fee_amount: 50,
+        },
+        &ctx(),
+    );
+
+    match outcome {
+        KernelOutcome::Economic {
+            disposition,
+            state_after,
+            ..
+        } => {
+            assert_eq!(disposition, EconomicDisposition::AcceptedEffective);
+            assert_eq!(
+                state_after.get_balance(
+                    &aivoguard::AccountId::new("alice"),
+                    &AssetId::new("USD"),
+                    &available(),
+                ),
+                200
+            );
+            assert_eq!(
+                state_after.get_balance(
+                    &aivoguard::AccountId::new("bob"),
+                    &AssetId::new("USD"),
+                    &available(),
+                ),
+                800
+            );
+        }
+        KernelOutcome::Error { error, .. } => panic!("unexpected error: {error:?}"),
+    }
+}
+
+#[test]
+fn transfer_with_fee_distinct_assets_checks_each_asset_cell() {
+    let world = base_world();
+    let mut state = EconomicState::new();
+    state.set_balance(
+        aivoguard::AccountId::new("alice"),
+        AssetId::new("USD"),
+        available(),
+        1_000,
+    );
+    state.set_balance(
+        aivoguard::AccountId::new("alice"),
+        AssetId::new("EUR"),
+        available(),
+        50,
+    );
+
+    let outcome = evaluate(
+        &world,
+        &state,
+        &Action::TransferWithFee {
+            actor: ActorId::new("alice-actor"),
+            action_id: None,
+            from: aivoguard::AccountId::new("alice"),
+            to: aivoguard::AccountId::new("bob"),
+            asset: AssetId::new("USD"),
+            amount: 800,
+            fee_payer: aivoguard::AccountId::new("alice"),
+            fee_recipient: aivoguard::AccountId::new("fee"),
+            fee_asset: AssetId::new("EUR"),
+            fee_amount: 30,
+        },
+        &ctx(),
+    );
+
+    match outcome {
+        KernelOutcome::Economic {
+            disposition,
+            state_after,
+            ..
+        } => {
+            assert_eq!(disposition, EconomicDisposition::AcceptedEffective);
+            assert_eq!(
+                state_after.get_balance(
+                    &aivoguard::AccountId::new("alice"),
+                    &AssetId::new("USD"),
+                    &available(),
+                ),
+                200
+            );
+            assert_eq!(
+                state_after.get_balance(
+                    &aivoguard::AccountId::new("alice"),
+                    &AssetId::new("EUR"),
+                    &available(),
+                ),
+                20
+            );
+        }
+        KernelOutcome::Error { error, .. } => panic!("unexpected error: {error:?}"),
+    }
+}
+
+#[test]
+fn transfer_with_fee_distinct_facets_checks_each_balance_cell() {
+    let mut world = base_world();
+    let fee_reserve = FacetId::new("fee_reserve");
+    world.insert_facet(fee_reserve.clone());
+    world.fee = Some(FeeRule {
+        debit_facet: fee_reserve.clone(),
+        credit_facet: available(),
+    });
+
+    let mut state = EconomicState::new();
+    state.set_balance(
+        aivoguard::AccountId::new("alice"),
+        AssetId::new("USD"),
+        available(),
+        1_000,
+    );
+    state.set_balance(
+        aivoguard::AccountId::new("alice"),
+        AssetId::new("USD"),
+        fee_reserve.clone(),
+        50,
+    );
+
+    let outcome = evaluate(
+        &world,
+        &state,
+        &Action::TransferWithFee {
+            actor: ActorId::new("alice-actor"),
+            action_id: None,
+            from: aivoguard::AccountId::new("alice"),
+            to: aivoguard::AccountId::new("bob"),
+            asset: AssetId::new("USD"),
+            amount: 800,
+            fee_payer: aivoguard::AccountId::new("alice"),
+            fee_recipient: aivoguard::AccountId::new("fee"),
+            fee_asset: AssetId::new("USD"),
+            fee_amount: 30,
+        },
+        &ctx(),
+    );
+
+    match outcome {
+        KernelOutcome::Economic {
+            disposition,
+            state_after,
+            ..
+        } => {
+            assert_eq!(disposition, EconomicDisposition::AcceptedEffective);
+            assert_eq!(
+                state_after.get_balance(
+                    &aivoguard::AccountId::new("alice"),
+                    &AssetId::new("USD"),
+                    &available(),
+                ),
+                200
+            );
+            assert_eq!(
+                state_after.get_balance(
+                    &aivoguard::AccountId::new("alice"),
+                    &AssetId::new("USD"),
+                    &fee_reserve,
+                ),
+                20
+            );
+        }
+        KernelOutcome::Error { error, .. } => panic!("unexpected error: {error:?}"),
+    }
+}
+
+#[test]
+fn transfer_with_fee_same_cell_overdraft_follows_world_permission() {
+    let mut world = base_world();
+    world.allow_negative_balances = true;
+    let mut state = EconomicState::new();
+    state.set_balance(
+        aivoguard::AccountId::new("alice"),
+        AssetId::new("USD"),
+        available(),
+        100,
+    );
+
+    let outcome = evaluate(
+        &world,
+        &state,
+        &Action::TransferWithFee {
+            actor: ActorId::new("alice-actor"),
+            action_id: None,
+            from: aivoguard::AccountId::new("alice"),
+            to: aivoguard::AccountId::new("bob"),
+            asset: AssetId::new("USD"),
+            amount: 80,
+            fee_payer: aivoguard::AccountId::new("alice"),
+            fee_recipient: aivoguard::AccountId::new("fee"),
+            fee_asset: AssetId::new("USD"),
+            fee_amount: 30,
+        },
+        &ctx(),
+    );
+
+    match outcome {
+        KernelOutcome::Economic {
+            disposition,
+            state_after,
+            ..
+        } => {
+            assert_eq!(disposition, EconomicDisposition::AcceptedEffective);
+            assert_eq!(
+                state_after.get_balance(
+                    &aivoguard::AccountId::new("alice"),
+                    &AssetId::new("USD"),
+                    &available(),
+                ),
+                -10
+            );
+        }
+        KernelOutcome::Error { error, .. } => panic!("unexpected error: {error:?}"),
+    }
+}
