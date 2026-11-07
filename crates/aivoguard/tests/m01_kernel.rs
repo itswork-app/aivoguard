@@ -820,7 +820,7 @@ fn transfer_with_fee_distinct_fee_payer_checks_each_account_cell() {
 }
 
 #[test]
-fn transfer_with_fee_distinct_assets_checks_each_asset_cell) {
+fn transfer_with_fee_distinct_assets_checks_each_asset_cell() {
     let world = base_world();
     let mut state = EconomicState::new();
     state.set_balance(
