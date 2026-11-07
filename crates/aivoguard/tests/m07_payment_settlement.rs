@@ -128,7 +128,7 @@ fn assert_error(case: &PaymentSettlementCase, id: PaymentSettlementErrorId) {
     let result = evaluate_payment_settlement(case);
     assert_eq!(result.verdict, PaymentSettlementVerdict::Error);
     assert_eq!(result.error.as_ref().unwrap().error_id, id);
-    assert!(result.mismatches.is_empty(), "ERROR must clear mismatches");
+    assert_eq!(result.mismatches, Vec::new(), "ERROR must clear mismatches");
 }
 
 // A. valid lifecycle observations
@@ -143,7 +143,7 @@ fn a_valid_settled_match() {
     )]);
     let result = evaluate_payment_settlement(&case);
     assert_eq!(result.verdict, PaymentSettlementVerdict::Match);
-    assert!(result.mismatches.is_empty());
+    assert_eq!(result.mismatches, Vec::new());
     assert!(result.error.is_none());
 }
 

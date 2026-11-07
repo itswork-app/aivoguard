@@ -159,7 +159,7 @@ fn noop_accepted_effective_zero_effects() {
         } => {
             assert_eq!(disposition, EconomicDisposition::AcceptedEffective);
             assert_eq!(transaction.actor, ActorId::new("alice-actor"));
-            assert!(transaction.effects.is_empty());
+            assert_eq!(transaction.effects, Vec::new());
             assert_eq!(state_after, state);
             assert!(evidence.disposition.is_some());
         }
@@ -256,7 +256,7 @@ fn insufficient_funds_is_failed_economic_with_zero_effects() {
             ..
         } => {
             assert_eq!(disposition, EconomicDisposition::FailedEconomic);
-            assert!(transaction.effects.is_empty());
+            assert_eq!(transaction.effects, Vec::new());
             assert_eq!(state_after, before);
         }
         KernelOutcome::Error { error, .. } => panic!("unexpected error: {error:?}"),
@@ -376,7 +376,7 @@ fn transfer_with_fee_atomicity_on_fee_failure() {
             ..
         } => {
             assert_eq!(disposition, EconomicDisposition::FailedEconomic);
-            assert!(transaction.effects.is_empty());
+            assert_eq!(transaction.effects, Vec::new());
             assert_eq!(state_after, before);
         }
         KernelOutcome::Error { error, .. } => panic!("unexpected error: {error:?}"),
@@ -647,5 +647,52 @@ fn unknown_asset_is_invalid_input() {
             assert_eq!(error.kind, KernelErrorKind::InvalidInput);
         }
         KernelOutcome::Economic { .. } => panic!("expected invalid input"),
+    }
+}
+
+#[test]
+fn transfer_with_fee_aggregate_same_cell_debit_is_failed_economic() {
+    let world = base_world();
+    let mut state = funded_state();
+    state.set_balance(
+        aivoguard::AccountId::new("alice"),
+        AssetId::new("USD"),
+        available(),
+        100,
+    );
+    let before = state.clone();
+
+    let outcome = evaluate(
+        &world,
+        &state,
+        &Action::TransferWithFee {
+            actor: ActorId::new("alice-actor"),
+            action_id: None,
+            from: aivoguard::AccountId::new("alice"),
+            to: aivoguard::AccountId::new("bob"),
+            asset: AssetId::new("USD"),
+            amount: 80,
+            fee_payer: aivoguard::AccountId::new("alice"),
+            fee_recipient: aivoguard::AccountId::new("fee"),
+            fee_asset: AssetId::new("USD"),
+            fee_amount: 30,
+        },
+        &ctx(),
+    );
+
+    match outcome {
+        KernelOutcome::Economic {
+            disposition,
+            state_after,
+            transaction,
+            ..
+        } => {
+            assert_eq!(disposition, EconomicDisposition::FailedEconomic);
+            assert_eq!(transaction.effects, Vec::new());
+            assert_eq!(state_after, before);
+        }
+        KernelOutcome::Error { error, .. } => {
+            panic!("aggregate insufficiency must be economic failure: {error:?}");
+        }
     }
 }

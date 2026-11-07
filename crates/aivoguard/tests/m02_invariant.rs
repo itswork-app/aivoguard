@@ -152,7 +152,7 @@ fn not_applicable_when_world_lacks_concept() {
         out.applicability,
         Some(aivoguard::ApplicabilityStatus::NotApplicable)
     );
-    assert!(out.violations.is_empty());
+    assert_eq!(out.violations, Vec::new());
 }
 
 #[test]
@@ -994,7 +994,7 @@ fn transaction_actor_owns_account_zero_effect_accepted_effective() {
         },
     );
     assert_eq!(out.kind, InvariantResultKind::Pass);
-    assert!(tx.effects.is_empty());
+    assert_eq!(tx.effects, Vec::new());
     assert_eq!(tx.disposition, EconomicDisposition::AcceptedEffective);
 }
 
@@ -1107,4 +1107,38 @@ fn count_type_is_not_money() {
     assert_eq!(c.value(), 3);
     assert_eq!(c.checked_add(aivoguard::Count::new(2)).unwrap().value(), 5);
     assert!(c.checked_add(aivoguard::Count::new(i128::MAX)).is_none());
+}
+
+#[test]
+fn contiguous_history_range_handles_i64_boundaries() {
+    let world = world_usd();
+    let invariant = inv(
+        "history-boundary",
+        InvariantScope::History,
+        ViolationPolicy::All,
+        Applicability::Always,
+        PropertyExpr::Compare {
+            left: ValueExpr::Literal(Money::new(AssetId::new("USD"), 1)),
+            op: CmpOp::Eq,
+            right: ValueExpr::Literal(Money::new(AssetId::new("USD"), 1)),
+        },
+    );
+
+    for position in [i64::MIN, i64::MAX] {
+        let records = vec![HistoryRecord {
+            logical_position: position,
+            transition: None,
+        }];
+        let target = EvaluationTarget::History {
+            world: &world,
+            records: &records,
+        };
+        let range = DomainExpr::HistoryRange {
+            start: position,
+            end: position,
+            require_contiguous: true,
+        };
+        let record = resolve_history_index(&invariant, target, &range, 0).unwrap();
+        assert_eq!(record.logical_position, position);
+    }
 }

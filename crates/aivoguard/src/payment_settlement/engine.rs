@@ -561,7 +561,7 @@ mod tests {
         ]);
         let result = evaluate_payment_settlement(&case);
         assert_eq!(result.verdict, PaymentSettlementVerdict::Match);
-        assert!(result.mismatches.is_empty());
+        assert_eq!(result.mismatches, Vec::new());
         assert!(result.error.is_none());
     }
 
@@ -611,7 +611,7 @@ mod tests {
             result.error.as_ref().unwrap().error_id,
             PaymentSettlementErrorId::MissingObservationField
         );
-        assert!(result.mismatches.is_empty());
+        assert_eq!(result.mismatches, Vec::new());
     }
 
     #[test]
@@ -758,7 +758,7 @@ mod tests {
         case.observation.fee_amount = None;
         let result = evaluate_payment_settlement(&case);
         assert_eq!(result.verdict, PaymentSettlementVerdict::Error);
-        assert!(result.mismatches.is_empty());
+        assert_eq!(result.mismatches, Vec::new());
         assert_eq!(
             result.error.as_ref().unwrap().error_id,
             PaymentSettlementErrorId::MissingObservationField
@@ -943,7 +943,7 @@ mod tests {
         let result = evaluate_payment_settlement(case);
         assert_eq!(result.verdict, PaymentSettlementVerdict::Error);
         assert_eq!(result.error.as_ref().unwrap().error_id, id);
-        assert!(result.mismatches.is_empty());
+        assert_eq!(result.mismatches, Vec::new());
     }
 
     #[test]
@@ -1074,7 +1074,7 @@ mod tests {
             result.error.as_ref().unwrap().error_id,
             PaymentSettlementErrorId::ObservationBindingMismatch
         );
-        assert!(result.mismatches.is_empty());
+        assert_eq!(result.mismatches, Vec::new());
     }
 
     #[test]
@@ -1267,7 +1267,7 @@ mod tests {
         });
         let result = evaluate_payment_settlement(&case);
         assert_eq!(result.verdict, PaymentSettlementVerdict::Error);
-        assert!(result.mismatches.is_empty());
+        assert_eq!(result.mismatches, Vec::new());
         assert_eq!(
             result.error.as_ref().unwrap().error_id,
             PaymentSettlementErrorId::M06CompositionError
@@ -1302,7 +1302,7 @@ mod tests {
         });
         let result = evaluate_payment_settlement(&case);
         assert_eq!(result.verdict, PaymentSettlementVerdict::Match);
-        assert!(result.mismatches.is_empty());
+        assert_eq!(result.mismatches, Vec::new());
         assert!(result.error.is_none());
         assert_eq!(result.provenance.m06_verdict.as_deref(), Some("Match"));
     }

@@ -170,7 +170,7 @@ fn exact_balance_match() {
     let sim = base_sim(state_with(100, Some(0)));
     let r = evaluate_regression(&case_with(vec![bal_exact("e1", 100, true)], sim, None));
     assert_eq!(r.verdict, RegressionVerdict::Match);
-    assert!(r.mismatches.is_empty());
+    assert_eq!(r.mismatches, Vec::new());
     assert!(r.error.is_none());
     assert_eq!(r.expectations_evaluated, 1);
 }
@@ -301,7 +301,7 @@ fn all_non_applicable_expectations_match() {
     assert_eq!(r.verdict, RegressionVerdict::Match);
     assert_eq!(r.expectations_skipped, 2);
     assert_eq!(r.expectations_evaluated, 0);
-    assert!(r.mismatches.is_empty());
+    assert_eq!(r.mismatches, Vec::new());
 }
 
 #[test]
@@ -327,7 +327,7 @@ fn non_applicable_absent_balance_skips_without_error() {
         None,
     ));
     assert_eq!(r.verdict, RegressionVerdict::Match);
-    assert!(r.mismatches.is_empty());
+    assert_eq!(r.mismatches, Vec::new());
     assert!(r.error.is_none());
     assert_eq!(r.expectations_skipped, 2);
     assert_eq!(r.expectations_evaluated, 0);
@@ -810,7 +810,7 @@ fn error_after_prior_mismatch_aborts_with_error() {
         RegressionErrorId::MissingObservationField
     );
     // §14.1: mismatches[] empty unless MISMATCH
-    assert!(r.mismatches.is_empty());
+    assert_eq!(r.mismatches, Vec::new());
     assert_eq!(r.expectations_evaluated, 2);
 }
 
