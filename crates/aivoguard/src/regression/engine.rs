@@ -192,7 +192,6 @@ fn validate_expectation_set(expectations: &[Expectation]) -> Result<(), Regressi
 }
 
 fn validate_expectation_target_tokens(expectation: &Expectation) -> Result<(), RegressionError> {
-    let mut fields: Vec<(&str, &str)> = Vec::new();
     match &expectation.class {
         ExpectationClass::FinalBalanceExact {
             account_id,
@@ -206,31 +205,35 @@ fn validate_expectation_target_tokens(expectation: &Expectation) -> Result<(), R
             facet_id,
             ..
         } => {
-            fields.push(("account_id", account_id));
-            fields.push(("asset_id", asset_id));
-            fields.push(("facet_id", facet_id));
+            validate_target_token(expectation, "account_id", account_id)?;
+            validate_target_token(expectation, "asset_id", asset_id)?;
+            validate_target_token(expectation, "facet_id", facet_id)
         }
         ExpectationClass::InvariantKindExact { invariant_id, .. }
         | ExpectationClass::CompletionInvariantKindExact { invariant_id, .. } => {
-            fields.push(("invariant_id", invariant_id));
+            validate_target_token(expectation, "invariant_id", invariant_id)
         }
         ExpectationClass::ExecutionStatusExact { .. }
         | ExpectationClass::ExecutedActionCountExact { .. }
-        | ExpectationClass::StepDispositionExact { .. } => {}
+        | ExpectationClass::StepDispositionExact { .. } => Ok(()),
     }
+}
 
-    for (field, value) in fields {
-        if value.is_empty() {
-            return Err(RegressionError::new(
-                RegressionErrorId::InvalidExpectation,
-                format!("{field} must be a non-empty token"),
-            )
-            .with_field(
-                "expectation_id",
-                StructuredValue::String(expectation.expectation_id.clone()),
-            )
-            .with_field("field", StructuredValue::String(field.to_owned())));
-        }
+fn validate_target_token(
+    expectation: &Expectation,
+    field: &str,
+    value: &str,
+) -> Result<(), RegressionError> {
+    if value.is_empty() {
+        return Err(RegressionError::new(
+            RegressionErrorId::InvalidExpectation,
+            format!("{field} must be a non-empty token"),
+        )
+        .with_field(
+            "expectation_id",
+            StructuredValue::String(expectation.expectation_id.clone()),
+        )
+        .with_field("field", StructuredValue::String(field.to_owned())));
     }
     Ok(())
 }
