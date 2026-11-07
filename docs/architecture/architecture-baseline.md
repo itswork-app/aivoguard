@@ -6,7 +6,7 @@
 | Task | TASK-00B |
 | Status | **BASELINE** (architecture documentation; not a normative economic spec) |
 | Authority | Subordinate to frozen design specifications and accepted ADRs |
-| Implementation | Current source includes M01–M04 and M06–M08; M05 and M09 are not implemented |
+| Implementation | Current source includes M01–M04 and M07–M08; M06 source/tests are present but authorization is unresolved; M05 and M09 are not implemented |
 | Status register | [Implementation Status Ledger](../implementation-status.md) |
 
 This document maps frozen product/domain/economic specifications into repository
@@ -133,7 +133,7 @@ ADAPTERS            M07 payment/settlement testing + semantic adapter boundary
                      wire NOT FROZEN / NOT AUTHORIZED)
 ORCHESTRATION       M03 simulator (IMPLEMENTED / PASS; Gate 3 CLOSED); M09 multi-agent (future)
 EVALUATION          M02 invariants (IMPLEMENTED / PASS; Gate 2 CLOSED);
-                    M06 regression (IMPLEMENTED; Gate 5 CLOSED)
+                    M06 regression (SOURCE PRESENT; AUTHORIZATION UNRESOLVED; Gate-5 spec frozen)
 ECONOMIC AUTHORITY  M01 kernel (IMPLEMENTED / PASS; Gate 1 CLOSED)
 DOMAIN              World / State / Action / Asset / Money primitives (in M01)
 ```
@@ -260,12 +260,12 @@ own economic truth (M01), invariant evaluation (M02), or simulation sequencing
 Economic fault-injection perturbations per future specs. Distinct from M04.
 Neither silently alters authoritative economic semantics. No detailed APIs here.
 
-### M06 — Regression (**FROZEN** specification; IMPLEMENTED)
+### M06 — Regression (**FROZEN** specification; SOURCE PRESENT; AUTHORIZATION UNRESOLVED)
 
 Compares declared expectations against authoritative outputs per
 [`docs/design/economic-regression-engine-specification.md`](../design/economic-regression-engine-specification.md)
-(**FROZEN**, Gate 5 **CLOSED**, TASK-19; audit TASK-18). Implementation under
-`crates/aivoguard/src/regression/`.
+(**FROZEN**, Gate 5 **CLOSED**, TASK-19; audit TASK-18). Source and tests are present under
+`crates/aivoguard/src/regression/` and `crates/aivoguard/tests/m06_regression.rs`, but no separate implementation authorization record has been located. Treat this code as unratified/experimental until a prospective maintainer decision or de-scope decision is recorded in [Issue #9](https://github.com/itswork-app/aivoguard/issues/9). The freeze itself does not authorize implementation.
 
 ```text
 Economic Truth ≠ Invariant Evaluation ≠ Test Expectation
@@ -614,7 +614,7 @@ Architecture remains compatible with, and does **not** decide:
 * M04 specification: **FROZEN** (Gate 4 **CLOSED**); implemented (TASK-11;
   authorized TASK-10H)
 * M06 specification: **FROZEN** (Gate 5 **CLOSED**; TASK-19; audit TASK-18);
-  implemented under `src/regression/`
+  source present under `src/regression/` (authorization unresolved; Issue #9)
 * M07 specification: **FROZEN** (Gate 6; @ `b7d1874`); **IMPLEMENTED** /
   **FROZEN_FOR_CURRENT_SCOPE** (core TASK-38…41; semantic adapter TASK-43;
   audits TASK-42 / TASK-44 **PASS**; freeze evidence TASK-45)
@@ -639,7 +639,7 @@ Architecture remains compatible with, and does **not** decide:
 * M03 as a read-only orchestration module under `crates/aivoguard/src/simulator/`
   (implemented; packaging remains an implementation decision)
 * M04 as specified by frozen Gate-4 contract (**FROZEN**; implemented TASK-11)
-* M06 as specified by frozen Gate-5 contract (**FROZEN**; implemented)
+* M06 as specified by frozen Gate-5 contract (**FROZEN**; source present; authorization unresolved)
 * M07 as specified by frozen Gate-6 contract (**FROZEN**; implemented for
   current authorized scope; provider/wire require separate authorization)
 * M08 as specified by frozen Gate-7 contract (**FROZEN** by TASK-54;
@@ -661,7 +661,7 @@ Architecture remains compatible with, and does **not** decide:
 | M03 | Frozen | Defined | Implemented / **PASS** | Gate 3 **CLOSED** / TASK-08 / TASK-08R / TASK-08F / TASK-09 |
 | M04 | **FROZEN** | Defined | **IMPLEMENTED** (TASK-11) | Gate 4 **CLOSED** / TASK-10G / TASK-10H |
 | M05 | Future | Boundary only | Not implemented | Future |
-| M06 | **FROZEN** | Defined | **IMPLEMENTED** | Gate 5 **CLOSED** / TASK-19 (audit TASK-18) |
+| M06 | **FROZEN** | Defined | **SOURCE PRESENT; AUTHORIZATION UNRESOLVED** | Gate 5 **CLOSED** / TASK-19 freezes specification only; implementation authorization not located (Issue #9) |
 | M07 | **FROZEN** | Defined | **IMPLEMENTED** / **FROZEN_FOR_CURRENT_SCOPE** (semantic adapter; no provider/wire) | Gate 6 / TASK-45 (audits TASK-42 / TASK-44) |
 | M08 | **FROZEN** | Defined (Gate 7) | **IMPLEMENTED** / **FROZEN_FOR_CURRENT_SCOPE** (inbound-only; wire **NOT FROZEN**) | Gate 7 **CLOSED_FOR_CURRENT_BOUNDED_INBOUND_SCOPE** / TASK-66 / TASK-67 |
 | M09 | Future | Boundary only | Not implemented | Future |
