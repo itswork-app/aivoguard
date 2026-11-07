@@ -194,8 +194,18 @@ fn validate_expectation_set(expectations: &[Expectation]) -> Result<(), Regressi
 fn validate_expectation_target_tokens(expectation: &Expectation) -> Result<(), RegressionError> {
     let mut fields: Vec<(&str, &str)> = Vec::new();
     match &expectation.class {
-        ExpectationClass::FinalBalanceExact { account_id, asset_id, facet_id, .. }
-        | ExpectationClass::FinalBalanceAbsoluteTolerance { account_id, asset_id, facet_id, .. } => {
+        ExpectationClass::FinalBalanceExact {
+            account_id,
+            asset_id,
+            facet_id,
+            ..
+        }
+        | ExpectationClass::FinalBalanceAbsoluteTolerance {
+            account_id,
+            asset_id,
+            facet_id,
+            ..
+        } => {
             fields.push(("account_id", account_id));
             fields.push(("asset_id", asset_id));
             fields.push(("facet_id", facet_id));
@@ -453,13 +463,15 @@ fn eval_step_disposition(
 ) -> EvalOne {
     let idx = match checked_step_index(step_index) {
         Ok(index) if index < sim.step_records.len() => index,
-        Ok(_) => return EvalOne::Error(
-            RegressionError::new(
-                RegressionErrorId::MissingObservationField,
-                "step_index out of range for step_records",
-            )
-            .with_field("step_index", StructuredValue::U64(step_index)),
-        ),
+        Ok(_) => {
+            return EvalOne::Error(
+                RegressionError::new(
+                    RegressionErrorId::MissingObservationField,
+                    "step_index out of range for step_records",
+                )
+                .with_field("step_index", StructuredValue::U64(step_index)),
+            );
+        }
         Err(error) => return EvalOne::Error(error),
     };
     let step = &sim.step_records[idx];
@@ -505,13 +517,15 @@ fn eval_invariant_kind(
 ) -> EvalOne {
     let idx = match checked_step_index(step_index) {
         Ok(index) if index < sim.step_records.len() => index,
-        Ok(_) => return EvalOne::Error(
-            RegressionError::new(
-                RegressionErrorId::MissingObservationField,
-                "step_index out of range for step_records",
-            )
-            .with_field("step_index", StructuredValue::U64(step_index)),
-        ),
+        Ok(_) => {
+            return EvalOne::Error(
+                RegressionError::new(
+                    RegressionErrorId::MissingObservationField,
+                    "step_index out of range for step_records",
+                )
+                .with_field("step_index", StructuredValue::U64(step_index)),
+            );
+        }
         Err(error) => return EvalOne::Error(error),
     };
     let step = &sim.step_records[idx];
@@ -532,9 +546,17 @@ fn eval_invariant_kind(
     ));
     let matches: Vec<&InvariantEvaluationRecord> = records
         .iter()
-        .filter(|r| record_invariant_id(r) == invariant_id && record_point(r) == expected_point)
+        .filter(|r| {
+            record_invariant_id(r) == invariant_id && record_point(r) == expected_point
+        })
         .collect();
-    resolve_invariant_matches(expectation, "InvariantKindExact", &matches, expected_kind, target)
+    resolve_invariant_matches(
+        expectation,
+        "InvariantKindExact",
+        &matches,
+        expected_kind,
+        target,
+    )
 }
 
 fn eval_completion_invariant(
@@ -570,11 +592,13 @@ fn resolve_invariant_matches(
     target: StructuredValue,
 ) -> EvalOne {
     match matches.len() {
-        0 => EvalOne::Error(RegressionError::new(
-            RegressionErrorId::MissingObservationField,
-            format!("no matching {class_name} observation records"),
-        )
-        .with_field("target", target.clone())),
+        0 => EvalOne::Error(
+            RegressionError::new(
+                RegressionErrorId::MissingObservationField,
+                format!("no matching {class_name} observation records"),
+            )
+            .with_field("target", target.clone()),
+        ),
         1 => match matches[0] {
             InvariantEvaluationRecord::NotExecuted { .. } => EvalOne::Error(
                 RegressionError::new(
