@@ -264,8 +264,8 @@ Neither silently alters authoritative economic semantics. No detailed APIs here.
 
 Compares declared expectations against authoritative outputs per
 [`docs/design/economic-regression-engine-specification.md`](../design/economic-regression-engine-specification.md)
-(v1.0.0 **HISTORICALLY FROZEN**, TASK-19; v1.1.0 amendment in progress; TASK-68 implementation authorization). Source and tests are present under
-`crates/aivoguard/src/regression/` and `crates/aivoguard/tests/m06_regression.rs` are authorized and prospectively ratified effective 2026-11-07 by [TASK-68](../design/m06-implementation-authorization.md). TASK-68 supplements the historical freeze-time BLOCKED marker without claiming prior authorization. The v1.1.0 specification is frozen by TASK-70; v1.0.0 is preserved in the archive. AD-03 / AD-12 / AD-14 / AD-15, M06-OD-01/02/03, and DC-13 remain open.
+(v1.0.0 **HISTORICALLY FROZEN**, TASK-19; v1.1.0 **FROZEN**, TASK-70; TASK-68 implementation authorization). Source and tests are present under
+`crates/aivoguard/src/regression/` and `crates/aivoguard/tests/m06_regression.rs` are authorized and prospectively ratified effective 2026-11-07 by [TASK-68](../design/m06-implementation-authorization.md). TASK-68 supplements the historical freeze-time BLOCKED marker without claiming prior authorization. The v1.1.0 specification is frozen by [TASK-70](../design/m06-specification-freeze-v1.1.0.md); v1.0.0 is preserved in the archive. AD-03 / AD-12 / AD-14 / AD-15, M06-OD-01/02/03, and DC-13 remain open.
 
 ```text
 Economic Truth ≠ Invariant Evaluation ≠ Test Expectation
@@ -639,7 +639,7 @@ Architecture remains compatible with, and does **not** decide:
 * M03 as a read-only orchestration module under `crates/aivoguard/src/simulator/`
   (implemented; packaging remains an implementation decision)
 * M04 as specified by frozen Gate-4 contract (**FROZEN**; implemented TASK-11)
-* M06 as specified by Gate-5 v1.0.0 baseline (historically frozen; v1.1.0 amendment in progress; implementation authorized by TASK-68)
+* M06 as specified by Gate-5 v1.0.0 baseline (historically frozen; v1.1.0 frozen by TASK-70; implementation authorized by TASK-68)
 * M07 as specified by frozen Gate-6 contract (**FROZEN**; implemented for
   current authorized scope; provider/wire require separate authorization)
 * M08 as specified by frozen Gate-7 contract (**FROZEN** by TASK-54;
@@ -661,7 +661,7 @@ Architecture remains compatible with, and does **not** decide:
 | M03 | Frozen | Defined | Implemented / **PASS** | Gate 3 **CLOSED** / TASK-08 / TASK-08R / TASK-08F / TASK-09 |
 | M04 | **FROZEN** | Defined | **IMPLEMENTED** (TASK-11) | Gate 4 **CLOSED** / TASK-10G / TASK-10H |
 | M05 | Future | Boundary only | Not implemented | Future |
-| M06 | **FROZEN** | Defined | **IMPLEMENTED / AUTHORIZED (TASK-68); SPEC AMENDMENT IN PROGRESS** | Gate 5 **CLOSED** / TASK-19 froze v1.0.0; implementation authorized separately by TASK-68; v1.1.0 frozen by TASK-70 |
+| M06 | **FROZEN** | Defined | **IMPLEMENTED / AUTHORIZED (TASK-68); SPEC FROZEN v1.1.0 (TASK-70)** | Gate 5 **CLOSED** / TASK-19 froze v1.0.0; implementation authorized separately by TASK-68; v1.1.0 frozen by TASK-70 |
 | M07 | **FROZEN** | Defined | **IMPLEMENTED** / **FROZEN_FOR_CURRENT_SCOPE** (semantic adapter; no provider/wire) | Gate 6 / TASK-45 (audits TASK-42 / TASK-44) |
 | M08 | **FROZEN** | Defined (Gate 7) | **IMPLEMENTED** / **FROZEN_FOR_CURRENT_SCOPE** (inbound-only; wire **NOT FROZEN**) | Gate 7 **CLOSED_FOR_CURRENT_BOUNDED_INBOUND_SCOPE** / TASK-66 / TASK-67 |
 | M09 | Future | Boundary only | Not implemented | Future |
