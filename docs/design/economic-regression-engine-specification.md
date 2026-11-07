@@ -59,7 +59,7 @@ Domain Contract FROZEN
         ↓
 M01 / M02 / M03 / M04 FROZEN
         ↓
-This M06 specification (**FROZEN**)
+M06 v1.0.0 (**HISTORICALLY FROZEN; ARCHIVED**) / v1.1.0 (**AMENDMENT IN PROGRESS**)
         ↓
 Accepted ADRs
         ↓
@@ -104,7 +104,7 @@ Scenario/Test expectation) remains listed **OPEN** in `domain-contract.md`.
 M06 defines the Gate-5 expectation-matching semantics required by the
 regression engine.
 
-This specification provides the M06 realization of regression expectations,
+The M06 v1.0.0 specification provides the baseline realization of regression expectations,
 but DC-13 remains formally OPEN in the Domain Contract until an explicit
 Domain Contract amendment is authorized and applied.
 
@@ -264,7 +264,7 @@ unless ERROR conditions trigger first (invalid case / observation).
 
 ---
 
-## 6. Expectation model (M06 regression expectations)
+## 6. Expectation model (M06 regression expectations; v1.0.0 baseline with v1.1.0 amendments)
 
 ### 6.1 Closed Gate-5 expectation classes
 
@@ -968,7 +968,7 @@ No hash algorithm is mandated.
 
 ## 22. Acceptance tests (normative for future implementation)
 
-A conforming implementation **MUST** provide deterministic tests covering:
+The implementation **MUST** provide deterministic tests covering:
 
 ### 22.1 Basic
 
@@ -1214,7 +1214,7 @@ or serialization, CLI/API, or shrinking.
 ## 32. v1.1.0 amendment register — OPEN
 
 The following v1.1.0 reconciliation items have been implemented in this branch.
-They remain amendment-candidate semantics until the PR review, required CI, and
+They remain amendment-candidate semantics until PR review, required CI, and a
 new freeze record are complete.
 
 | ID | Area | v1.0.0 contract / observed implementation | Proposed v1.1.0 resolution | Required evidence |
