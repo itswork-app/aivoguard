@@ -26,6 +26,8 @@ Material semantic changes require an explicit specification amendment. Freeze
 does **not** authorize M06 implementation, API/CLI/DSL design, or crate
 creation. A separate implementation-authorization task is required.
 
+> **Post-freeze administrative notice (2026-11-07):** The statement above records the authority state at the TASK-19 freeze point. M06 implementation was subsequently authorized and the existing bounded implementation prospectively ratified by [TASK-68](m06-implementation-authorization.md), effective 2026-11-07. This later authorization does not amend the normative semantics in this frozen specification or resolve any open decision.
+
 Open decisions **AD-03**, **AD-12**, **AD-14**, and **AD-15** remain **OPEN**
 and are not resolved by this freeze. **DC-13** remains formally **OPEN** in the
 Domain Contract; this freeze does **not** close or amend DC-13.
