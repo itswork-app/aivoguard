@@ -1,4 +1,4 @@
-//! M06 error taxonomy (frozen Gate-5).
+//! M06 error taxonomy (Gate-5 v1.0.0 baseline; v1.1.0 amendment in progress).
 
 use crate::regression::types::StructuredValue;
 
