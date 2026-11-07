@@ -45,7 +45,7 @@ These examples must be interpreted only within the behavior implemented and spec
 | M02 Invariant Engine | Rust source and integration tests | Read-only deterministic evaluator; no claim of formal verification |
 | M03 Simulator | Rust source and integration tests | Deterministic scenario orchestration; not a live environment sandbox |
 | M04 Adversarial Engine | Rust source and integration tests | Candidate transformations within its implemented model; not exhaustive attack generation |
-| M06 Regression | Rust source and integration tests are present | Implemented and prospectively ratified effective 2026-11-07 by TASK-68; bounded to Gate-5; v1.1.0 specification amendment and CI reconciliation are in progress. Independent correctness audit remains open. |
+| M06 Regression | Rust source and integration tests are present | Implemented and prospectively ratified effective 2026-11-07 by TASK-68; bounded to Gate-5; v1.1.0 specification was reconciled and frozen by TASK-70. Independent correctness audit remains open. |
 | M07 Payment/Settlement | Implementation master and tests; frozen bounded scope | No provider I/O, live payment, webhook, or wire protocol |
 | M08 x402 Adapter | TASK-63…67 implementation record and tests | Inbound semantic translation only; no HTTP/wire codec, crypto verification, facilitator, outbound path, or M07 observation output |
 | M05 / M09 | No source module or integration test | Not implemented |
@@ -70,7 +70,7 @@ No grant milestone will claim delivery of an unimplemented CLI, SDK, hosted serv
 ### M1 — Baseline integrity and traceability (Month 1)
 - Verify the exact repository baseline and required CI.
 - Reconcile README, architecture, documentation index, module status, and implementation evidence.
-- Complete TASK-69 M06 v1.1.0 specification-to-code reconciliation and re-freeze; keep independent audit limitations explicit.
+- [x] Complete TASK-69 M06 v1.1.0 specification-to-code reconciliation and re-freeze under TASK-70; keep independent audit limitations explicit.
 - Publish known limitations and open risks.
 
 **Acceptance evidence:** versioned implementation ledger, exact commit SHA, green CI run links, and unresolved-risk register.
