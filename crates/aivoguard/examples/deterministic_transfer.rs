@@ -36,7 +36,7 @@ fn main() {
         &state,
         &Action::Transfer {
             actor: ActorId::new("alice-actor"),
-            action_id: Some("demo-transfer-001".into()),
+            action_id: None,
             from: AccountId::new("alice"),
             to: AccountId::new("bob"),
             asset: AssetId::new("USD"),
