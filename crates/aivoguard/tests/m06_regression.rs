@@ -1093,3 +1093,51 @@ fn maximum_step_index_is_a_missing_observation_not_a_wrapped_index() {
         RegressionErrorId::MissingObservationField
     );
 }
+
+
+#[test]
+fn all_empty_balance_identity_tokens_are_invalid() {
+    for field in ["account_id", "asset_id", "facet_id"] {
+        let sim = base_sim(EconomicState::new());
+        let mut expectation = bal_exact("empty-token", 0, true);
+        if let ExpectationClass::FinalBalanceExact { account_id, asset_id, facet_id, .. } =
+            &mut expectation.class
+        {
+            match field {
+                "account_id" => account_id.clear(),
+                "asset_id" => asset_id.clear(),
+                "facet_id" => facet_id.clear(),
+                _ => unreachable!(),
+            }
+        }
+        let result = evaluate_regression(&case_with(vec![expectation], sim, None));
+        assert_eq!(result.verdict, RegressionVerdict::Error, "{field}");
+        assert_eq!(
+            result.error.as_ref().unwrap().error_id,
+            RegressionErrorId::InvalidExpectation,
+            "{field}"
+        );
+    }
+}
+
+#[test]
+fn empty_invariant_identity_token_is_invalid() {
+    let sim = base_sim(state_with(0, None));
+    let result = evaluate_regression(&case_with(
+        vec![Expectation {
+            expectation_id: "empty-invariant".into(),
+            applicable: false,
+            class: ExpectationClass::CompletionInvariantKindExact {
+                invariant_id: String::new(),
+                expected_kind: InvariantResultKind::Pass,
+            },
+        }],
+        sim,
+        None,
+    ));
+    assert_eq!(result.verdict, RegressionVerdict::Error);
+    assert_eq!(
+        result.error.as_ref().unwrap().error_id,
+        RegressionErrorId::InvalidExpectation
+    );
+}
