@@ -2,12 +2,11 @@
 
 ## Supported versions
 
-AivoGuard is in **foundation / bootstrap** stage. There is no production
-release and no supported product version yet.
+AivoGuard is a pre-production Rust testing library. M01–M04 and M06–M08 have source and integration tests within documented bounds. There is no production release, hosted service, or supported production version.
 
 | Version | Supported |
 | --- | --- |
-| `0.0.0` (foundation) | Best-effort review of repository/tooling issues only |
+| Current unreleased main branch | Best-effort review of repository and library issues; no production SLA |
 | Production releases | Not yet available |
 
 ## Reporting a vulnerability
@@ -35,14 +34,11 @@ Relevant reports during foundation stage are limited to:
   (for example accidental inclusion of secrets)
 * CI or tooling misconfiguration that weakens integrity of validation
 
-There is currently no economic engine, network service, authentication system,
-or deployment surface to exploit. Do not submit exploit instructions.
+The repository includes local deterministic economic/testing modules. It currently has no hosted service, production payment execution, custody, or live x402 verification surface. Reports concerning code correctness, parser behavior, state transitions, invariant evaluation, simulation, regression, settlement testing, or adapter boundaries are in scope for maintainer triage. Do not submit exploit instructions in public issues.
 
 ## Safe harbor
 
-Good-faith security research against systems you are authorized to test is
-welcome once a production surface and reporting channel exist. Unauthorized
-access, data destruction, or privacy violations are not authorized.
+Good-faith security research must be limited to systems you are authorized to test. Unauthorized access, data destruction, or privacy violations are not authorized. A private reporting channel and coordinated disclosure process are still required before a production release.
 
 ## Secrets and credentials
 
