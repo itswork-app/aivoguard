@@ -598,7 +598,7 @@ fn resolve_invariant_matches(
                 RegressionErrorId::MissingObservationField,
                 format!("no matching {class_name} observation records"),
             )
-            .with_field("target", target.clone()),
+            .with_field("target", target),
         ),
         1 => match matches[0] {
             InvariantEvaluationRecord::NotExecuted { .. } => EvalOne::Error(
@@ -610,7 +610,7 @@ fn resolve_invariant_matches(
                     "expectation_id",
                     StructuredValue::String(expectation.expectation_id.clone()),
                 )
-                .with_field("target", target.clone()),
+                .with_field("target", target),
             ),
             InvariantEvaluationRecord::Executed { outcome, .. } => {
                 if outcome.kind == expected_kind {
@@ -619,7 +619,7 @@ fn resolve_invariant_matches(
                     EvalOne::Mismatch(MismatchEvidence {
                         expectation_id: expectation.expectation_id.clone(),
                         class: class_name.into(),
-                        target: target.clone(),
+                        target: target,
                         expected: StructuredValue::InvariantKind(expected_kind),
                         observed: StructuredValue::InvariantKind(outcome.kind),
                         operator: ComparisonOperator::Exact,
