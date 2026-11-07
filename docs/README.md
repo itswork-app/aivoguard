@@ -1,63 +1,57 @@
 # Documentation
 
-This directory holds AivoGuard's version-controlled documentation.
+This directory contains AivoGuard's version-controlled specifications, architecture records, implementation evidence, and non-normative product/business planning.
 
-## What belongs in `docs/`
+## Document authority
 
-| Path | Purpose |
-| --- | --- |
-| `docs/design/` | Normative and draft **design specifications** — the intended contracts for behavior and semantics |
-| `docs/architecture/` | Architecture documents describing system structure, boundaries, and component relationships |
-| `docs/reference/` | Non-normative reference material (glossaries, guides, explanatory notes) |
-| `docs/adr/` | Architecture Decision Records for significant, durable decisions |
-| `docs/business/` | Non-normative business, funding, grant, and commercial planning |
+| Document class | Authority |
+|---|---|
+| Frozen design specifications under `design/` | Normative economic/product semantics for their declared gate/version |
+| Accepted ADRs under `adr/` | Architectural constraints subordinate to frozen specifications |
+| Architecture baseline | Describes implemented structure; does not redefine semantics |
+| Implementation status ledger | Current code/test/authorization evidence register; does not amend frozen semantics |
+| Reference and business documents | Explanatory or strategic only; cannot authorize product scope or APIs |
 
-## How these differ
+Read [Specification Policy](design/SPECIFICATION-POLICY.md) before changing normative behavior.
 
-* **Design specifications** define *what must be true*. When frozen, they are normative. Implementation must conform to them.
-* **Architecture documents** explain *how the system is structured* to satisfy specifications. They do not silently replace normative specs.
-* **Reference material** helps humans understand the project. It is non-normative unless a document explicitly says otherwise.
-* **ADRs** record *why* a significant technical decision was made, including context and consequences. See [`adr/README.md`](adr/README.md).
-* **Business documents** describe funding and commercial hypotheses. They do not authorize product scope, implementation, APIs, or architecture.
+## Current implementation and gates
 
-## Business and funding documents
+The current source tree contains M01–M04 and M06–M08. M05 and M09 are not implemented. See the [Implementation Status Ledger](implementation-status.md) for source paths, integration tests, gate evidence, limitations, and unresolved authorization reconciliation.
+
+| Module | Specification | Current implementation status |
+|---|---|---|
+| M01 Economic Kernel | [Frozen](design/economic-kernel-specification.md), Gate 1 closed | Implemented; TASK-04 evidence |
+| M02 Invariant Engine | [Frozen](design/economic-invariant-engine-specification.md), Gate 2 closed | Implemented; TASK-06 / TASK-06R evidence |
+| M03 Deterministic Simulator | [Frozen](design/deterministic-simulator-specification.md), Gate 3 closed | Implemented; TASK-08 / TASK-08R / TASK-08F evidence |
+| M04 Adversarial Scenario Engine | [Frozen](design/adversarial-scenario-engine-specification.md), Gate 4 closed | Implemented; TASK-10H / TASK-11 evidence |
+| M05 Chaos | Future boundary | Not implemented |
+| M06 Economic Regression | [Frozen](design/economic-regression-engine-specification.md), Gate 5 closed | Source and tests present; implementation authorization record requires reconciliation |
+| M07 Payment & Settlement Testing | [Frozen](design/payment-settlement-testing-specification.md), Gate 6 | Bounded implementation recorded by [implementation master](design/m07-implementation-master-specification.md), TASK-37…45 |
+| M08 x402 Adapter | [Frozen](design/x402-adapter-specification.md), Gate 7 | Bounded inbound semantic implementation recorded by [implementation master](design/m08-implementation-master-specification.md), TASK-63…67 |
+| M09 Multi-Agent World | Future boundary | Not implemented |
+
+A frozen specification may contain a historical “BLOCKED” or “NOT AUTHORIZED” marker that reflects the state when the specification was frozen. Later implementation authority must be supported by a separate accepted implementation task/master record. Do not infer authorization from source code alone. M06's authorization evidence remains an explicit open reconciliation item.
+
+## Architecture and engineering
+
+- [Architecture Baseline](architecture/architecture-baseline.md) — module boundaries and dependency direction.
+- [Implementation Status Ledger](implementation-status.md) — current evidence and grant-readiness gates.
+- [ADR index](adr/README.md) — durable architecture decisions.
+- [Specification Policy](design/SPECIFICATION-POLICY.md) — semantic change control.
+
+## Product and funding strategy
+
+All business documents are non-normative hypotheses. They do not modify frozen product scope or authorize interfaces/features.
 
 | Document | Status | Purpose |
-| --- | --- | --- |
-| [`business/funding-strategy.md`](business/funding-strategy.md) | **DRAFT — non-normative** | Hybrid funding model, company-led governance, grant portfolio, and financial controls |
-| [`business/grant-proposal.md`](business/grant-proposal.md) | **DRAFT — not submission-ready** | Adaptable public-good grant proposal and six-month milestone plan |
-| [`business/commercial-roadmap.md`](business/commercial-roadmap.md) | **DRAFT — non-normative** | Developer-first validation, paid pilots, and staged commercial roadmap |
+|---|---|---|
+| [Product Strategy](business/product-strategy.md) | Draft | Product positioning, target user, boundaries, and validation |
+| [Funding Strategy](business/funding-strategy.md) | Draft | Hybrid public-good, grant, and commercial funding |
+| [Grant Proposal](business/grant-proposal.md) | Draft — not submission-ready | Six-month public-good work plan and planning budget |
+| [Commercial Roadmap](business/commercial-roadmap.md) | Draft | Developer validation, paid assessments, and staged commercialization |
 
-## Specification authority
+## Grant readiness
 
-1. Normative specifications are version-controlled in this repository.
-2. Implementation must follow frozen specifications.
-3. Undocumented semantic changes are prohibited.
-4. Discoveries that require semantic change must trigger a specification amendment — not a silent code-only fix.
+The repository is not yet grant-submission-ready. The blocking items are explicit: license and contributor-rights decision, private vulnerability-reporting channel, M06 authorization reconciliation, post-merge CI evidence on the exact main baseline, reproducible external demo, external validation, and funder-specific eligibility/budget review. Track these in [Implementation Status Ledger](implementation-status.md).
 
-Full hierarchy and process rules:
-[`design/SPECIFICATION-POLICY.md`](design/SPECIFICATION-POLICY.md).
-
-## Current status
-
-| Document | Status |
-| --- | --- |
-| [`design/SPECIFICATION-POLICY.md`](design/SPECIFICATION-POLICY.md) | Process policy (normative for process) |
-| [`design/product-scope.md`](design/product-scope.md) | Product scope — **FROZEN** |
-| [`design/domain-contract.md`](design/domain-contract.md) | Domain Contract / Gate 0 — **FROZEN** (Gate 0 **CLOSED**) |
-| [`design/economic-kernel-specification.md`](design/economic-kernel-specification.md) | Economic Kernel (M01) — **FROZEN** (Gate 1 **CLOSED**) |
-| [`design/economic-invariant-engine-specification.md`](design/economic-invariant-engine-specification.md) | Invariant Engine (M02) — **FROZEN** (Gate 2 **CLOSED**) |
-| [`design/deterministic-simulator-specification.md`](design/deterministic-simulator-specification.md) | Deterministic Simulator (M03) — **FROZEN** (Gate 3 **CLOSED**) |
-| [`design/adversarial-scenario-engine-specification.md`](design/adversarial-scenario-engine-specification.md) | Adversarial Scenario Engine (M04) — **FROZEN** (Gate 4 **CLOSED**) |
-| [`design/economic-regression-engine-specification.md`](design/economic-regression-engine-specification.md) | Economic Regression Engine (M06) — **FROZEN** (Gate 5 **CLOSED**; implementation **BLOCKED**) |
-| [`architecture/architecture-baseline.md`](architecture/architecture-baseline.md) | Architecture baseline — M01/M02/M03/M04 **IMPLEMENTED**; M06 spec **FROZEN** (not implemented) |
-| M01 implementation | Present in `crates/aivoguard` (`kernel`); TASK-04 **PASS** |
-| M02 implementation | Present in `crates/aivoguard` (`invariant`); TASK-06 / TASK-06R **PASS** |
-| M03 implementation | Present in `crates/aivoguard` (`simulator`); TASK-08 / TASK-08R; TASK-08F audit **PASS**; baseline `c4ce9bb` |
-| M04 implementation | Present in `crates/aivoguard` (`adversarial`); TASK-11; authorized by TASK-10H |
-| Gate 0–4 | **CLOSED** |
-| Gate 4 (M04) | **CLOSED** — specification **FROZEN**; implemented (TASK-11) |
-| Gate 5 (M06) | **CLOSED** — specification **FROZEN** (TASK-19; audit TASK-18); implementation **BLOCKED** |
-| Gate 6+ / M05 / M07–M09 | Not implemented |
-
-`docs/reference/` remains an intentional placeholder for non-normative reference material.
+Business planning documents must not claim that grant funds are awarded, that a funder endorses the project, or that a future feature already exists.
