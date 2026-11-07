@@ -619,7 +619,7 @@ fn resolve_invariant_matches(
                     EvalOne::Mismatch(MismatchEvidence {
                         expectation_id: expectation.expectation_id.clone(),
                         class: class_name.into(),
-                        target: target,
+                        target,
                         expected: StructuredValue::InvariantKind(expected_kind),
                         observed: StructuredValue::InvariantKind(outcome.kind),
                         operator: ComparisonOperator::Exact,
