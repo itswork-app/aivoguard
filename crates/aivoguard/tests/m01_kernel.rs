@@ -159,7 +159,7 @@ fn noop_accepted_effective_zero_effects() {
         } => {
             assert_eq!(disposition, EconomicDisposition::AcceptedEffective);
             assert_eq!(transaction.actor, ActorId::new("alice-actor"));
-            assert!(transaction.effects.is_empty());
+            assert_eq!(transaction.effects, Vec::new());
             assert_eq!(state_after, state);
             assert!(evidence.disposition.is_some());
         }
@@ -256,7 +256,7 @@ fn insufficient_funds_is_failed_economic_with_zero_effects() {
             ..
         } => {
             assert_eq!(disposition, EconomicDisposition::FailedEconomic);
-            assert!(transaction.effects.is_empty());
+            assert_eq!(transaction.effects, Vec::new());
             assert_eq!(state_after, before);
         }
         KernelOutcome::Error { error, .. } => panic!("unexpected error: {error:?}"),
@@ -376,7 +376,7 @@ fn transfer_with_fee_atomicity_on_fee_failure() {
             ..
         } => {
             assert_eq!(disposition, EconomicDisposition::FailedEconomic);
-            assert!(transaction.effects.is_empty());
+            assert_eq!(transaction.effects, Vec::new());
             assert_eq!(state_after, before);
         }
         KernelOutcome::Error { error, .. } => panic!("unexpected error: {error:?}"),
@@ -688,7 +688,7 @@ fn transfer_with_fee_aggregate_same_cell_debit_is_failed_economic() {
             ..
         } => {
             assert_eq!(disposition, EconomicDisposition::FailedEconomic);
-            assert!(transaction.effects.is_empty());
+            assert_eq!(transaction.effects, Vec::new());
             assert_eq!(state_after, before);
         }
         KernelOutcome::Error { error, .. } => {
