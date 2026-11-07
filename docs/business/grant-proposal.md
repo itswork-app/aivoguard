@@ -156,7 +156,7 @@ VC funding is not a prerequisite for this stage. Institutional fundraising shoul
 | Risk | Mitigation |
 |---|---|
 | License and contributor-rights ambiguity | Select and publish a license, verify ownership/authority, and establish contributor terms before submission |
-| M06 authorization gap | Reconcile the formal implementation task record; do not overclaim until closed |
+| M06 implementation correctness | Authorization is recorded by TASK-68; complete independent correctness and cross-module audit before stronger assurance claims |
 | Hidden correctness defects | Independent review, edge-case tests, fuzz/property testing where justified, transparent issue register |
 | Ecosystem mismatch | Apply only when a measurable developer/ecosystem benefit is demonstrated |
 | Scope expansion | Frozen specs and explicit implementation gates; no grant document silently authorizes code |
@@ -169,7 +169,7 @@ VC funding is not a prerequisite for this stage. Institutional fundraising shoul
 - [ ] Select a named funder and verify current eligibility, jurisdiction, applicant type, allowable costs, IP terms, and reporting requirements.
 - [ ] Resolve the repository license and contributor-rights policy; publish actual license text and metadata.
 - [ ] Configure private vulnerability reporting or provide a verified private contact and response process.
-- [ ] Reconcile M06 implementation authorization record (TASK-68).
+- [x] Record M06 implementation authorization and prospective ratification (TASK-68); independently audit correctness before claiming an audit result.
 - [ ] Verify green CI on the exact main commit proposed as the application baseline.
 - [ ] Produce a clean-environment reproducible demonstration from documented existing capabilities.
 - [ ] Obtain external developer feedback or clearly state that validation is not yet complete.
