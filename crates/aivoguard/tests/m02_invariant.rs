@@ -1208,5 +1208,5 @@ fn exists_first_only_accepts_a_later_valid_witness() {
     );
 
     assert_eq!(out.kind, InvariantResultKind::Pass);
-    assert!(out.violations.is_empty());
+    assert_eq!(out.violations, Vec::new());
 }
