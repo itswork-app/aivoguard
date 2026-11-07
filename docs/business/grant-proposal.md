@@ -11,13 +11,13 @@
 | Initial wedge | Reproducible testing of agentic economic and payment workflows |
 | Scope authority | Frozen product/design specifications and explicit implementation authorization |
 
-> This is a master proposal, not an application to a named funder. Do not submit unchanged. The repository now declares Apache-2.0; private vulnerability reporting is not yet configured, M06 implementation authorization remains unresolved, and full third-party IP/provenance review is incomplete. Funder fit, eligibility, applicant details, IP terms, and budget eligibility must be verified before submission.
+> This is a master proposal, not an application to a named funder. Do not submit unchanged. The repository now declares Apache-2.0; private vulnerability reporting is not yet configured, M06 implementation is authorized by TASK-68 (with independent audit still open), and full third-party IP/provenance review is incomplete. Funder fit, eligibility, applicant details, IP terms, and budget eligibility must be verified before submission.
 
 ## 1. Executive summary
 
 AivoGuard is a Rust-based deterministic economic testing library for developers building autonomous agents that can initiate or influence economically consequential workflows.
 
-The current codebase includes an economic kernel (M01), invariant evaluator (M02), deterministic simulator (M03), adversarial scenario engine (M04), M06 regression source/tests (authorization unresolved; excluded from accepted capability claims), payment/settlement testing module (M07), and a bounded inbound x402 semantic adapter (M08). M05 chaos and M09 multi-agent world are not implemented. The current public repository does not provide a CLI, SDK, hosted API, live payment processor, wallet, custody, transaction signer, or runtime enforcement proxy.
+The current codebase includes an economic kernel (M01), invariant evaluator (M02), deterministic simulator (M03), adversarial scenario engine (M04), M06 regression engine (implemented and prospectively authorized by TASK-68; independent audit not yet claimed), payment/settlement testing module (M07), and a bounded inbound x402 semantic adapter (M08). M05 chaos and M09 multi-agent world are not implemented. The current public repository does not provide a CLI, SDK, hosted API, live payment processor, wallet, custody, transaction signer, or runtime enforcement proxy.
 
 The project thesis is that agent developers need reproducible evidence about economic consequences—not only plausible model output or successful tool invocation. AivoGuard evaluates supported economic actions and scenarios using deterministic rules. LLM output is not authoritative for economic state or test verdicts.
 
@@ -45,7 +45,7 @@ These examples must be interpreted only within the behavior implemented and spec
 | M02 Invariant Engine | Rust source and integration tests | Read-only deterministic evaluator; no claim of formal verification |
 | M03 Simulator | Rust source and integration tests | Deterministic scenario orchestration; not a live environment sandbox |
 | M04 Adversarial Engine | Rust source and integration tests | Candidate transformations within its implemented model; not exhaustive attack generation |
-| M06 Regression | Rust source and integration tests are present | Not counted as an accepted/authorized capability until prospective maintainer ratification or de-scope decision is recorded (Issue #9) |
+| M06 Regression | Rust source and integration tests are present | Implemented and prospectively ratified effective 2026-11-07 by TASK-68; bounded by frozen Gate-5 semantics. Independent correctness audit remains open. |
 | M07 Payment/Settlement | Implementation master and tests; frozen bounded scope | No provider I/O, live payment, webhook, or wire protocol |
 | M08 x402 Adapter | TASK-63…67 implementation record and tests | Inbound semantic translation only; no HTTP/wire codec, crypto verification, facilitator, outbound path, or M07 observation output |
 | M05 / M09 | No source module or integration test | Not implemented |
@@ -70,7 +70,7 @@ No grant milestone will claim delivery of an unimplemented CLI, SDK, hosted serv
 ### M1 — Baseline integrity and traceability (Month 1)
 - Verify the exact repository baseline and required CI.
 - Reconcile README, architecture, documentation index, module status, and implementation evidence.
-- Resolve M06 implementation authorization evidence or explicitly mark the module as experimental/unverified for grant claims.
+- Record M06 implementation authorization and align source, tests, and public claims with TASK-68; keep independent audit limitations explicit.
 - Publish known limitations and open risks.
 
 **Acceptance evidence:** versioned implementation ledger, exact commit SHA, green CI run links, and unresolved-risk register.
@@ -169,7 +169,7 @@ VC funding is not a prerequisite for this stage. Institutional fundraising shoul
 - [ ] Select a named funder and verify current eligibility, jurisdiction, applicant type, allowable costs, IP terms, and reporting requirements.
 - [ ] Resolve the repository license and contributor-rights policy; publish actual license text and metadata.
 - [ ] Configure private vulnerability reporting or provide a verified private contact and response process.
-- [ ] Reconcile M06 implementation authorization evidence.
+- [ ] Reconcile M06 implementation authorization record (TASK-68).
 - [ ] Verify green CI on the exact main commit proposed as the application baseline.
 - [ ] Produce a clean-environment reproducible demonstration from documented existing capabilities.
 - [ ] Obtain external developer feedback or clearly state that validation is not yet complete.
