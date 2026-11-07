@@ -2,8 +2,7 @@
 
 ## Current status
 
-AivoGuard is in **foundation / bootstrap** stage. Formal governance structures
-(roles, voting, membership, release authority) are intentionally minimal.
+AivoGuard has implemented deterministic economic testing modules, but remains a pre-production project. Formal governance structures (roles, voting, membership, release authority) are intentionally minimal and company-led during this stage.
 
 This document records the operating principles that apply until a richer
 governance model is adopted.
@@ -19,8 +18,7 @@ governance model is adopted.
 3. **Honesty over momentum** — Documentation must not claim features that do
    not exist.
 4. **Determinism as a project principle** — Design and implementation choices
-   should preserve deterministic, reproducible behavior where economic or
-   testing semantics are concerned (to be defined in later gates).
+   must preserve deterministic, reproducible behavior required by the frozen economic and testing specifications.
 5. **Security before production** — Vulnerability reporting and release
    controls must exist before any production release.
 
@@ -28,7 +26,7 @@ governance model is adopted.
 
 | Role | Responsibility |
 | --- | --- |
-| Maintainers | Repository stewardship, review of PRs, acceptance of foundation changes |
+| Maintainers | Repository stewardship, review of PRs, specification and implementation-gate integrity |
 | Contributors | Propose changes via PRs/issues per `CONTRIBUTING.md` |
 
 Named maintainer roster, committer election, and decision quorums are **not**
@@ -47,8 +45,7 @@ external participation.
 
 ## Conflict resolution
 
-During bootstrap, unresolved disagreements should be recorded as open questions
-in issues or draft specifications rather than resolved silently in code.
+During the current pre-production stage, unresolved disagreements must be recorded as open questions in issues or draft specifications rather than resolved silently in code. Normative semantics require a specification amendment; implementation authorization requires an explicit task record.
 
 ## Amendments
 
