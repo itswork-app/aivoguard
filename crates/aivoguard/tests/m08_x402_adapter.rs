@@ -2,7 +2,7 @@
 //!
 //! Proves the bounded path: fixture observation → validate → translate →
 //! provenance → non-authoritative `X402SemanticRecord`. No network, wire,
-//! M01 mutation, or M07 SettlementObservation emission.
+//! M01 mutation, or M07 `SettlementObservation` emission.
 
 use aivoguard::{
     adapt_x402_observation, AdapterProvenanceSeed, AmountCarrier, M08AdapterErrorId,
@@ -321,14 +321,14 @@ fn trust_class_on_ok_is_never_verified_under_policy() {
 }
 
 /// Compile-time / type-level guard: M08 module surface does not expose M07
-/// SettlementObservation construction from adapt.
+/// `SettlementObservation` construction from adapt.
 #[test]
 fn adapt_return_type_is_semantic_record_not_settlement_observation() {
     let record = adapt_x402_observation(&valid_observation(), &base_config()).expect("ok");
     let _: aivoguard::X402SemanticRecord = record;
 }
 
-/// M01 EconomicState is not reachable from adapt (no mutation path).
+/// M01 `EconomicState` is not reachable from adapt (no mutation path).
 #[test]
 fn m01_economic_state_type_unused_by_adapt() {
     // Presence of EconomicState in the crate must not be mutated by M08.
