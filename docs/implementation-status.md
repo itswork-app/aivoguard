@@ -63,9 +63,10 @@ These are not yet closed by the remediation above:
 1. M06 implementation authorization evidence reconciliation.
 2. Full state-construction and invariant validation boundary review in M01.
 3. Nested quantifier/binding restoration review in M02.
-4. Cross-module adversarial, simulator, regression, settlement, and adapter semantic audit beyond the current test suite.
-5. Property-based/fuzz testing and deterministic replay verification.
-6. Independent external correctness/security review.
+4. M02 `EXISTS` with `FirstOnly` violation policy can misclassify a later suppressed failure as a witness; confirmed as Issue #7 and remediation is open in PR #8.
+5. Cross-module adversarial, simulator, regression, settlement, and adapter semantic audit beyond the current test suite.
+6. Property-based/fuzz testing and deterministic replay verification.
+7. Independent external correctness/security review.
 
 Do not claim formal verification, complete security assurance, production readiness, or exhaustive adversarial coverage.
 
