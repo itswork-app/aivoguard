@@ -84,6 +84,16 @@ cargo fmt --all -- --check
 cargo check --workspace --all-targets
 cargo test --workspace --all-targets
 cargo clippy --workspace --all-targets -- -D warnings
+cargo run --example deterministic_transfer
+```
+
+The example is a deterministic local library demonstration, not a live payment or provider integration. Expected output:
+
+```text
+disposition: AcceptedEffective
+effects: 2
+alice USD minor units: 8500
+bob USD minor units: 1500
 ```
 
 The current crate is a Rust library workspace. A stable, supported public CLI or SDK is not yet part of the product contract.
