@@ -48,7 +48,7 @@ The M01/M02 remediation PR was validated by GitHub Actions run #33 on PR head `a
 - `cargo test --workspace --all-targets`: PASS
 - `cargo clippy --workspace --all-targets -- -D warnings`: PASS
 
-The M01/M02 aggregate-debit and history-range remediation was merged to `main` as `a25cd588f81c67640d31d66ca1478276ae2d65c8`; post-merge GitHub Actions run #34 on that exact commit completed successfully. A subsequent M02 existential-witness correction was merged as `63af88838c0b08abe7b8652eb16abeb1f5ca290e`; PR-head run #44 and post-merge main run #46 both passed all checks. This is not a release certification or independent security audit.
+The M01/M02 aggregate-debit and history-range remediation was merged to `main` as `a25cd588f81c67640d31d66ca1478276ae2d65c8`; post-merge GitHub Actions run #34 passed. The M02 existential-witness correction was merged as `63af88838c0b08abe7b8652eb16abeb1f5ca290e`; PR-head run #44 and post-merge run #46 passed. Documentation reconciliation was merged as `6d09ed8ce7a2020c6690b25dbb3764812b05c943`; post-merge main run #49 also passed format, check, tests, and strict Clippy. This is not a release certification or independent security audit.
 
 ## 4. Confirmed remediation history
 
@@ -61,12 +61,11 @@ The M01/M02 aggregate-debit and history-range remediation was merged to `main` a
 
 These are not yet closed by the remediation above:
 
-1. M06 implementation authorization evidence reconciliation.
-2. Full state-construction and invariant validation boundary review in M01.
-3. Nested quantifier/binding restoration review in M02.
-4. Cross-module adversarial, simulator, regression, settlement, and adapter semantic audit beyond the current test suite.
-5. Property-based/fuzz testing and deterministic replay verification.
-6. Independent external correctness/security review.
+1. M06 implementation authorization evidence reconciliation (tracked in Issue #9; source/tests exist, but no separate authorization record has been identified).
+2. M01 initial `EconomicState` validation boundary requires a normative interpretation before code changes (Issue #10).
+3. Cross-module adversarial, simulator, regression, settlement, and adapter semantic audit beyond the current test suite.
+4. Property-based/fuzz testing and deterministic replay verification.
+5. Independent external correctness/security review.
 
 Do not claim formal verification, complete security assurance, production readiness, or exhaustive adversarial coverage.
 
@@ -74,8 +73,8 @@ Do not claim formal verification, complete security assurance, production readin
 
 | Gate | Status | Evidence required |
 |---|---|---|
-| Accurate public implementation claims | IN PROGRESS | README, architecture, and this ledger agree; CI on exact main baseline. |
-| Frozen spec / implementation authority reconciliation | IN PROGRESS | M06 authorization record; preserve freeze-time semantics. |
+| Accurate public implementation claims | PASS — current docs baseline | README, architecture, and this ledger agree; main commit `6d09ed8` passed run #49. |
+| Frozen spec / implementation authority reconciliation | BLOCKED | M06 implementation authorization evidence must be located or explicitly decided (Issue #9); preserve freeze-time semantics. |
 | License and contributor IP | BLOCKED | Explicit license decision, rights review, actual license text, metadata. |
 | Private vulnerability reporting | BLOCKED | Enable private reporting or publish a verified private contact and process. |
 | Reproducible external demo | BLOCKED | Clean-environment instructions, expected output, checksum/versioned fixture. |
