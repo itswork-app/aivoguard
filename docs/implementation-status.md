@@ -48,7 +48,7 @@ The M01/M02 remediation PR was validated by GitHub Actions run #33 on PR head `a
 - `cargo test --workspace --all-targets`: PASS
 - `cargo clippy --workspace --all-targets -- -D warnings`: PASS
 
-The M01/M02 aggregate-debit and history-range remediation was merged to `main` as `a25cd588f81c67640d31d66ca1478276ae2d65c8`; post-merge GitHub Actions run #34 passed. The M02 existential-witness correction was merged as `63af88838c0b08abe7b8652eb16abeb1f5ca290e`; PR-head run #44 and post-merge run #46 passed. Documentation reconciliation was merged as `6d09ed8ce7a2020c6690b25dbb3764812b05c943`; post-merge main run #49 passed. The implementation-ledger update was merged as `a1c5828182e7674587f9872b281f88fcb77e74f4`; post-merge main run #51 passed. The reproducible M01 example and expanded edge-case tests were merged as `24cbbcda83467cb5f7417fac1250ba30010bb3ec`; post-merge main run #58 passed format, check, tests, and strict Clippy. This is not a release certification or independent security audit.
+The M01/M02 aggregate-debit and history-range remediation was merged to `main` as `a25cd588f81c67640d31d66ca1478276ae2d65c8`; post-merge GitHub Actions run #34 passed. The M02 existential-witness correction was merged as `63af88838c0b08abe7b8652eb16abeb1f5ca290e`; PR-head run #44 and post-merge run #46 passed. Documentation reconciliation was merged as `6d09ed8ce7a2020c6690b25dbb3764812b05c943`; post-merge main run #49 passed. The implementation-ledger update was merged as `a1c5828182e7674587f9872b281f88fcb77e74f4`; post-merge main run #51 passed. The reproducible M01 example and expanded edge-case tests were merged as `24cbbcda83467cb5f7417fac1250ba30010bb3ec`; post-merge main run #58 passed. CI was then extended to execute the example and assert its exact output. PR #14 head run #65 and post-merge main run #66 passed format, check, tests, demo execution/output assertion, and strict Clippy. This is not a release certification or independent security audit.
 
 ## 4. Confirmed remediation history
 
@@ -56,7 +56,7 @@ The M01/M02 aggregate-debit and history-range remediation was merged to `main` a
 - M02: contiguous history validation now uses one ordered pass and does not increment beyond an inclusive `i64::MAX` endpoint; boundary tests cover `i64::MIN` and `i64::MAX`.
 - M02: `EXISTS` witness detection now uses isolated per-member violations, so `FirstOnly` suppression cannot turn a failing candidate into a witness; regression tests cover no witness and a later valid witness.
 - Strict Clippy findings discovered in M01/M02/M03/M06/M07/M08 tests and source were corrected without weakening `-D warnings`.
-- Added `examples/deterministic_transfer.rs` with a documented `cargo run --example deterministic_transfer` command and deterministic expected output. This is a local M01 library demo, not a live payment integration.
+- Added `crates/aivoguard/examples/deterministic_transfer.rs` with a documented `cargo run --example deterministic_transfer` command and deterministic expected output. CI executes it and asserts exact output. This is a local M01 library demo, not a live payment integration.
 - Expanded M01 TransferWithFee tests across same-cell aggregate insufficiency, zero fee, distinct authorized payer account, distinct asset, distinct facet, and World-permitted overdraft; added a 4,096-position M02 contiguous-history stress test.
 
 ## 5. Remaining technical audit items
