@@ -748,7 +748,9 @@ fn transfer_with_fee_zero_fee_preserves_same_cell_transfer() {
 
 #[test]
 fn transfer_with_fee_distinct_fee_payer_checks_each_account_cell() {
-    let world = base_world();
+    let mut world = base_world();
+    let alice_fee = aivoguard::AccountId::new("alice-fee");
+    world.insert_account(Account::new("alice-fee", ActorId::new("alice-actor")));
     let mut state = EconomicState::new();
     state.set_balance(
         aivoguard::AccountId::new("alice"),
@@ -757,7 +759,7 @@ fn transfer_with_fee_distinct_fee_payer_checks_each_account_cell() {
         1_000,
     );
     state.set_balance(
-        aivoguard::AccountId::new("bob"),
+        alice_fee.clone(),
         AssetId::new("USD"),
         available(),
         50,
@@ -773,7 +775,7 @@ fn transfer_with_fee_distinct_fee_payer_checks_each_account_cell() {
             to: aivoguard::AccountId::new("bob"),
             asset: AssetId::new("USD"),
             amount: 800,
-            fee_payer: aivoguard::AccountId::new("bob"),
+            fee_payer: alice_fee.clone(),
             fee_recipient: aivoguard::AccountId::new("fee"),
             fee_asset: AssetId::new("USD"),
             fee_amount: 50,
@@ -804,13 +806,21 @@ fn transfer_with_fee_distinct_fee_payer_checks_each_account_cell() {
                 ),
                 800
             );
+            assert_eq!(
+                state_after.get_balance(
+                    &alice_fee,
+                    &AssetId::new("USD"),
+                    &available(),
+                ),
+                0
+            );
         }
         KernelOutcome::Error { error, .. } => panic!("unexpected error: {error:?}"),
     }
 }
 
 #[test]
-fn transfer_with_fee_distinct_assets_checks_each_asset_cell() {
+fn transfer_with_fee_distinct_assets_checks_each_asset_cell) {
     let world = base_world();
     let mut state = EconomicState::new();
     state.set_balance(
