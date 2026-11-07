@@ -1,7 +1,7 @@
 //! Minimal reproducible M01 economic transfer example.
 //!
-//! Amounts are integer minor units: USD has 2 decimal places, so 10_000 =
-//! USD 100.00 and 1_500 = USD 15.00. This example exercises the library only;
+//! Amounts are integer minor units: USD has 2 decimal places, so `10_000` =
+//! USD 100.00 and `1_500` = USD 15.00. This example exercises the library only;
 //! it does not connect to a payment provider or move real funds.
 
 use aivoguard::{
