@@ -265,20 +265,23 @@ fn eval_property(
                 return Ok(());
             }
             let mut found = false;
-            let mut local_violations = Vec::new();
             for member in members {
                 apply_binding(bindings, &member);
-                let before = local_violations.len();
+                // A witness is determined by this member's own evaluation,
+                // not by the aggregate violation policy. In particular,
+                // FirstOnly may suppress later violations in a shared vector
+                // and must never turn a failing member into a witness.
+                let mut member_violations = Vec::new();
                 match eval_property(
                     invariant,
                     target,
                     body,
                     bindings,
-                    &mut local_violations,
+                    &mut member_violations,
                     discovered_error,
                 ) {
                     Ok(()) => {
-                        if local_violations.len() == before {
+                        if member_violations.is_empty() {
                             found = true;
                         }
                     }

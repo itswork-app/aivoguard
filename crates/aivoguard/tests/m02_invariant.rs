@@ -1142,3 +1142,71 @@ fn contiguous_history_range_handles_i64_boundaries() {
         assert_eq!(record.logical_position, position);
     }
 }
+
+#[test]
+fn exists_first_only_does_not_turn_suppressed_violations_into_witnesses() {
+    let world = world_usd();
+    let state = state_with(-1, -2);
+    let invariant = inv(
+        "exists-nonnegative",
+        InvariantScope::State,
+        ViolationPolicy::FirstOnly,
+        Applicability::Always,
+        PropertyExpr::Exists {
+            domain: DomainExpr::WorldAccounts,
+            body: Box::new(PropertyExpr::Compare {
+                left: ValueExpr::BoundAccountBalance {
+                    asset: AssetId::new("USD"),
+                    facet: facet(),
+                },
+                op: CmpOp::Ge,
+                right: ValueExpr::Literal(Money::new(AssetId::new("USD"), 0)),
+            }),
+        },
+    );
+
+    let out = evaluate_invariant(
+        &invariant,
+        EvaluationTarget::State {
+            world: &world,
+            state: &state,
+        },
+    );
+
+    assert_eq!(out.kind, InvariantResultKind::Fail);
+    assert_eq!(out.violations.len(), 1);
+}
+
+#[test]
+fn exists_first_only_accepts_a_later_valid_witness() {
+    let world = world_usd();
+    let state = state_with(-1, 0);
+    let invariant = inv(
+        "exists-nonnegative",
+        InvariantScope::State,
+        ViolationPolicy::FirstOnly,
+        Applicability::Always,
+        PropertyExpr::Exists {
+            domain: DomainExpr::WorldAccounts,
+            body: Box::new(PropertyExpr::Compare {
+                left: ValueExpr::BoundAccountBalance {
+                    asset: AssetId::new("USD"),
+                    facet: facet(),
+                },
+                op: CmpOp::Ge,
+                right: ValueExpr::Literal(Money::new(AssetId::new("USD"), 0)),
+            }),
+        },
+    );
+
+    let out = evaluate_invariant(
+        &invariant,
+        EvaluationTarget::State {
+            world: &world,
+            state: &state,
+        },
+    );
+
+    assert_eq!(out.kind, InvariantResultKind::Pass);
+    assert_eq!(out.violations, Vec::new());
+}
